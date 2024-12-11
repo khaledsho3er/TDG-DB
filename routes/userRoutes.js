@@ -2,9 +2,9 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const isAuthenticated = require("../middlewares/authMiddleware"); // Adjust path to where your middleware is located
 
 const router = express.Router();
-
 // Sign Up Route
 router.post("/signup", async (req, res) => {
   const {
@@ -20,6 +20,9 @@ router.post("/signup", async (req, res) => {
     language,
     region,
     shipmentAddress,
+    city,
+    country,
+    postalCode,
   } = req.body;
 
   if (!firstName || !lastName || !email || !password) {
@@ -49,6 +52,10 @@ router.post("/signup", async (req, res) => {
       language,
       region,
       shipmentAddress,
+      role: "User",
+      city,
+      country,
+      postalCode,
     });
 
     const savedUser = await newUser.save();
@@ -63,44 +70,240 @@ router.post("/signup", async (req, res) => {
 });
 
 // Sign In Route
+// Sign In Route
+// router.post("/signin", async (req, res) => {
+//   const { email, password } = req.body;
+
+//   if (!email || !password) {
+//     return res
+//       .status(400)
+//       .json({ message: "Email and password are required." });
+//   }
+
+//   try {
+//     const user = await User.findOne({ email });
+
+//     if (!user) {
+//       return res.status(400).json({ message: "Invalid credentials" });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+
+//     if (!isMatch) {
+//       return res.status(400).json({ message: "Invalid credentials" });
+//     }
+
+//     // Store the userId in the session
+//     req.session.userId = user._id;
+//     console.log("Session ID:", req.session.id); // Log session ID to check
+//     console.log("Session User ID after login:", req.session.userId); // Log session user ID to check
+
+//     req.session.save((err) => {
+//       if (err) {
+//         console.error("Error saving session:", err);
+//         return res.status(500).json({ message: "Error saving session" });
+//       }
+//       res.status(200).json({
+//         message: "User logged in successfully",
+//         user: { id: user._id, email: user.email },
+//       });
+//     });
+//   } catch (error) {
+//     console.error("Error signing in user:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
 router.post("/signin", async (req, res) => {
   const { email, password } = req.body;
+  const user = await User.findOne({ email });
 
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ message: "Email and password are required." });
+  if (user && (await bcrypt.compare(password, user.password))) {
+    req.session.userId = user._id; // Save user ID in session
+    res.json({ message: "Login successful!" });
+    console.log("Session data after login:", req.session);
+  } else {
+    res.status(401).json({ message: "Invalid email or password" });
+  }
+});
+
+// router.post("/signin", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     // Verify user credentials
+//     const user = await User.findOne({ email });
+//     console.log("User:", user);
+
+//     if (!user || !(await bcrypt.compare(password, user.password))) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     // Set session data
+//     req.session.userId = user._id;
+//     req.session.email = user.email;
+//     console.log("session:", req.session.userId);
+
+//     // Send user data without sensitive information
+//     res.json({
+//       id: user._id,
+//       email: user.email,
+//       firstName: user.firstName,
+//       lastName: user.lastName,
+//       phoneNumber: user.phoneNumber,
+//       address1: user.address1,
+//       address2: user.address2,
+//       dateOfBirth: user.dateOfBirth,
+//       gender: user.gender,
+//       role: user.role,
+//       // other non-sensitive user info
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
+
+// Add a route to check session
+router.get("/check-session", (req, res) => {
+  if (req.session.userId) {
+    res.json({
+      isAuthenticated: true,
+      userId: req.session.userId,
+    });
+  } else {
+    res.status(401).json({
+      isAuthenticated: false,
+    });
+  }
+});
+// Protected route to update user information
+// router.put("/update", isAuthenticated, async (req, res) => {
+//   console.log("Request Body:", req.body); // Log the incoming request body
+
+//   const { firstName, lastName, phoneNumber, address1 } = req.body;
+
+//   if (!req.session.userId) {
+//     return res.status(401).json({ message: "User not authenticated" });
+//   }
+
+//   const user = await User.findById(req.session.userId);
+//   if (!user) {
+//     return res.status(404).json({ message: "User not found" });
+//   }
+
+//   user.firstName = firstName || user.firstName;
+//   user.lastName = lastName || user.lastName;
+//   user.phoneNumber = phoneNumber || user.phoneNumber;
+//   user.address1 = address1 || user.address1;
+
+//   const updatedUser = await user.save();
+//   res.status(200).json({ message: "User updated", user: updatedUser });
+// });
+
+// Route to test if user is logged in
+router.get("/test", isAuthenticated, (req, res) => {
+  res.status(200).json({ message: "You are logged in!" });
+});
+
+// Route to fetch user data (Profile)
+// function isAuthenticated(req, res, next) {
+//   console.log("Session ID in isAuthenticated:", req.session.id); // Log session ID to check
+//   if (!req.session.userId) {
+//     return res.status(401).json({ message: "User not authenticated" });
+//   }
+//   next();
+// }
+
+// router.get("/profile", isAuthenticated, async (req, res) => {
+//   console.log("Session User ID in profile route:", req.session.userId); // Log session user ID
+
+//   try {
+//     const user = await User.findById(req.session.userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     res.status(200).json({
+//       id: user._id,
+//       firstName: user.firstName,
+//       lastName: user.lastName,
+//       email: user.email,
+//       phoneNumber: user.phoneNumber,
+//       address1: user.address1,
+//       address2: user.address2,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching user data:", error);
+//     res.status(500).json({ message: "Internal server error" });
+// //   }
+// // });
+// router.get("/profile", isAuthenticated, async (req, res) => {
+//   try {
+//     console.log("Session User ID in profile route:", req.session.userId); // Log session user ID
+//     // Fetch user data from the database using the userId stored in the session
+//     const user = await User.findById(req.session.userId);
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Send back the user data
+//     res.status(200).json({
+//       id: user._id,
+//       firstName: user.firstName,
+//       lastName: user.lastName,
+//       email: user.email,
+//       phoneNumber: user.phoneNumber,
+//       address1: user.address1,
+//       address2: user.address2,
+//       dateOfBirth: user.dateOfBirth,
+//       gender: user.gender,
+//       language: user.language,
+//       region: user.region,
+//       shipmentAddress: user.shipmentAddress,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching user data:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+router.get("/getUser", (req, res) => {
+  console.log("Session on getUser:", req.session); // Debugging
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
 
-  try {
-    // Find the user by email
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    // Compare the entered password with the hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    // Generate a JWT token with the secret key from the environment variable
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Token expiry (you can adjust this time)
+  User.findById(req.session.userId)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    })
+    .catch((err) => {
+      console.error("Error fetching user:", err);
+      res.status(500).json({ message: "Server error" });
     });
+});
 
-    // Send response with the token and user info
-    res.status(200).json({
-      message: "User logged in successfully",
-      token: token,
-      user: { id: user._id, email: user.email },
+router.put("/updateUser", isAuthenticated, async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.session.userId,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "User updated successfully",
+      user: updatedUser,
     });
   } catch (error) {
-    console.error("Error during sign-in:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
