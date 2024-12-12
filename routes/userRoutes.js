@@ -120,8 +120,8 @@ router.post("/signin", async (req, res) => {
 
   if (user && (await bcrypt.compare(password, user.password))) {
     req.session.userId = user._id; // Save user ID in session
+    console.log("Session data after login:", req.session); // Debugging session data
     res.json({ message: "Login successful!" });
-    console.log("Session data after login:", req.session);
   } else {
     res.status(401).json({ message: "Invalid email or password" });
   }
@@ -288,7 +288,7 @@ router.get("/getUser", (req, res) => {
 router.put("/updateUser", isAuthenticated, async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(
-      req.session.userId,
+      req.session.userId, // Use the userId from the session
       req.body,
       { new: true }
     );

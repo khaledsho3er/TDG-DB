@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const bodyParser = require("body-parser");
 const userRoutes = require("./routes/userRoutes");
-const billingInfoRoutes = require("./routes/billingRoutes"); // Import the billing info routes
 
 const cors = require("cors");
 const session = require("express-session"); // Import session middleware
@@ -54,7 +53,6 @@ app.use(
 
 // Use the user routes for API endpoints
 app.use("/api", userRoutes);
-app.use("/api/billing", billingInfoRoutes); // Billing info routes
 
 // Start the server
 app.listen(port, () => {
