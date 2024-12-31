@@ -6,6 +6,9 @@ const userRoutes = require("./routes/userRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const typeRoutes = require("./routes/typeRoutes");
+const vendorRoutes = require("./routes/vendorRoutes");
+const catalogueRoutes = require("./routes/catalogueRoutes");
+
 const cors = require("cors");
 const path = require("path"); // For serving static files
 
@@ -63,6 +66,9 @@ app.use("/api", userRoutes);
 app.use("/api/categories", categoryRoutes); // Category routes
 app.use("/api/subcategories", subCategoryRoutes); // SubCategory routes
 app.use("/api/types", typeRoutes); // Type routes
+app.use("/api/vendors", vendorRoutes);
+app.use("/api/catalogues", catalogueRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
