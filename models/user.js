@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
     default: "Other", // Default value
     required: false, // Optional field
   },
+  role: { type: String, default: "User", required: true },
+  city: { type: String, required: false },
+  postalCode: { type: String, required: false },
+  country: { type: String, required: false },
   language: { type: String, required: false },
   region: { type: String, required: false },
   shipmentAddress: { type: String, required: false },
