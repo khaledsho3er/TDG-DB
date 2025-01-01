@@ -11,6 +11,10 @@ const vendorRoutes = require("./routes/vendorRoutes");
 const catalogueRoutes = require("./routes/catalogueRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const policyRoutes = require("./routes/policiesRoutes");
+const contactUsRoutes = require("./routes/contactUsRoutes");
+const jobRoutes = require("./routes/jobRoutes");
+const jobFormRoutes = require("./routes/jobFormRoutes");
+
 const cors = require("cors");
 const path = require("path"); // For serving static files
 
@@ -73,6 +77,10 @@ app.use("/api/vendors", vendorRoutes);
 app.use("/api/catalogues", catalogueRoutes);
 app.use("/api/faqs", faqRoutes);
 app.use("/api/policies", policyRoutes);
+app.use("/api/contactus", contactUsRoutes); //contactUs Routes
+app.use("/api/jobdesc", jobRoutes);
+app.use("/api/jobforms", jobFormRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
