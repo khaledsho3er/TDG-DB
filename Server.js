@@ -6,6 +6,7 @@ const userRoutes = require("./routes/userRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const typeRoutes = require("./routes/typeRoutes");
+const products = require("./routes/productsRoutes");
 const vendorRoutes = require("./routes/vendorRoutes");
 const catalogueRoutes = require("./routes/catalogueRoutes");
 const faqRoutes = require("./routes/faqRoutes");
@@ -67,11 +68,11 @@ app.use("/api", userRoutes);
 app.use("/api/categories", categoryRoutes); // Category routes
 app.use("/api/subcategories", subCategoryRoutes); // SubCategory routes
 app.use("/api/types", typeRoutes); // Type routes
+app.use("/api/products", products);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/catalogues", catalogueRoutes);
 app.use("/api/faqs", faqRoutes);
 app.use("/api/policies", policyRoutes);
-
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
