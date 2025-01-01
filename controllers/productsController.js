@@ -100,28 +100,53 @@ exports.getProducts = async (req, res) => {
       vendor,
       stockMin,
       stockMax,
+      colors,
+      sizes,
+      manufacturer,
+      leadTime,
+      sku,
+      manufactureYear,
+      brandId,
+      brandName,
+      collection,
+      type,
     } = req.query;
 
     const filter = {};
 
+    // Add filters based on the query parameters
     if (category) filter.category = category;
     if (subcategory) filter.subcategory = subcategory;
-    if (priceMin || priceMax)
+    if (priceMin || priceMax) {
       filter.price = {
         ...(priceMin && { $gte: priceMin }),
         ...(priceMax && { $lte: priceMax }),
       };
+    }
     if (tags) filter.tags = { $in: tags.split(",") };
     if (vendor) filter.vendor = vendor;
-    if (stockMin || stockMax)
+    if (stockMin || stockMax) {
       filter.stock = {
         ...(stockMin && { $gte: stockMin }),
         ...(stockMax && { $lte: stockMax }),
       };
+    }
+    if (colors) filter.colors = { $in: colors.split(",") };
+    if (sizes) filter.sizes = { $in: sizes.split(",") };
+    if (manufacturer) filter.manufacturer = manufacturer;
+    if (leadTime) filter.leadTime = leadTime;
+    if (sku) filter.sku = sku;
+    if (manufactureYear) filter.manufactureYear = manufactureYear;
+    if (brandId) filter.brandId = brandId;
+    if (brandName) filter.brandName = brandName;
+    if (collection) filter.collection = collection;
+    if (type) filter.type = type;
 
+    // Fetch products based on the filter
     const products = await Product.find(filter)
-      .populate("category subcategory vendor type brandId brandName")
+      .populate("category subcategory vendor type brandId")
       .exec();
+
     res.status(200).json(products);
   } catch (error) {
     console.error("Error fetching products:", error);
