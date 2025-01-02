@@ -1,5 +1,5 @@
-const Review = require("../models/Review");
-const Product = require("../models/Product");
+const Review = require("../models/reviews");
+const Product = require("../models/Products");
 
 exports.createReview = async (req, res) => {
   try {
@@ -7,12 +7,10 @@ exports.createReview = async (req, res) => {
 
     // Ensure all required fields are present
     if (!reviewerName || !userId || !rating || !comment || !productId) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Reviewer name, user ID, rating, comment, and product ID are required",
-        });
+      return res.status(400).json({
+        message:
+          "Reviewer name, user ID, rating, comment, and product ID are required",
+      });
     }
 
     // Check if the product exists
