@@ -14,6 +14,7 @@ const policyRoutes = require("./routes/policiesRoutes");
 const contactUsRoutes = require("./routes/contactUsRoutes");
 const jobRoutes = require("./routes/jobRoutes");
 const jobFormRoutes = require("./routes/jobFormRoutes");
+const favoritesRoutes = require("./routes/favoritesRoutes");
 
 const cors = require("cors");
 const path = require("path"); // For serving static files
@@ -80,6 +81,7 @@ app.use("/api/policies", policyRoutes);
 app.use("/api/contactus", contactUsRoutes); //contactUs Routes
 app.use("/api/jobdesc", jobRoutes);
 app.use("/api/jobforms", jobFormRoutes);
+app.use("/api/favorites", favoritesRoutes);
 
 // Start the server
 app.listen(port, () => {
