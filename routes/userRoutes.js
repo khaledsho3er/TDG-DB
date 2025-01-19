@@ -2,7 +2,10 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
-const isAuthenticated = require("../middlewares/authMiddleware"); // Adjust path to where your middleware is located
+const {
+  isAuthenticated,
+  isAuthorized,
+} = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 // Sign Up Route
@@ -55,6 +58,8 @@ router.post("/signup", async (req, res) => {
       role: "User",
       city,
       country,
+      authorityTier: 0,
+      permissions: [],
       postalCode,
     });
 
@@ -352,5 +357,21 @@ router.put("/changePassword", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+router.get(
+  "/admin-dashboard",
+  isAuthenticated,
+  isAuthorized(["Admin"]),
+  (req, res) => {
+    res.json({ message: "Welcome Admin!" });
+  }
+);
+router.get(
+  "/vendor-dashboard",
+  isAuthenticated,
+  isAuthorized(["Vendor"]),
+  (req, res) => {
+    res.json({ message: "Welcome Vendor!" });
+  }
+);
 
 module.exports = router;

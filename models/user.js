@@ -15,7 +15,18 @@ const userSchema = new mongoose.Schema({
     default: "Other", // Default value
     required: false, // Optional field
   },
-  role: { type: String, default: "User", required: true },
+  role: {
+    type: String,
+    enum: ["User", "Admin", "Vendor", "Employee"],
+    default: "User",
+  },
+  authorityTier: {
+    type: Number,
+    enum: [1, 2, 3],
+    required: function () {
+      return this.role === "Employee";
+    },
+  },
   city: { type: String, required: false },
   postalCode: { type: String, required: false },
   country: { type: String, required: false },
