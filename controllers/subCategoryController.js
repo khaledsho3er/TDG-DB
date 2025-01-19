@@ -1,4 +1,5 @@
 const SubCategory = require("../models/subCategory");
+const Category = require("../models/category"); // Assuming Category model is used for categories
 
 exports.createSubCategory = async (req, res) => {
   try {
@@ -37,7 +38,27 @@ exports.getSubCategories = async (req, res) => {
     res.status(500).json({ message: "Error fetching subCategories", error });
   }
 };
+exports.getSubCategoriesForCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
 
+    // Find the category by ID
+    const category = await Category.findById(categoryId);
+
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // Fetch sub-categories using the list of sub-category IDs
+    const subCategories = await SubCategory.find({
+      _id: { $in: category.subCategories },
+    });
+
+    res.status(200).json(subCategories);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching sub-categories", error });
+  }
+};
 exports.updateSubCategory = async (req, res) => {
   try {
     const { id } = req.params;
