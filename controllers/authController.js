@@ -8,13 +8,12 @@ exports.signin = async (req, res) => {
   try {
     let user;
 
-    // Handle Vendor login (check user table)
     if (role === "Vendor") {
       user = await User.findOne({ email });
-    }
-    // Handle Employee login (check employee table)
-    else if (role === "Employee") {
-      user = await Employee.findOne({ email });
+    } else if (role === "Employee") {
+      user = await Employee.findOne({ email }).select(
+        "_id email role tier password"
+      );
     } else {
       return res.status(400).json({ message: "Invalid role" });
     }
@@ -23,19 +22,23 @@ exports.signin = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Check if password exists before comparing
+    const isPasswordValid = user.password
+      ? await bcrypt.compare(password, user.password)
+      : false;
 
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    // Respond with user details (include role for front-end handling)
+    // Include tier only for Employees
     res.status(200).json({
       message: "Login successful",
       user: {
         _id: user._id,
         email: user.email,
         role: user.role,
+        tier: role === "Employee" ? user.tier : undefined, // Only include for Employees
       },
     });
   } catch (error) {
