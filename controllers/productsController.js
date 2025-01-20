@@ -277,6 +277,33 @@ exports.getProductsByCategory = async (req, res) => {
   }
 };
 
+exports.getProductsByCategoryName = async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+
+    // Fetch category by name
+    const category = await Category.findOne({ name: categoryName });
+
+    if (!category) {
+      return res.status(404).json({ message: `Category ${categoryName} not found` });
+    }
+
+    // Fetch products with the matching category ID
+    const products = await Product.find({ category: category._id })
+      .populate("category subcategory vendor type brandId") // Populate related fields if needed
+      .exec();
+
+    if (!products.length) {
+      return res.status(404).json({ message: `No products found for category ${categoryName}` });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products by category:", error);
+    res.status(500).json({ message: "Error fetching products by category", error });
+  }
+};
+
 exports.getProductsBySubcategory = async (req, res) => {
   try {
     const { subcategoryId, subcategoryName } = req.params;

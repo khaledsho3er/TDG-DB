@@ -8,17 +8,15 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
+  getProductsByCategoryName,
 } = require("../controllers/productsController");
 
 const router = express.Router();
 
-
 router.post("/addproduct", upload.array("images", 5), createProduct); // Limit to 5 images
 router.get("/getproducts", getProducts);
-router.get(
-  "/category/:categoryId/:categoryName/products",
-  getProductsByCategory
-);
+router.get("/products/:categoryName", getProductsByCategoryName);
+router.get("/category/:categoryId/:categoryName", getProductsByCategory);
 router.get(
   "/subcategory/:subcategoryId/:subcategoryName",
   getProductsBySubcategory
