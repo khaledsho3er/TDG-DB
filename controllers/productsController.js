@@ -228,6 +228,81 @@ exports.getProducts = async (req, res) => {
   }
 };
 
+exports.getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Log the received ID to check its value
+    console.log("Received product ID:", id);
+
+    // Ensure no unwanted characters in ID (e.g., extra spaces, newlines)
+    if (!id || id.trim() === "") {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+
+    const product = await Product.findById(id)
+      .populate("category subcategory vendor type brandId")
+      .exec();
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Error fetching product", error });
+  }
+};
+
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const { categoryId, categoryName } = req.params;
+
+    // Fetch products with the matching category ID
+    const products = await Product.find({ category: categoryId })
+      .populate("category subcategory vendor type brandId") // Populate related fields if needed
+      .exec();
+
+    if (!products.length) {
+      return res
+        .status(404)
+        .json({ message: `No products found for category ${categoryName}` });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products by category:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching products by category", error });
+  }
+};
+
+exports.getProductsBySubcategory = async (req, res) => {
+  try {
+    const { subcategoryId, subcategoryName } = req.params;
+
+    // Fetch products for the specified subcategory
+    const products = await Product.find({ subcategory: subcategoryId })
+      .populate("subcategory category vendor type brandId") // Adjust population as needed
+      .exec();
+
+    if (!products.length) {
+      return res.status(404).json({
+        message: `No products found for subcategory ${subcategoryName}`,
+      });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products by subcategory:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching products by subcategory", error });
+  }
+};
+
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
