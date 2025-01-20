@@ -7,8 +7,9 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     salePrice: { type: Number }, // Optional field for sale price
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, // ObjectId
-    subcategory: { type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" }, // ObjectId
-    type: { type: mongoose.Schema.Types.ObjectId, ref: "Type" }, // ObjectId
+    subcategory: { type: mongoose.Schema.Types.ObjectId, ref: "subcategories" }, // ObjectId
+    vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+    type: { type: mongoose.Schema.Types.ObjectId, ref: "types" }, // ObjectId
     manufacturer: { type: String },
     collection: { type: String },
     manufactureYear: { type: Number },

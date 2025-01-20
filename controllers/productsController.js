@@ -171,7 +171,6 @@ exports.getProducts = async (req, res) => {
       priceMin,
       priceMax,
       tags,
-      vendor,
       stockMin,
       stockMax,
       colors,
@@ -198,7 +197,6 @@ exports.getProducts = async (req, res) => {
       };
     }
     if (tags) filter.tags = { $in: tags.split(",") };
-    if (vendor) filter.vendor = vendor;
     if (stockMin || stockMax) {
       filter.stock = {
         ...(stockMin && { $gte: stockMin }),
