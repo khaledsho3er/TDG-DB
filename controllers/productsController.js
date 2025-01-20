@@ -1,94 +1,168 @@
 const Product = require("../models/Products");
+const mongoose = require("mongoose"); // Import mongoose
 
+// exports.createProduct = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       description,
+//       category,
+//       subcategory,
+//       colors,
+//       sizes,
+//       price,
+//       salePrice,
+//       tags,
+//       manufacturer,
+//       collection,
+//       type,
+//       manufactureYear,
+//       reviews,
+//       images,
+//       mainImage,
+//       technicalDimensions,
+//       brandId,
+//       brandName,
+//       leadTime,
+//       stock,
+//       sku,
+//       warrantyInfo,
+//       materialCareInstructions,
+//       productSpecificRecommendations,
+//       Estimatedtimeleadforcustomization,
+//       Customizationoptions,
+//       Additionaldetails,
+//       Additionalcosts,
+//       claimProcess,
+//     } = req.body;
+
+//     console.log(req.body);
+
+//     const productImages = req.files
+//       ? req.files.map((file) => `/uploads/${file.filename}`)
+//       : [];
+
+//     if (!name || !price || !category) {
+//       return res
+//         .status(400)
+//         .json({ message: "Name, price, and category are required" });
+//     }
+
+//     const product = new Product({
+//       name,
+//       description,
+//       category,
+//       subcategory,
+//       colors,
+//       sizes,
+//       price,
+//       salePrice,
+//       tags,
+//       manufacturer,
+//       collection,
+//       type,
+//       manufactureYear,
+//       reviews,
+//       images: productImages,
+//       mainImage,
+//       technicalDimensions,
+//       brandId,
+//       brandName,
+//       leadTime,
+//       stock,
+//       sku,
+//       warrantyInfo,
+//       materialCareInstructions,
+//       productSpecificRecommendations,
+//       Estimatedtimeleadforcustomization,
+//       Customizationoptions,
+//       Additionaldetails,
+//       Additionalcosts,
+//       claimProcess,
+//       vendor: "placeholderVendorId", // Temporary placeholder vendor ID for testing
+//     });
+
+//     await product.save();
+//     res.status(201).json({ message: "Product created successfully", product });
+//   } catch (error) {
+//     console.error("Error creating product:", error);
+//     res.status(500).json({ message: "Error creating product", error });
+//   }
+// };
+// exports.createProduct = async (req, res) => {
+//   try {
+//     const productData = req.body;
+//     console.log("Received product data:", productData);
+
+//     const product = new Product(productData);
+
+//     // Validate the product data against the schema
+//     await product.validate(); // This will throw an error if validation fails
+
+//     await product.save();
+//     res.status(201).json({ message: "Product created successfully", product });
+//   } catch (error) {
+//     console.error("Error creating product:", error);
+
+//     // Log validation errors
+//     if (error.name === "ValidationError") {
+//       console.error("Validation Errors:", error.errors);
+//     }
+
+//     res.status(500).json({ message: "Error creating product", error });
+//   }
+// };
 exports.createProduct = async (req, res) => {
   try {
-    const {
-      name,
-      description,
-      category,
-      subcategory,
-      colors,
-      sizes,
-      price,
-      salePrice,
-      tags,
-      manufacturer,
-      collection,
-      type,
-      manufactureYear,
-      reviews,
-      images,
-      mainImage,
-      technicalDimensions,
-      brandId,
-      brandName,
-      leadTime,
-      stock,
-      sku,
-      warrantyInfo,
-      materialCareInstructions,
-      productSpecificRecommendations,
-      Estimatedtimeleadforcustomization,
-      Customizationoptions,
-      Additionaldetails,
-      Additionalcosts,
-      claimProcess,
-    } = req.body;
+    // Extract form data from req.body
+    const productData = req.body;
 
-    console.log(req.body);
-
-    const productImages = req.files
-      ? req.files.map((file) => `/uploads/${file.filename}`)
-      : [];
-
-    if (!name || !price || !category) {
-      return res
-        .status(400)
-        .json({ message: "Name, price, and category are required" });
+    // Convert category, subcategory, and type to ObjectIDs
+    if (productData.category) {
+      productData.category = new mongoose.Types.ObjectId(productData.category); // Use 'new'
+    }
+    if (productData.subcategory) {
+      productData.subcategory = new mongoose.Types.ObjectId(
+        productData.subcategory
+      ); // Use 'new'
+    }
+    if (productData.type) {
+      productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    const product = new Product({
-      name,
-      description,
-      category,
-      subcategory,
-      colors,
-      sizes,
-      price,
-      salePrice,
-      tags,
-      manufacturer,
-      collection,
-      type,
-      manufactureYear,
-      reviews,
-      images: productImages,
-      mainImage,
-      technicalDimensions,
-      brandId,
-      brandName,
-      leadTime,
-      stock,
-      sku,
-      warrantyInfo,
-      materialCareInstructions,
-      productSpecificRecommendations,
-      Estimatedtimeleadforcustomization,
-      Customizationoptions,
-      Additionaldetails,
-      Additionalcosts,
-      claimProcess,
-      vendor: "placeholderVendorId", // Temporary placeholder vendor ID for testing
-    });
+    // Add image file paths to productData
+    if (req.files && req.files.length > 0) {
+      productData.images = req.files.map((file) => file.filename); // Array of file names
+      productData.mainImage = req.files[0].filename; // Set the first image as the main image
+    }
 
+    // Parse nested fields (if sent as JSON strings)
+    if (productData.technicalDimensions) {
+      productData.technicalDimensions = JSON.parse(
+        productData.technicalDimensions
+      );
+    }
+    if (productData.warrantyInfo) {
+      productData.warrantyInfo = JSON.parse(productData.warrantyInfo);
+    }
+
+    // Ensure reviews is an array of objects
+    if (productData.reviews) {
+      productData.reviews = JSON.parse(productData.reviews); // Parse the stringified array
+    } else {
+      productData.reviews = []; // Set to empty array if not provided
+    }
+
+    // Create and save the product
+    const product = new Product(productData);
     await product.save();
+
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
     console.error("Error creating product:", error);
     res.status(500).json({ message: "Error creating product", error });
   }
 };
-
 exports.getProducts = async (req, res) => {
   try {
     const {

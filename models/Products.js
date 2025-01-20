@@ -6,12 +6,11 @@ const productSchema = new mongoose.Schema(
     name: { type: String, required: true, maxlength: 100 },
     price: { type: Number, required: true },
     salePrice: { type: Number }, // Optional field for sale price
-    category: { type: Schema.Types.ObjectId, ref: "Category" },
-    vendor: { type: Schema.Types.ObjectId, ref: "Vendor" },
-    subcategory: { type: String }, // Optional subcategory
+    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, // ObjectId
+    subcategory: { type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" }, // ObjectId
+    type: { type: mongoose.Schema.Types.ObjectId, ref: "Type" }, // ObjectId
     manufacturer: { type: String },
     collection: { type: String },
-    type: { type: String },
     manufactureYear: { type: Number },
     tags: [{ type: String }], // Array of tags
     reviews: [
