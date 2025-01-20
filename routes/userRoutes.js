@@ -362,6 +362,38 @@ router.put("/changePassword", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+router.post("/signin-vendor", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(400).json({ message: "User not found!" });
+
+    // Check if the user is a vendor
+    if (user.role !== "Vendor") {
+      return res.status(403).json({ message: "Access denied! Not a vendor." });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid password!" });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      "your_secret_key",
+      { expiresIn: "1d" }
+    );
+
+    res.cookie("token", token, { httpOnly: true });
+    res.status(200).json({ message: "Login successful!", token, user });
+  } catch (error) {
+    res.status(500).json({ message: "Server error!" });
+  }
+});
+
 router.get(
   "/admin-dashboard",
   isAuthenticated,

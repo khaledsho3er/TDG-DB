@@ -18,7 +18,8 @@ const jobRoutes = require("./routes/jobRoutes");
 const jobFormRoutes = require("./routes/jobFormRoutes");
 const cors = require("cors");
 const path = require("path"); // For serving static files
-
+const employeeRoutes = require("./routes/employeeRoutes");
+const authSigninEmp = require("./routes/authRoutes");
 const session = require("express-session"); // Import session middleware
 
 const app = express();
@@ -83,7 +84,8 @@ app.use("/api/reviews", reviews);
 app.use("/api/contactus", contactUsRoutes); //contactUs Routes
 app.use("/api/jobdesc", jobRoutes);
 app.use("/api/jobforms", jobFormRoutes);
-
+app.use("/api/employee", employeeRoutes);
+app.use("/api/signin-emp", authSigninEmp);
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
