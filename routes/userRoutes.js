@@ -266,23 +266,28 @@ router.get("/test", isAuthenticated, (req, res) => {
 //     res.status(500).json({ message: "Internal server error" });
 //   }
 // });
-router.get("/getUser", (req, res) => {
+router.get("/getUser", async (req, res) => {
   console.log("Session on getUser:", req.session); // Debugging
   if (!req.session.userId) {
     return res.status(401).json({ message: "Not authenticated" });
   }
 
-  User.findById(req.session.userId)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    })
-    .catch((err) => {
-      console.error("Error fetching user:", err);
-      res.status(500).json({ message: "Server error" });
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log("Fetched user:", user); // Log user object
+    res.json({
+      firstName: user.firstName, // Explicitly send the firstName field
+      lastName: user.lastName,
+      email: user.email,
     });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 router.put("/updateUser", isAuthenticated, async (req, res) => {

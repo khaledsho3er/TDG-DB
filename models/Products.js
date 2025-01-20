@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, maxlength: 100 },
     price: { type: Number, required: true },
     salePrice: { type: Number }, // Optional field for sale price
-    category: {
-      type: String,
-    },
+    category: { type: Schema.Types.ObjectId, ref: "Category" },
+    vendor: { type: Schema.Types.ObjectId, ref: "Vendor" },
     subcategory: { type: String }, // Optional subcategory
     manufacturer: { type: String },
     collection: { type: String },
