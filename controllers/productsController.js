@@ -231,7 +231,6 @@ exports.getProductById = async (req, res) => {
     const { id } = req.params;
 
     // Log the received ID to check its value
-    console.log("Received product ID:", id);
 
     // Ensure no unwanted characters in ID (e.g., extra spaces, newlines)
     if (!id || id.trim() === "") {
@@ -285,7 +284,9 @@ exports.getProductsByCategoryName = async (req, res) => {
     const category = await Category.findOne({ name: categoryName });
 
     if (!category) {
-      return res.status(404).json({ message: `Category ${categoryName} not found` });
+      return res
+        .status(404)
+        .json({ message: `Category ${categoryName} not found` });
     }
 
     // Fetch products with the matching category ID
@@ -294,13 +295,17 @@ exports.getProductsByCategoryName = async (req, res) => {
       .exec();
 
     if (!products.length) {
-      return res.status(404).json({ message: `No products found for category ${categoryName}` });
+      return res
+        .status(404)
+        .json({ message: `No products found for category ${categoryName}` });
     }
 
     res.status(200).json(products);
   } catch (error) {
     console.error("Error fetching products by category:", error);
-    res.status(500).json({ message: "Error fetching products by category", error });
+    res
+      .status(500)
+      .json({ message: "Error fetching products by category", error });
   }
 };
 
