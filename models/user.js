@@ -17,15 +17,8 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["User", "Admin", "Vendor", "Employee"],
+    enum: ["User"],
     default: "User",
-  },
-  authorityTier: {
-    type: Number,
-    enum: [1, 2, 3],
-    required: function () {
-      return this.role === "Employee";
-    },
   },
   city: { type: String, required: false },
   postalCode: { type: String, required: false },

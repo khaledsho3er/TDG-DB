@@ -31,8 +31,8 @@ const productSchema = new mongoose.Schema(
       height: { type: Number },
       weight: { type: Number },
     },
-    brandId: { type: String }, // Brand reference
-    brandName: { type: String }, // Name of the brand
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" }, // Reference to vendor ID in User table
+    brandId: { type: mongoose.Schema.Types.ObjectId, ref: "Brand" }, // Reference to Brand model
     leadTime: { type: String }, // Estimated delivery lead time
     stock: { type: Number, default: 0 }, // Stock quantity
     sku: { type: String }, // Stock Keeping Unit

@@ -7,7 +7,7 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const typeRoutes = require("./routes/typeRoutes");
 const products = require("./routes/productsRoutes");
-const vendorRoutes = require("./routes/vendorRoutes");
+const brandRoutes = require("./routes/brandRoutes");
 const catalogueRoutes = require("./routes/catalogueRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const policyRoutes = require("./routes/policiesRoutes");
@@ -21,7 +21,8 @@ const path = require("path"); // For serving static files
 const employeeRoutes = require("./routes/employeeRoutes");
 const authSigninEmp = require("./routes/authRoutes");
 const session = require("express-session"); // Import session middleware
-
+const orderRoutes = require("./routes/orderRoutes");
+const vendorRoutes = require("./routes/vendorRoutes");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -75,7 +76,7 @@ app.use("/api/categories", categoryRoutes); // Category routes
 app.use("/api/subcategories", subCategoryRoutes); // SubCategory routes
 app.use("/api/types", typeRoutes); // Type routes
 app.use("/api/products", products);
-app.use("/api/vendors", vendorRoutes);
+app.use("/api/brand", brandRoutes);
 app.use("/api/catalogues", catalogueRoutes);
 app.use("/api/faqs", faqRoutes);
 app.use("/api/policies", policyRoutes);
@@ -86,6 +87,9 @@ app.use("/api/jobdesc", jobRoutes);
 app.use("/api/jobforms", jobFormRoutes);
 app.use("/api/employee", employeeRoutes);
 app.use("/api/signin-emp", authSigninEmp);
+app.use("/api/orders", orderRoutes);
+app.use("/api/vendors", vendorRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

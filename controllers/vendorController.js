@@ -1,123 +1,115 @@
-const Vendor = require("../models/vendors");
+const Vendor = require("../models/vendor");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
-exports.createVendor = async (req, res) => {
+const SECRET_KEY = "your_secret_key"; // Replace with a secure secret
+
+// Signup
+exports.signup = async (req, res) => {
+  const { firstName, lastName, email, password, phoneNumber, tier } = req.body;
+
   try {
-    const { body } = req;
+    const existingVendor = await Vendor.findOne({ email });
+    if (existingVendor) {
+      return res.status(400).json({ message: "Vendor already exists" });
+    }
 
-    const digitalCopiesLogoPaths = req.files["digitalCopiesLogo"]
-      ? req.files["digitalCopiesLogo"].map((file) => `uploads/${file.filename}`)
-      : [];
-
-    const cataloguePaths = req.files["catalogues"]
-      ? req.files["catalogues"].map((file) => `uploads/${file.filename}`)
-      : [];
-
-    const coverPhotoPath = req.files["coverPhoto"]
-      ? `uploads/${req.files["coverPhoto"][0].filename}`
-      : null;
-
-    const vendor = new Vendor({
-      ...body,
-      digitalCopiesLogo: digitalCopiesLogoPaths,
-      catalogues: cataloguePaths,
-      coverPhoto: coverPhotoPath,
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newVendor = new Vendor({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      phoneNumber,
+      tier,
     });
 
-    const savedVendor = await vendor.save();
-    res.status(201).json(savedVendor);
+    await newVendor.save();
+    res.status(201).json({ message: "Vendor created successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating vendor", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Login
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const vendor = await Vendor.findOne({ email });
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, vendor.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    req.session.vendor = vendor; // Store vendor info in session
+    res.status(200).json({ message: "Login successful", vendor });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Logout
+exports.logout = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ message: "Logout failed" });
+    }
+    res.status(200).json({ message: "Logout successful" });
+  });
+};
+
+// Get all vendors
 exports.getAllVendors = async (req, res) => {
   try {
     const vendors = await Vendor.find();
     res.status(200).json(vendors);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching vendors", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Get a single vendor
 exports.getVendorById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const vendor = await Vendor.findById(id);
+    const vendor = await Vendor.findById(req.params.id);
     if (!vendor) {
       return res.status(404).json({ message: "Vendor not found" });
     }
     res.status(200).json(vendor);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching vendor", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Update vendor
 exports.updateVendor = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updatedVendor = await Vendor.findByIdAndUpdate(id, req.body, {
+    const vendor = await Vendor.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-    if (!updatedVendor) {
+    if (!vendor) {
       return res.status(404).json({ message: "Vendor not found" });
     }
-    res.status(200).json(updatedVendor);
+    res.status(200).json({ message: "Vendor updated successfully", vendor });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating vendor", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Delete vendor
 exports.deleteVendor = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deletedVendor = await Vendor.findByIdAndDelete(id);
-    if (!deletedVendor) {
+    const vendor = await Vendor.findByIdAndDelete(req.params.id);
+    if (!vendor) {
       return res.status(404).json({ message: "Vendor not found" });
     }
     res.status(200).json({ message: "Vendor deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error deleting vendor", error: error.message });
-  }
-};
-
-exports.updateVendorImages = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const vendor = await Vendor.findById(id);
-    if (!vendor) {
-      return res.status(404).json({ message: "Vendor not found" });
-    }
-
-    if (req.files["digitalCopiesLogo"]) {
-      const newLogos = req.files["digitalCopiesLogo"].map(
-        (file) => `uploads/${file.filename}`
-      );
-      vendor.digitalCopiesLogo.push(...newLogos); // Add new logos
-    }
-
-    if (req.files["catalogues"]) {
-      const newCatalogues = req.files["catalogues"].map(
-        (file) => `uploads/${file.filename}`
-      );
-      vendor.catalogues.push(...newCatalogues); // Add new catalogs
-    }
-
-    await vendor.save();
-    res.status(200).json(vendor);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating vendor images", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
