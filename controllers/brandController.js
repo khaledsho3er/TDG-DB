@@ -1,5 +1,5 @@
 const Brand = require("../models/Brand");
-const upload = require("../middlewares/multerSetup");
+const upload = require("../middlewares/brandMulterSetup");
 
 // Create a new brand
 exports.createBrand = async (req, res) => {
@@ -52,7 +52,8 @@ exports.createBrand = async (req, res) => {
         ? req.files["documents"].map((file) => file.path)
         : [],
     });
-
+    console.log("Received data:", req.body);
+    console.log("Received files:", req.files);
     await brand.save();
     res.status(201).json(brand);
   } catch (error) {

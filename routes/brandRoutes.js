@@ -5,7 +5,7 @@ const upload = require("../middlewares/multerSetup");
 
 // Create a new brand
 router.post(
-  "/",
+  "/brand",
   upload.fields([
     { name: "brandlogo", maxCount: 1 },
     { name: "digitalCopiesLogo", maxCount: 5 },

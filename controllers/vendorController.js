@@ -14,6 +14,7 @@ exports.signup = async (req, res) => {
     password,
     phoneNumber,
     tier,
+    brandId,
   } = req.body;
 
   try {
@@ -31,6 +32,7 @@ exports.signup = async (req, res) => {
       password: hashedPassword,
       phoneNumber,
       tier,
+      brandId,
     });
 
     await newVendor.save();
@@ -61,6 +63,7 @@ exports.login = async (req, res) => {
       email: vendor.email,
       tier: vendor.tier,
       role: vendor.role,
+      brandId: vendor.brandId,
     };
 
     res.status(200).json({
@@ -70,6 +73,7 @@ exports.login = async (req, res) => {
         email: vendor.email,
         tier: vendor.tier,
         role: vendor.role,
+        brandId: vendor.brandId,
       },
     });
   } catch (error) {
