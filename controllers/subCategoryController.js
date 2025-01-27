@@ -38,6 +38,7 @@ exports.getSubCategories = async (req, res) => {
     res.status(500).json({ message: "Error fetching subCategories", error });
   }
 };
+
 exports.getSubCategoriesForCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
@@ -59,6 +60,7 @@ exports.getSubCategoriesForCategory = async (req, res) => {
     res.status(500).json({ message: "Error fetching sub-categories", error });
   }
 };
+
 exports.updateSubCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -88,6 +90,7 @@ exports.deleteSubCategory = async (req, res) => {
     res.status(500).json({ message: "Error deleting subCategory", error });
   }
 };
+
 exports.getSubcategoryById = async (req, res) => {
   try {
     const subcategory = await Subcategory.findById(
