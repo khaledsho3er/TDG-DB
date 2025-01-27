@@ -3,29 +3,39 @@ const router = express.Router();
 const brandController = require("../controllers/brandController");
 const upload = require("../middlewares/multerSetup");
 
+// Create a new brand
 router.post(
-  "/brand",
+  "/",
   upload.fields([
-    { name: "digitalCopiesLogo", maxCount: 5 }, // Multiple logos
-    { name: "catalogues", maxCount: 10 }, // Multiple catalogs
-    { name: "coverPhoto", maxCount: 1 }, // Single cover photo
+    { name: "brandlogo", maxCount: 1 },
+    { name: "digitalCopiesLogo", maxCount: 5 },
+    { name: "coverPhoto", maxCount: 1 },
+    { name: "catalogues", maxCount: 10 },
+    { name: "documents", maxCount: 10 },
   ]),
   brandController.createBrand
 );
 
-router.get("/brand", brandController.getAllBrands);
-router.get("/brand/:id", brandController.getBrandById);
+// Get all brands
+router.get("/", brandController.getAllBrands);
 
+// Get a single brand by ID
+router.get("/:id", brandController.getBrandById);
+
+// Update a brand by ID
 router.put(
-  "/brand/:id/upload-images",
+  "/:id",
   upload.fields([
-    { name: "digitalCopiesLogo", maxCount: 5 }, // Multiple logos
-    { name: "catalogues", maxCount: 10 }, // Multiple catalogs
+    { name: "brandlogo", maxCount: 1 },
+    { name: "digitalCopiesLogo", maxCount: 5 },
+    { name: "coverPhoto", maxCount: 1 },
+    { name: "catalogues", maxCount: 10 },
+    { name: "documents", maxCount: 10 },
   ]),
-  brandController.updateBrandImages
+  brandController.updateBrand
 );
 
-router.put("/brand/:id", brandController.updateBrand);
-router.delete("/brand/:id", brandController.deleteBrand);
+// Delete a brand by ID
+router.delete("/:id", brandController.deleteBrand);
 
 module.exports = router;

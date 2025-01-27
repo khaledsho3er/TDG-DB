@@ -1,123 +1,132 @@
-const brand = require("../models/Brand");
+const Brand = require("../models/Brand");
+const upload = require("../middlewares/multerSetup");
 
+// Create a new brand
 exports.createBrand = async (req, res) => {
   try {
-    const { body } = req;
+    const {
+      brandName,
+      commercialRegisterNo,
+      taxNumber,
+      companyAddress,
+      phoneNumber,
+      email,
+      bankAccountNumber,
+      websiteURL,
+      instagramURL,
+      facebookURL,
+      tiktokURL,
+      linkedinURL,
+      shippingPolicy,
+      brandDescription,
+      fees,
+    } = req.body;
 
-    const digitalCopiesLogoPaths = req.files["digitalCopiesLogo"]
-      ? req.files["digitalCopiesLogo"].map((file) => `uploads/${file.filename}`)
-      : [];
-
-    const cataloguePaths = req.files["catalogues"]
-      ? req.files["catalogues"].map((file) => `uploads/${file.filename}`)
-      : [];
-
-    const coverPhotoPath = req.files["coverPhoto"]
-      ? `uploads/${req.files["coverPhoto"][0].filename}`
-      : null;
-
-    const Brand = new Brand({
-      ...body,
-      digitalCopiesLogo: digitalCopiesLogoPaths,
-      catalogues: cataloguePaths,
-      coverPhoto: coverPhotoPath,
+    const brand = new Brand({
+      brandName,
+      commercialRegisterNo,
+      taxNumber,
+      companyAddress,
+      phoneNumber,
+      email,
+      bankAccountNumber,
+      websiteURL,
+      instagramURL,
+      facebookURL,
+      tiktokURL,
+      linkedinURL,
+      shippingPolicy,
+      brandDescription,
+      fees,
+      brandlogo: req.files["brandlogo"] ? req.files["brandlogo"][0].path : null,
+      digitalCopiesLogo: req.files["digitalCopiesLogo"]
+        ? req.files["digitalCopiesLogo"].map((file) => file.path)
+        : [],
+      coverPhoto: req.files["coverPhoto"]
+        ? req.files["coverPhoto"][0].path
+        : null,
+      catalogues: req.files["catalogues"]
+        ? req.files["catalogues"].map((file) => file.path)
+        : [],
+      documents: req.files["documents"]
+        ? req.files["documents"].map((file) => file.path)
+        : [],
     });
 
-    const savedBrand = await brand.save();
-    res.status(201).json(savedBrand);
+    await brand.save();
+    res.status(201).json(brand);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating brand", error: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
+// Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
     const brands = await Brand.find();
     res.status(200).json(brands);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching brands", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Get a single brand by ID
 exports.getBrandById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const brand = await Brand.findById(id);
+    const brand = await Brand.findById(req.params.id);
     if (!brand) {
-      return res.status(404).json({ message: "brand not found" });
+      return res.status(404).json({ message: "Brand not found" });
     }
     res.status(200).json(brand);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching brand", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Update a brand by ID
 exports.updateBrand = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updatedBrand = await Brand.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
-    if (!updatedBrand) {
-      return res.status(404).json({ message: "brand not found" });
-    }
-    res.status(200).json(updatedBrand);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating brand", error: error.message });
-  }
-};
-
-exports.deleteBrand = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedBrand = await Brand.findByIdAndDelete(id);
-    if (!deletedBrand) {
-      return res.status(404).json({ message: "brand not found" });
-    }
-    res.status(200).json({ message: "brand deleted successfully" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error deleting brand", error: error.message });
-  }
-};
-
-exports.updateBrandImages = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const brand = await Brand.findById(id);
+    const brand = await Brand.findById(req.params.id);
     if (!brand) {
-      return res.status(404).json({ message: "brand not found" });
+      return res.status(404).json({ message: "Brand not found" });
     }
 
+    const updates = req.body;
+    if (req.files["brandlogo"]) {
+      updates.brandlogo = req.files["brandlogo"][0].path;
+    }
     if (req.files["digitalCopiesLogo"]) {
-      const newLogos = req.files["digitalCopiesLogo"].map(
-        (file) => `uploads/${file.filename}`
+      updates.digitalCopiesLogo = req.files["digitalCopiesLogo"].map(
+        (file) => file.path
       );
-      brand.digitalCopiesLogo.push(...newLogos); // Add new logos
     }
-
+    if (req.files["coverPhoto"]) {
+      updates.coverPhoto = req.files["coverPhoto"][0].path;
+    }
     if (req.files["catalogues"]) {
-      const newCatalogues = req.files["catalogues"].map(
-        (file) => `uploads/${file.filename}`
-      );
-      brand.catalogues.push(...newCatalogues); // Add new catalogs
+      updates.catalogues = req.files["catalogues"].map((file) => file.path);
+    }
+    if (req.files["documents"]) {
+      updates.documents = req.files["documents"].map((file) => file.path);
     }
 
+    Object.assign(brand, updates);
     await brand.save();
     res.status(200).json(brand);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating brand images", error: error.message });
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Delete a brand by ID
+exports.deleteBrand = async (req, res) => {
+  try {
+    const brand = await Brand.findByIdAndDelete(req.params.id);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+    res.status(200).json({ message: "Brand deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

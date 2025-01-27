@@ -6,7 +6,15 @@ const SECRET_KEY = "your_secret_key"; // Replace with a secure secret
 
 // Signup
 exports.signup = async (req, res) => {
-  const { firstName, lastName, email, password, phoneNumber, tier } = req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    employeeNumber,
+    password,
+    phoneNumber,
+    tier,
+  } = req.body;
 
   try {
     const existingVendor = await Vendor.findOne({ email });
@@ -19,6 +27,7 @@ exports.signup = async (req, res) => {
       firstName,
       lastName,
       email,
+      employeeNumber,
       password: hashedPassword,
       phoneNumber,
       tier,
@@ -46,8 +55,23 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    req.session.vendor = vendor; // Store vendor info in session
-    res.status(200).json({ message: "Login successful", vendor });
+    // Store vendor information in the session
+    req.session.vendor = {
+      id: vendor._id,
+      email: vendor.email,
+      tier: vendor.tier,
+      role: vendor.role,
+    };
+
+    res.status(200).json({
+      message: "Login successful",
+      vendor: {
+        id: vendor._id,
+        email: vendor.email,
+        tier: vendor.tier,
+        role: vendor.role,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
