@@ -27,6 +27,23 @@ exports.getTypes = async (req, res) => {
     res.status(500).json({ message: "Error fetching types", error });
   }
 };
+exports.getTypeById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const type = await Type.findById(id); // Fetch type without populating subCategoryId
+
+    if (!type) {
+      return res.status(404).json({ message: "Type not found" });
+    }
+
+    res.status(200).json(type); // Return the type without populated subCategoryId
+  } catch (error) {
+    console.error("Error fetching type:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching type", error: error.message });
+  }
+};
 
 exports.updateType = async (req, res) => {
   try {
