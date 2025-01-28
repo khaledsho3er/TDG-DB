@@ -8,6 +8,7 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
+  getProductsByBrandId,
   getProductsByCategoryName,
 } = require("../controllers/productsController");
 
@@ -23,7 +24,7 @@ router.get(
 );
 
 router.get("/getsingle/:id", getProductById);
-
+router.get("/getproducts/brand/:brandId", getProductsByBrandId);
 router.put("/:id", upload.array("images", 5), updateProduct);
 router.delete("/:id", deleteProduct);
 router.post("/upload", upload.array("images", 10), (req, res) => {

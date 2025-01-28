@@ -5,12 +5,14 @@ const {
   getTypes,
   updateType,
   deleteType,
+  getTypeById,
 } = require("../controllers/typeController");
 
 const router = express.Router();
 
 router.post("/create", upload.single("image"), createType);
 router.get("/", getTypes);
+router.get("/types/:id", getTypeById);
 router.put("/:id", upload.single("image"), updateType);
 router.delete("/:id", deleteType);
 

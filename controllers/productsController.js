@@ -365,3 +365,33 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ message: "Error deleting product", error });
   }
 };
+// Controller function to get products by brandId
+exports.getProductsByBrandId = async (req, res) => {
+  let { brandId } = req.params; // Get brandId from the request parameters
+
+  // Trim any whitespace or newline characters from brandId
+  brandId = brandId.trim();
+
+  // Check if brandId is a valid ObjectId
+  if (!mongoose.Types.ObjectId.isValid(brandId)) {
+    return res.status(400).json({ message: "Invalid brandId format" });
+  }
+
+  try {
+    // Query the database for products that match the brandId
+    const products = await Product.find({ brandId: brandId });
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No products found for this brand" });
+    }
+
+    // Send the products as the response
+    res.status(200).json(products);
+  } catch (error) {
+    // Handle any errors that occur during the query
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server error while fetching products" });
+  }
+};
