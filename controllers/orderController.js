@@ -50,6 +50,7 @@ exports.createOrder = async (req, res) => {
       type: "order",
       description: `You have received a new order from customer ${customerId}.`,
       brandId, // Associate this notification with the brand
+      orderId: savedOrder._id,
       read: false,
     });
 
