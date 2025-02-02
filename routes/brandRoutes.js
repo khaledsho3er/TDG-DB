@@ -37,5 +37,7 @@ router.put(
 
 // Delete a brand by ID
 router.delete("/:id", brandController.deleteBrand);
+router.get("/status/:status", brandController.getBrandsByStatus);
+router.put("/partners/:id/status", brandController.updateBrandStatus);
 
 module.exports = router;

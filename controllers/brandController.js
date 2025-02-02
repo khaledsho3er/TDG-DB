@@ -131,3 +131,40 @@ exports.deleteBrand = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+// Get brands by status
+exports.getBrandsByStatus = async (req, res) => {
+  try {
+    const { status } = req.params;
+    const brands = await Brand.find({ status });
+
+    if (!brands.length) {
+      return res.status(404).json({ message: "No brands found for this status" });
+    }
+
+    res.status(200).json(brands);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+exports.updateBrandStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const brand = await Brand.findById(id);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    brand.status = status;
+    await brand.save();
+
+    res.status(200).json({ message: `Brand status updated to ${status}`, brand });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
