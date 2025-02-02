@@ -2,11 +2,23 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     cartItems: [
       {
-        productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-        brandId: { type: mongoose.Schema.Types.ObjectId, ref: "Brand", required: true }, // Added brandId
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        brandId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Brand",
+          required: true,
+        }, // Added brandId
         name: { type: String, required: true }, // Product name
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
@@ -18,16 +30,20 @@ const orderSchema = new mongoose.Schema(
     shippingFee: { type: Number, required: true },
     total: { type: Number, required: true },
 
-    orderStatus: { 
-      type: String, 
-      default: "Pending", 
-      enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"] 
+    orderStatus: {
+      type: String,
+      default: "Pending",
+      enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
     },
-    
+
     orderDate: { type: Date, default: Date.now },
 
     paymentDetails: {
-      paymentMethod: { type: String, required: true, enum: ["card", "cash", "paypal"] },
+      paymentMethod: {
+        type: String,
+        required: true,
+        enum: ["card", "cash", "paypal"],
+      },
       cardNumber: { type: String }, // Store last 4 digits for security
       expiry: { type: String },
       cvv: { type: String },

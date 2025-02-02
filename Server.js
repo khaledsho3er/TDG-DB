@@ -23,6 +23,7 @@ const authSigninEmp = require("./routes/authRoutes");
 const session = require("express-session"); // Import session middleware
 const orderRoutes = require("./routes/orderRoutes");
 const vendorRoutes = require("./routes/vendorRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -89,7 +90,7 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/signin-emp", authSigninEmp);
 app.use("/api/orders", orderRoutes);
 app.use("/api/vendors", vendorRoutes);
-
+app.use("/api/notifications", notificationRoutes);
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
