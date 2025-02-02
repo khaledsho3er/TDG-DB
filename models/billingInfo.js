@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 const bcrypt = require("bcrypt");
 
 const billingInfoSchema = new Schema({
-  cardNumber: { type: String, required: true },
+  cardNumber: { type: String, required: false },
   cardNameHolder: { type: String, required: true },
   expirationDate: { type: String, required: true },
   cvv: { type: String, required: true },

@@ -37,7 +37,7 @@ exports.signup = async (req, res) => {
 
     await newVendor.save();
     console.log("New vendor created:", req.body);
-    res.status(201).json({ message: "Vendor created successfully" });
+    res.status(201).json(newVendor);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -134,6 +134,31 @@ exports.updateVendor = async (req, res) => {
   }
 };
 
+
+exports.updateByEmailAndPassword = async (req, res) => {
+  try {
+    const { email, password, brandId } = req.body;
+
+    // Find the vendor by email and password
+    const vendor = await Vendor.findOne({ email, password });
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    // Update the vendor document with the brandId
+    vendor.brandId = brandId;
+
+    // Save the updated vendor
+    await vendor.save();
+
+    return res.status(200).json({ message: "Vendor updated successfully", vendor });
+  } catch (error) {
+    console.error("Error updating vendor:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Delete vendor
 exports.deleteVendor = async (req, res) => {
   try {
@@ -161,3 +186,4 @@ exports.getVendorsByBrand = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
