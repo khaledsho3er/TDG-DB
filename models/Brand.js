@@ -22,7 +22,7 @@ const BrandSchema = new mongoose.Schema(
     brandDescription: { type: String },
     status: {
       type: String,
-      enum: ["deactivate", "active", "pending"],
+      enum: ["deactivated", "active", "pending", "rejected"],
       default: "pending",
     },
     documents: { type: [String] }, // Array of tax document paths
