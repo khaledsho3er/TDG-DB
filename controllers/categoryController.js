@@ -108,27 +108,45 @@ const Type = require("../models/types");
 // };
 exports.createCategory = async (req, res) => {
   try {
-    const { name, description, subCategories } = req.body;
+    const { name, description } = req.body;
     const categoryImage = req.file ? req.file.filename : null;
 
-    // Parse subcategories
-    const parsedSubCategories = JSON.parse(subCategories);
+    console.log("Received Data:", req.body); // Debugging
+    console.log("Files Uploaded:", req.files); // Debugging
 
-    // Create subcategories and their types
+    let subCategories = [];
+    if (req.body.subCategories) {
+      try {
+        subCategories = JSON.parse(req.body.subCategories);
+      } catch (error) {
+        return res
+          .status(400)
+          .json({ message: "Invalid subCategories format" });
+      }
+    }
+
+    console.log("Parsed Subcategories:", subCategories);
+
     const subCategoryIds = await Promise.all(
-      parsedSubCategories.map(async (subCategory) => {
+      subCategories.map(async (subCategory, index) => {
         const createdTypes = await Type.insertMany(
           subCategory.types.map((typeName) => ({ name: typeName }))
         );
+
+        const subCategoryImage =
+          req.files?.subCategoryImages?.[index]?.filename || null;
+
         const createdSubCategory = await SubCategory.create({
           name: subCategory.name,
+          description: subCategory.description || "",
+          image: subCategoryImage,
           types: createdTypes.map((type) => type._id),
         });
+
         return createdSubCategory._id;
       })
     );
 
-    // Create the category
     const category = await Category.create({
       name,
       description,
@@ -146,6 +164,7 @@ exports.createCategory = async (req, res) => {
       .json({ message: "Error creating category", error: error.message });
   }
 };
+
 // Get All Categories with SubCategories and Types
 exports.getAllCategories = async (req, res) => {
   try {
