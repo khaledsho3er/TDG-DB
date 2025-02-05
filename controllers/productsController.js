@@ -333,11 +333,19 @@ exports.getProductsBySubcategory = async (req, res) => {
       .json({ message: "Error fetching products by subcategory", error });
   }
 };
-
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+
+    // Ensure reviews is an array of objects
+    if (updates.reviews && typeof updates.reviews === "string") {
+      updates.reviews = JSON.parse(updates.reviews); // Convert back to an array if it was stringified
+    }
+    // Ensure warrantyInfo is an object
+    if (updates.warrantyInfo && typeof updates.warrantyInfo === "string") {
+      updates.warrantyInfo = JSON.parse(updates.warrantyInfo); // Convert back to an object if it was stringified
+    }
 
     if (req.files) {
       updates.images = req.files.map((file) => `/uploads/${file.filename}`);
@@ -345,7 +353,13 @@ exports.updateProduct = async (req, res) => {
 
     const updatedProduct = await Product.findByIdAndUpdate(id, updates, {
       new: true,
+      runValidators: true, // Optional: ensures that the update adheres to the model's validation rules
     });
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
     res
       .status(200)
       .json({ message: "Product updated successfully", updatedProduct });
@@ -354,7 +368,6 @@ exports.updateProduct = async (req, res) => {
     res.status(500).json({ message: "Error updating product", error });
   }
 };
-
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;

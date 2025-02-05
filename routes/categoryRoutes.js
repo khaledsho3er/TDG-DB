@@ -29,7 +29,14 @@ const {
 } = require("../controllers/categoryController");
 const upload = require("../middlewares/multerSetup");
 
-router.post("/categories", upload.single("image"), createCategory);
+router.post(
+  "/categories",
+  upload.fields([
+    { name: "image", maxCount: 1 }, // Main category image
+    { name: "subCategoryImages", maxCount: 10 }, // Subcategory images
+  ]),
+  createCategory
+);
 router.get("/categories", getAllCategories);
 router.get("/categories/:id", getCategoryById);
 router.put("/categories/:id", updateCategory);

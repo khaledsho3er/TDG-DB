@@ -24,6 +24,8 @@ const session = require("express-session"); // Import session middleware
 const orderRoutes = require("./routes/orderRoutes");
 const vendorRoutes = require("./routes/vendorRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const favoritesRoute = require("./routes/favoritesRoute");
+const quotationRoutes = require("./routes/quotationRoutes");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -91,6 +93,8 @@ app.use("/api/signin-emp", authSigninEmp);
 app.use("/api/orders", orderRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/favorites", favoritesRoute);
+app.use("/api/quotation", quotationRoutes);
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
