@@ -198,7 +198,7 @@ exports.getCategoryById = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, image, subCategories } = req.body;
+    const { name, description, image, subCategories, types } = req.body;
 
     // Update the category
     const updatedCategory = await Category.findByIdAndUpdate(
@@ -211,11 +211,11 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Update SubCategories and Types
+    // Update SubCategories
     if (subCategories && subCategories.length > 0) {
       await Promise.all(
         subCategories.map(async (subCategory) => {
-          const updatedSubCategory = await SubCategory.findByIdAndUpdate(
+          await SubCategory.findByIdAndUpdate(
             subCategory.id,
             {
               name: subCategory.name,
@@ -224,17 +224,23 @@ exports.updateCategory = async (req, res) => {
             },
             { new: true }
           );
+        })
+      );
+    }
 
-          if (subCategory.types && subCategory.types.length > 0) {
-            await Promise.all(
-              subCategory.types.map(async (type) => {
-                await Type.findByIdAndUpdate(type.id, {
-                  name: type.name,
-                  description: type.description,
-                });
-              })
-            );
-          }
+    // Update Types (separately)
+    if (types && types.length > 0) {
+      await Promise.all(
+        types.map(async (type) => {
+          await Type.findByIdAndUpdate(
+            type.id,
+            {
+              name: type.name,
+              description: type.description,
+              subCategoryId: type.subCategoryId, // Ensure it's linked correctly
+            },
+            { new: true }
+          );
         })
       );
     }
@@ -244,9 +250,10 @@ exports.updateCategory = async (req, res) => {
       category: updatedCategory,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating category", error: error.message });
+    res.status(500).json({
+      message: "Error updating category",
+      error: error.message,
+    });
   }
 };
 

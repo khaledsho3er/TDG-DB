@@ -10,12 +10,14 @@ const {
   deleteProduct,
   getProductsByBrandId,
   getProductsByCategoryName,
+  getSearchSuggestions,
 } = require("../controllers/productsController");
 
 const router = express.Router();
 
 router.post("/addproduct", upload.array("images", 5), createProduct); // Limit to 5 images
 router.get("/getproducts", getProducts);
+router.get("/search-suggestions", getSearchSuggestions);
 router.get("/products/:categoryName", getProductsByCategoryName);
 router.get("/category/:categoryId/:categoryName", getProductsByCategory);
 router.get(
