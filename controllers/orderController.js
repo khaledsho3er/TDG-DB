@@ -142,3 +142,49 @@ exports.deleteOrder = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getBestSellers = async (req, res) => {
+  try {
+    const bestSellers = await Order.aggregate([
+      { $unwind: "$cartItems" }, // Flatten cartItems array
+      {
+        $group: {
+          _id: "$cartItems.productId",
+          totalSold: { $sum: "$cartItems.quantity" },
+        },
+      }, // Count total quantity sold per product
+      { $sort: { totalSold: -1 } }, // Sort by highest sales
+      { $limit: 10 }, // Limit to top 10 bestsellers
+      {
+        $project: {
+          _id: { $toObjectId: "$_id" }, // Convert string to ObjectId
+          totalSold: 1,
+        },
+      },
+      {
+        $lookup: {
+          from: "products", // Ensure this matches your collection name in MongoDB
+          localField: "_id",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      }, // Fetch product details
+      { $unwind: "$productDetails" }, // Convert product array into object
+      {
+        $project: {
+          _id: "$productDetails._id",
+          name: "$productDetails.name",
+          image: "$productDetails.mainImage",
+          price: "$productDetails.price",
+          totalSold: 1,
+        },
+      }, // Format the final output
+    ]);
+
+    res.status(200).json(bestSellers);
+    console.log("Bestsellers:", bestSellers);
+  } catch (error) {
+    console.error("Error fetching bestsellers:", error);
+    res.status(500).json({ error: error.message });
+  }
+};

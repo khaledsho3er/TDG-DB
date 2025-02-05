@@ -223,6 +223,7 @@ exports.updateCategory = async (req, res) => {
     // Handle image update (if an image file is uploaded)
     const image = req.file ? req.file.filename : req.body.image;
 
+
     // Update the category
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
@@ -247,6 +248,9 @@ exports.updateCategory = async (req, res) => {
             },
             { new: true }
           );
+        })
+      );
+    }
 
           if (subCategory.types && subCategory.types.length > 0) {
             await Promise.all(
@@ -260,15 +264,15 @@ exports.updateCategory = async (req, res) => {
         }
       })
     );
-
     res.status(200).json({
       message: "Category, SubCategories, and Types updated successfully",
       category: updatedCategory,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating category", error: error.message });
+    res.status(500).json({
+      message: "Error updating category",
+      error: error.message,
+    });
   }
 };
 

@@ -408,3 +408,30 @@ exports.getProductsByBrandId = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching products" });
   }
 };
+
+exports.getSearchSuggestions = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) return res.json([]); // Return empty array if no query
+
+    const suggestions = await Product.find(
+      {
+        $or: [
+          { name: { $regex: query, $options: "i" } },
+          { manufacturer: { $regex: query, $options: "i" } },
+          { tags: { $regex: query, $options: "i" } },
+        ],
+      },
+      { name: 1, category: 1, subcategory: 1, type: 1, brandId: 1, mainImage:1 } // Selecting required fields
+    )
+      .populate("category", "name") // Populate category and only return name
+      .populate("subcategory", "name") // Populate subcategory
+      .populate("type", "name") // Populate type
+      .populate("brandId", "name") // Populate brand
+      .limit(5); // Limit suggestions to 5 results
+
+    res.json(suggestions);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching suggestions" });
+  }
+};
