@@ -217,7 +217,11 @@ exports.getCategoryById = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, image, subCategories } = req.body;
+    const { name, description } = req.body;
+    const parsedSubCategories = JSON.parse(req.body.subCategories || "[]");
+
+    // Handle image update (if an image file is uploaded)
+    const image = req.file ? req.file.filename : req.body.image;
 
     // Update the category
     const updatedCategory = await Category.findByIdAndUpdate(
@@ -231,11 +235,11 @@ exports.updateCategory = async (req, res) => {
     }
 
     // Update SubCategories and Types
-    if (subCategories && subCategories.length > 0) {
-      await Promise.all(
-        subCategories.map(async (subCategory) => {
+    await Promise.all(
+      parsedSubCategories.map(async (subCategory) => {
+        if (subCategory._id) {
           const updatedSubCategory = await SubCategory.findByIdAndUpdate(
-            subCategory.id,
+            subCategory._id,
             {
               name: subCategory.name,
               description: subCategory.description,
@@ -247,16 +251,15 @@ exports.updateCategory = async (req, res) => {
           if (subCategory.types && subCategory.types.length > 0) {
             await Promise.all(
               subCategory.types.map(async (type) => {
-                await Type.findByIdAndUpdate(type.id, {
-                  name: type.name,
-                  description: type.description,
-                });
+                if (typeof type === "object" && type._id) {
+                  await Type.findByIdAndUpdate(type._id, { name: type.name });
+                }
               })
             );
           }
-        })
-      );
-    }
+        }
+      })
+    );
 
     res.status(200).json({
       message: "Category, SubCategories, and Types updated successfully",
