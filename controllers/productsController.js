@@ -409,7 +409,7 @@ exports.getSearchSuggestions = async (req, res) => {
           { tags: { $regex: query, $options: "i" } },
         ],
       },
-      { name: 1, category: 1, subcategory: 1, type: 1, brandId: 1 } // Selecting required fields
+      { name: 1, category: 1, subcategory: 1, type: 1, brandId: 1, mainImage:1 } // Selecting required fields
     )
       .populate("category", "name") // Populate category and only return name
       .populate("subcategory", "name") // Populate subcategory
