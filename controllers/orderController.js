@@ -115,6 +115,34 @@ exports.getOrdersByBrand = async (req, res) => {
     res.status(500).json({ message: "Internal server error", error });
   }
 };
+// ✅ Get orders by customerId
+exports.getOrdersByCustomerId = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+
+    if (!customerId) {
+      return res.status(400).json({ message: "Customer ID is required" });
+    }
+
+    // Find orders where customerId matches and populate the necessary fields
+    const orders = await Order.find({ customerId })
+      .populate("cartItems.productId", "name price")
+      .populate("cartItems.brandId", "name")
+      .populate("customerId", "firstName lastName email"); // Populate user info if necessary
+
+    if (!orders || orders.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No orders found for this customer" });
+    }
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Error fetching orders by customer ID:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
 // ✅ Update an order
 exports.updateOrder = async (req, res) => {
   try {

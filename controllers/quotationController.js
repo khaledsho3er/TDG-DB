@@ -3,6 +3,7 @@ const Quotation = require("../models/quotation");
 const User = require("../models/user"); // Assuming you have a 'User' model
 const Product = require("../models/Products"); // Assuming you have a 'Product' model
 const Brand = require("../models/Brand"); // Assuming you have a 'Brand' model
+const Notification = require("../models/notification"); // Import the Notification model
 
 // Create a new quotation request
 exports.createQuotation = async (req, res) => {
@@ -28,6 +29,14 @@ exports.createQuotation = async (req, res) => {
 
     // Save the quotation to the database
     const savedQuotation = await newQuotation.save();
+    const newNotification = new Notification({
+      type: "quotation",
+      description: `You have received a new Quotation from customer ${userId}.`,
+      brandId, // Associate this notification with the brand
+      quotation: savedQuotation._id,
+      read: false,
+    });
+    await newNotification.save();
 
     res.status(201).json({
       message: "Quotation created successfully",
