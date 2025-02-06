@@ -216,3 +216,117 @@ exports.getBestSellers = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getVendorBestSellers = async (req, res) => {
+  try {
+    console.log("Request params:", req.params);
+    const { brandId } = req.params; // Extract brandId correctly from URL
+
+    if (!brandId) {
+      return res.status(401).json({ error: "Unauthorized: No brandId provided" });
+    }
+
+    const brandObjectId = new mongoose.Types.ObjectId(brandId);
+
+    console.log("Extracted brandId:", brandId);
+    console.log("Converted ObjectId:", brandObjectId);
+
+    const bestSellers = await Order.aggregate([
+      { $unwind: "$cartItems" }, // Flatten cartItems array
+      {
+        $match: {
+          "cartItems.brandId": brandObjectId, // Filter orders by brandId from cartItems
+        },
+      },
+      {
+        $group: {
+          _id: "$cartItems.productId",
+          totalSold: { $sum: "$cartItems.quantity" },
+        },
+      }, // Count total quantity sold per product
+      { $sort: { totalSold: -1 } }, // Sort by highest sales
+      { $limit: 10 }, // Limit to top 10 bestsellers
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      }, // Fetch product details
+      { $unwind: "$productDetails" }, // Convert product array into object
+      {
+        $project: {
+          _id: "$productDetails._id",
+          name: "$productDetails.name",
+          image: "$productDetails.mainImage",
+          price: "$productDetails.price",
+          totalSold: 1,
+        },
+      }, // Format the final output
+    ]);
+
+    console.log("Final Aggregation Query Result:", bestSellers);
+
+    res.status(200).json(bestSellers);
+  } catch (error) {
+    console.error("Error fetching vendor bestsellers:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+// Function to calculate total orders for a given date range
+const calculateTotalOrders = async (startDate, endDate) => {
+  try {
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          orderDate: {
+            $gte: startDate,
+            $lt: endDate,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$total" }, // Sum the total field from the order
+        },
+      },
+    ]);
+    return orders.length > 0 ? orders[0].total : 0;
+  } catch (error) {
+    console.error("Error calculating total orders:", error);
+    return 0;
+  }
+};
+
+// Export function to calculate percentage change between current and previous month
+exports.getPercentageChange = async (req, res) => {
+  const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1); // Start of current month
+  const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0); // End of current month
+
+  const lastMonthStart = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1); // Start of previous month
+  const lastMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth(), 0); // End of previous month
+
+  try {
+    const currentMonthTotal = await calculateTotalOrders(currentMonthStart, currentMonthEnd);
+    const lastMonthTotal = await calculateTotalOrders(lastMonthStart, lastMonthEnd);
+
+    let percentageChange = 0;
+    if (lastMonthTotal > 0) {
+      percentageChange = ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+    }
+
+    // Return the data as JSON
+    res.status(200).json({
+      totalOrders: currentMonthTotal,
+      percentageChange: percentageChange.toFixed(1),
+    });
+    console.log("Total Orders:", currentMonthTotal, "Percentage Change:", percentageChange.toFixed(1));
+  } catch (error) {
+    console.error("Error fetching percentage change data:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
