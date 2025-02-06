@@ -230,8 +230,7 @@ exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Log the received ID to check its value
-    console.log("Received product ID:", id);
+  
 
     // Ensure no unwanted characters in ID (e.g., extra spaces, newlines)
     if (!id || id.trim() === "") {
