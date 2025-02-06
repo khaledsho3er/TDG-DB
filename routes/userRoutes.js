@@ -126,7 +126,7 @@ router.post("/signin", async (req, res) => {
   if (user && (await bcrypt.compare(password, user.password))) {
     req.session.userId = user._id; // Save user ID in session
     console.log("Session data after login:", req.session); // Debugging session data
-    req.session.user={
+    req.session.user = {
       id: user._id,
       email: user.email,
       firstName: user.firstName,
@@ -134,15 +134,16 @@ router.post("/signin", async (req, res) => {
       phoneNumber: user.phoneNumber,
       address1: user.address1,
       address2: user.address2,
-      dateOfBirth: user.dateOfBirth
-    }
-    res.json({ message: "User logged in successfully", user: req.session.user });
+      dateOfBirth: user.dateOfBirth,
+    };
+    res.json({
+      message: "User logged in successfully",
+      user: req.session.user,
+    });
   } else {
     res.status(401).json({ message: "Invalid email or password" });
   }
 });
-
-
 
 // router.post("/signin", async (req, res) => {
 //   try {
@@ -328,6 +329,23 @@ router.get("/getUser", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+// Get User by ID Route
+router.get("/getUserById/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error("Error fetching user by ID:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.put("/updateUser", isAuthenticated, async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(
