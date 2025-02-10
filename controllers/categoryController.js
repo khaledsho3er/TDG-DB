@@ -109,7 +109,7 @@ const Type = require("../models/types");
 exports.createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const categoryImage = req.file ? req.file.filename : null;
+    const categoryImage =  req.files["image"] ? req.files["image"][0].filename : null;
 
     console.log("Received Data:", req.body); // Debugging
     console.log("Files Uploaded:", req.files); // Debugging
@@ -213,20 +213,44 @@ exports.getCategoryById = async (req, res) => {
   }
 };
 
-// Update Category, SubCategories, and Types
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
-    const parsedSubCategories = JSON.parse(req.body.subCategories || "[]");
 
-    // Handle image update (if an image file is uploaded)
-    const image = req.file ? req.file.filename : req.body.image;
+    console.log("Received Data:", req.body);
+    console.log("Files Uploaded:", req.files);
 
-    // Update the category
+    // ✅ تأكد من أن subCategories موجودة وهي مصفوفة، وإذا لم تكن، اجعلها مصفوفة فارغة []
+    const subCategories = Array.isArray(req.body.subCategories)
+  ? req.body.subCategories
+  : JSON.parse(req.body.subCategories || "[]");
+
+    if (!Array.isArray(subCategories)) {
+      try {
+        subCategories = JSON.parse(subCategories); // إذا كانت JSON String، حولها لمصفوفة
+      } catch (error) {
+        subCategories = []; // إذا فشل التحويل، اجعلها مصفوفة فارغة
+      }
+    }
+
+    // ✅ معالجة الـ SubCategories وتحويلها من JSON إلى كائنات
+    const parsedSubCategories = subCategories.map(subCat => {
+      try {
+        return JSON.parse(subCat);
+      } catch (error) {
+        console.error("Error parsing subCategory:", subCat, error);
+        return null;
+      }
+    }).filter(subCat => subCat !== null);
+
+    // ✅ تحديث صورة الفئة الرئيسية
+    const categoryImage = req.files["image"] ? req.files["image"][0].filename : req.body.image;
+
+    // ✅ تحديث الفئة الرئيسية
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
-      { name, description, image },
+      { name, description, image: categoryImage },
       { new: true }
     );
 
@@ -234,43 +258,71 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Update SubCategories and Types
-    await Promise.all(
-      parsedSubCategories.map(async (subCategory) => {
+    // ✅ تحديث الـ SubCategories ومعالجة الأنواع
+    const subCategoryUpdates = await Promise.all(
+      parsedSubCategories.map(async (subCategory, index) => {
+        let subCategoryImage = req.files["subCategoryImages"]?.[index]?.filename || subCategory.image;
+    
         if (subCategory._id) {
-          const updatedSubCategory = await SubCategory.findByIdAndUpdate(
+          const existingSubCategory = await SubCategory.findById(subCategory._id);
+          if (!existingSubCategory) return null;
+    
+          const newTypes = await Promise.all(
+            (subCategory.types || []).map(async (type) => {
+              if (type._id) {
+                return await Type.findByIdAndUpdate(type._id, { name: type.name }, { new: true });
+              } else {
+                return await Type.create({ name: type.name });
+              }
+            })
+          );
+    
+          return await SubCategory.findByIdAndUpdate(
             subCategory._id,
             {
               name: subCategory.name,
               description: subCategory.description,
-              image: subCategory.image,
+              image: subCategoryImage,
+              types: newTypes.map(type => type._id),
             },
             { new: true }
           );
+        } else {
+          const createdTypes = await Type.insertMany(
+            (subCategory.types || []).map((type) => ({ name: type.name }))
+          );
+    
+          return await SubCategory.create({
+            name: subCategory.name,
+            description: subCategory.description || "",
+            image: subCategoryImage,
+            types: createdTypes.map((type) => type._id),
+            category: id, // ✅ إضافة الفئة إلى السوبكاتيجوري
+          });
         }
       })
     );
-    if (subCategory.types && subCategory.types.length > 0) {
-      await Promise.all(
-        subCategory.types.map(async (type) => {
-          if (typeof type === "object" && type._id) {
-            await Type.findByIdAndUpdate(type._id, { name: type.name });
-          }
-        })
-      );
-    }
+    
+    // ✅ ربط subCategories بالكاتيجوري
+    updatedCategory.subCategories = subCategoryUpdates.filter(sub => sub !== null).map(sub => sub._id);
+    await updatedCategory.save();
+    
 
     res.status(200).json({
       message: "Category, SubCategories, and Types updated successfully",
       category: updatedCategory,
+      subCategories: subCategoryUpdates.filter(sub => sub !== null),
     });
   } catch (error) {
+    console.error("Error updating category:", error);
     res.status(500).json({
       message: "Error updating category",
       error: error.message,
     });
   }
 };
+
+
 
 // Delete Category and its SubCategories and Types
 exports.deleteCategory = async (req, res) => {
