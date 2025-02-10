@@ -39,7 +39,14 @@ router.post(
 );
 router.get("/categories", getAllCategories);
 router.get("/categories/:id", getCategoryById);
-router.put("/categories/:id", updateCategory);
+router.put(
+  "/categories/:id",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "subCategoryImages", maxCount: 10 },
+  ]),
+ updateCategory
+);
 router.delete("/categories/:id", deleteCategory);
 
 module.exports = router;
