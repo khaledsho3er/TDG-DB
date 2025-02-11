@@ -38,18 +38,20 @@ exports.createBrand = async (req, res) => {
       shippingPolicy,
       brandDescription,
       fees,
-      brandlogo: req.files["brandlogo"] ? req.files["brandlogo"][0].path : null,
+      brandlogo: req.files["brandlogo"]
+        ? req.files["brandlogo"][0].filename
+        : null,
       digitalCopiesLogo: req.files["digitalCopiesLogo"]
-        ? req.files["digitalCopiesLogo"].map((file) => file.path)
+        ? req.files["digitalCopiesLogo"].map((file) => file.filename)
         : [],
       coverPhoto: req.files["coverPhoto"]
-        ? req.files["coverPhoto"][0].path
+        ? req.files["coverPhoto"][0].filename
         : null,
       catalogues: req.files["catalogues"]
-        ? req.files["catalogues"].map((file) => file.path)
+        ? req.files["catalogues"].map((file) => file.filename)
         : [],
       documents: req.files["documents"]
-        ? req.files["documents"].map((file) => file.path)
+        ? req.files["documents"].map((file) => file.filename)
         : [],
     });
     console.log("Received data:", req.body);
