@@ -67,7 +67,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: false,
+      httpOnly: true, // More secure
       secure: true, // Use true only if HTTPS is enabled
       sameSite: "None",
     },
