@@ -33,7 +33,7 @@ const port = process.env.PORT || 5000;
 // Enable CORS globally for all routes
 app.use(
   cors({
-    origin: "https://thedesigngrit.com", // Change this to your frontend's URL
+    origin: "http://localhost:3000", // Change this to your frontend's URL
     credentials: true, // Allow cookies to be sent along with requests
   })
 );
