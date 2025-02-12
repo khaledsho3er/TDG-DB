@@ -35,6 +35,8 @@ app.use(
   cors({
     origin: "https://thedesigngrit.com", // Change this to your frontend's URL
     credentials: true, // Allow cookies to be sent along with requests
+
+    methods: ["GET", "POST", "PUT", "DELETE"], // السماح بكل الطلبات
   })
 );
 // Middleware to parse JSON bodies
@@ -65,9 +67,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
-      secure: false, // Use true only if HTTPS is enabled
-      sameSite: "lax",
+      httpOnly: false,
+      secure: true, // Use true only if HTTPS is enabled
+      sameSite: "None",
     },
   })
 );
