@@ -382,7 +382,7 @@ router.put("/updateUser/:id", isAuthenticated, async (req, res) => {
     }
 
     res.json({
-      message: "User updated successfully",
+      message: "User updated successfullyss",
       user: updatedUser,
     });
   } catch (error) {
