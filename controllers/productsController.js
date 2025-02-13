@@ -130,22 +130,12 @@ exports.createProduct = async (req, res) => {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    // // Add image file paths to productData
-    // if (req.files && req.files.length > 0) {
-    //   productData.images = req.files.map((file) => file.filename); // Array of file names
-    //   productData.mainImage = req.files[0].filename; // Set the first image as the main image
-    // }
-    if (req.files) {
-      if (Array.isArray(req.files)) {
-        // Correctly stores multiple images
-        productData.images = req.files.map((file) => file.filename);
-        productData.mainImage = req.files[0].filename; // First image as main image
-      } else {
-        // Fallback in case multer returns a single object
-        productData.images = [req.files.filename];
-        productData.mainImage = req.files.filename;
-      }
+    // Add image file paths to productData
+    if (req.files && req.files.length > 0) {
+      productData.images = req.files.map((file) => file.filename); // Array of file names
+      productData.mainImage = req.files[0].filename; // Set the first image as the main image
     }
+
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
       productData.technicalDimensions = JSON.parse(
