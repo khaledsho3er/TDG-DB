@@ -145,6 +145,15 @@ exports.createProduct = async (req, res) => {
     if (productData.warrantyInfo) {
       productData.warrantyInfo = JSON.parse(productData.warrantyInfo);
     }
+    if (productData.tags) {
+      productData.tags = JSON.parse(productData.tags);
+    }
+    if (productData.colors) {
+      productData.colors = JSON.parse(productData.colors);
+    }
+    if (productData.sizes) {
+      productData.sizes = JSON.parse(productData.sizes);
+    }
 
     // Ensure reviews is an array of objects
     if (productData.reviews) {
