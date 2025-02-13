@@ -116,7 +116,22 @@ exports.createProduct = async (req, res) => {
   try {
     // Extract form data from req.body
     const productData = req.body;
+    // Reconstruct arrays for colors and sizes
+    if (req.body.colors) {
+      productData.colors = Array.isArray(req.body.colors)
+        ? req.body.colors
+        : Object.values(req.body)
+            .filter((key) => key.startsWith("colors["))
+            .map((key) => req.body[key]);
+    }
 
+    if (req.body.sizes) {
+      productData.sizes = Array.isArray(req.body.sizes)
+        ? req.body.sizes
+        : Object.values(req.body)
+            .filter((key) => key.startsWith("sizes["))
+            .map((key) => req.body[key]);
+    }
     // Convert category, subcategory, and type to ObjectIDs
     if (productData.category) {
       productData.category = new mongoose.Types.ObjectId(productData.category); // Use 'new'
