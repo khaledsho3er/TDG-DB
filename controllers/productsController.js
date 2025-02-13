@@ -130,12 +130,29 @@ exports.createProduct = async (req, res) => {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    // Add image file paths to productData
-    if (req.files && req.files.length > 0) {
+    // // Add image file paths to productData
+    // if (req.files && req.files.length > 0) {
+    //   productData.images = req.files.map((file) => file.filename); // Array of file names
+    //   productData.mainImage = req.files[0].filename; // Set the first image as the main image
+    // }
+    if (req.files && Array.isArray(req.files)) {
       productData.images = req.files.map((file) => file.filename); // Array of file names
-      productData.mainImage = req.files[0].filename; // Set the first image as the main image
+      productData.mainImage = req.files[0]?.filename || ""; // First image as main image
+    } else {
+      productData.images = [];
     }
 
+    if (req.files) {
+      if (Array.isArray(req.files)) {
+        // Correctly stores multiple images
+        productData.images = req.files.map((file) => file.filename);
+        productData.mainImage = req.files[0].filename; // First image as main image
+      } else {
+        // Fallback in case multer returns a single object
+        productData.images = [req.files.filename];
+        productData.mainImage = req.files.filename;
+      }
+    }
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
       productData.technicalDimensions = JSON.parse(
@@ -229,8 +246,6 @@ exports.getProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-
-  
 
     // Ensure no unwanted characters in ID (e.g., extra spaces, newlines)
     if (!id || id.trim() === "") {
@@ -421,7 +436,14 @@ exports.getSearchSuggestions = async (req, res) => {
           { tags: { $regex: query, $options: "i" } },
         ],
       },
-      { name: 1, category: 1, subcategory: 1, type: 1, brandId: 1, mainImage:1 } // Selecting required fields
+      {
+        name: 1,
+        category: 1,
+        subcategory: 1,
+        type: 1,
+        brandId: 1,
+        mainImage: 1,
+      } // Selecting required fields
     )
       .populate("category", "name") // Populate category and only return name
       .populate("subcategory", "name") // Populate subcategory
