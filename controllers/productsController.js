@@ -349,10 +349,28 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+    // Reconstruct arrays for colors and sizes
+    if (req.body.colors) {
+      updates.colors = Array.isArray(req.body.colors)
+        ? req.body.colors
+        : Object.values(req.body)
+            .filter((key) => key.startsWith("colors["))
+            .map((key) => req.body[key]);
+    }
 
+    if (req.body.sizes) {
+      updates.sizes = Array.isArray(req.body.sizes)
+        ? req.body.sizes
+        : Object.values(req.body)
+            .filter((key) => key.startsWith("sizes["))
+            .map((key) => req.body[key]);
+    }
     // Ensure reviews is an array of objects
     if (updates.reviews && typeof updates.reviews === "string") {
       updates.reviews = JSON.parse(updates.reviews); // Convert back to an array if it was stringified
+    }
+    if (updates.technicalDimensions) {
+      updates.technicalDimensions = JSON.parse(updates.technicalDimensions);
     }
     // Ensure warrantyInfo is an object
     if (updates.warrantyInfo && typeof updates.warrantyInfo === "string") {
