@@ -367,6 +367,29 @@ router.put("/updateUser", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+//update user data with ID parmas not sessions
+router.put("/updateUser/:id", isAuthenticated, async (req, res) => {
+  const userId = req.params.id;
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId, // Use the userId from the session
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 router.put("/changePassword", isAuthenticated, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
