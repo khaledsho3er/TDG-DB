@@ -31,10 +31,20 @@ router.put("/:id", upload.array("images", 5), updateProduct);
 router.delete("/:id", deleteProduct);
 router.post("/upload", upload.array("images", 10), (req, res) => {
   try {
-    const filePaths = req.files.map((file) => file.name); // Get file paths
+    // Get the relative file paths
+    const filePaths = req.files.map((file) => {
+      const relativePath = path.relative(
+        path.join(__dirname, "../"),
+        file.path
+      );
+      return relativePath;
+    });
+
+    // Send the relative file paths back to the frontend
     res.status(200).json({ message: "Files uploaded successfully", filePaths });
   } catch (error) {
     console.error("Error uploading files:", error);
+    // Send an error response
     res.status(500).json({ message: "Error uploading files", error });
   }
 });
