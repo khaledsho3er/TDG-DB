@@ -368,7 +368,7 @@ router.put("/updateUser", isAuthenticated, async (req, res) => {
   }
 });
 //update user data with ID parmas not sessions
-router.put("/updateUser/:id", isAuthenticated, async (req, res) => {
+router.put("/updateUser/:id", async (req, res) => {
   const userId = req.params.id;
   try {
     const updatedUser = await User.findByIdAndUpdate(
