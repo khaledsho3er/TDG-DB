@@ -135,13 +135,6 @@ exports.createProduct = async (req, res) => {
     //   productData.images = req.files.map((file) => file.filename); // Array of file names
     //   productData.mainImage = req.files[0].filename; // Set the first image as the main image
     // }
-    if (req.files && Array.isArray(req.files)) {
-      productData.images = req.files.map((file) => file.filename); // Array of file names
-      productData.mainImage = req.files[0]?.filename || ""; // First image as main image
-    } else {
-      productData.images = [];
-    }
-
     if (req.files) {
       if (Array.isArray(req.files)) {
         // Correctly stores multiple images
