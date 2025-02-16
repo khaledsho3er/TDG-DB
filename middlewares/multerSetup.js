@@ -18,8 +18,6 @@
 // const upload = multer({ storage });
 // module.exports = upload;
 
-
-
 const multer = require("multer");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
