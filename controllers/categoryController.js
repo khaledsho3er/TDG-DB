@@ -58,7 +58,8 @@
 // };
 const Category = require("../models/category");
 const SubCategory = require("../models/subCategory");
-const Type = require("../models/types");
+const Type = require("../models/types");  
+const upload = require("../middlewares/multerSetup"); 
 // // Create Category with Subcategories and Types
 // exports.createCategory = async (req, res) => {
 //   try {
@@ -106,62 +107,112 @@ const Type = require("../models/types");
 //       .json({ message: "Error creating category", error: error.message });
 //   }
 // };
+
+// exports.createCategory = async (req, res) => {
+//   try {
+//     const { name, description } = req.body;
+//     const categoryImage =  req.files["image"] ? req.files["image"][0].filename : null;
+
+//     console.log("Received Data:", req.body); // Debugging
+//     console.log("Files Uploaded:", req.files); // Debugging
+
+//     let subCategories = [];
+//     if (req.body.subCategories) {
+//       try {
+//         subCategories = JSON.parse(req.body.subCategories);
+//       } catch (error) {
+//         return res
+//           .status(400)
+//           .json({ message: "Invalid subCategories format" });
+//       }
+//     }
+
+//     console.log("Parsed Subcategories:", subCategories);
+
+//     const subCategoryIds = await Promise.all(
+//       subCategories.map(async (subCategory, index) => {
+//         const createdTypes = await Type.insertMany(
+//           subCategory.types.map((typeName) => ({ name: typeName }))
+//         );
+
+//         const subCategoryImage =
+//           req.files?.subCategoryImages?.[index]?.filename || null;
+
+//         const createdSubCategory = await SubCategory.create({
+//           name: subCategory.name,
+//           description: subCategory.description || "",
+//           image: subCategoryImage,
+//           types: createdTypes.map((type) => type._id),
+//         });
+
+//         return createdSubCategory._id;
+//       })
+//     );
+
+//     const category = await Category.create({
+//       name,
+//       description,
+//       image: categoryImage,
+//       subCategories: subCategoryIds,
+//     });
+
+//     res
+//       .status(201)
+//       .json({ message: "Category created successfully", category });
+//   } catch (error) {
+//     console.error("Error creating category:", error);
+//     res
+//       .status(500)
+//       .json({ message: "Error creating category", error: error.message });
+//   }
+// };
+
 exports.createCategory = async (req, res) => {
   try {
-    const { name, description } = req.body;
-    const categoryImage =  req.files["image"] ? req.files["image"][0].filename : null;
-
-    console.log("Received Data:", req.body); // Debugging
-    console.log("Files Uploaded:", req.files); // Debugging
-
-    let subCategories = [];
-    if (req.body.subCategories) {
-      try {
-        subCategories = JSON.parse(req.body.subCategories);
-      } catch (error) {
-        return res
-          .status(400)
-          .json({ message: "Invalid subCategories format" });
+    upload.single("image")(req, res, async (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error uploading image", error: err.message });
       }
-    }
 
-    console.log("Parsed Subcategories:", subCategories);
+      const { name, description } = req.body;
+      const categoryImageUrl = req.file ? req.file.location : null;
 
-    const subCategoryIds = await Promise.all(
-      subCategories.map(async (subCategory, index) => {
-        const createdTypes = await Type.insertMany(
-          subCategory.types.map((typeName) => ({ name: typeName }))
-        );
+      let subCategories = [];
+      if (req.body.subCategories) {
+        try {
+          subCategories = JSON.parse(req.body.subCategories);
+        } catch (error) {
+          return res.status(400).json({ message: "Invalid subCategories format" });
+        }
+      }
 
-        const subCategoryImage =
-          req.files?.subCategoryImages?.[index]?.filename || null;
+      const subCategoryIds = await Promise.all(
+        subCategories.map(async (subCategory) => {
+          const createdTypes = await Type.insertMany(
+            subCategory.types.map((typeName) => ({ name: typeName }))
+          );
 
-        const createdSubCategory = await SubCategory.create({
-          name: subCategory.name,
-          description: subCategory.description || "",
-          image: subCategoryImage,
-          types: createdTypes.map((type) => type._id),
-        });
+          return await SubCategory.create({
+            name: subCategory.name,
+            description: subCategory.description || "",
+            image: subCategory.image, // يتم إرسال URL إذا كان موجودًا
+            types: createdTypes.map((type) => type._id),
+          });
+        })
+      );
 
-        return createdSubCategory._id;
-      })
-    );
+      const category = await Category.create({
+        name,
+        description,
+        image: categoryImageUrl,
+        subCategories: subCategoryIds.map((sub) => sub._id),
+      });
 
-    const category = await Category.create({
-      name,
-      description,
-      image: categoryImage,
-      subCategories: subCategoryIds,
+      res.status(201).json({ message: "Category created successfully", category });
     });
-
-    res
-      .status(201)
-      .json({ message: "Category created successfully", category });
   } catch (error) {
     console.error("Error creating category:", error);
-    res
-      .status(500)
-      .json({ message: "Error creating category", error: error.message });
+    res.status(500).json({ message: "Error creating category", error: error.message });
   }
 };
 
