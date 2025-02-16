@@ -4,7 +4,7 @@ const fs = require("fs");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../uploads");
+    const uploadPath = path.join(__dirname, "https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/images");
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
