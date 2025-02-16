@@ -367,7 +367,8 @@ exports.updateProduct = async (req, res) => {
     }
     // Ensure reviews is an array of objects
     if (updates.reviews && typeof updates.reviews === "string") {
-      updates.reviews = JSON.parse(updates.reviews); // Convert back to an array if it was stringified
+      updates.reviews = JSON.parse(updates.reviews);
+      // Convert back to an array if it was stringified
     }
     if (updates.technicalDimensions) {
       updates.technicalDimensions = JSON.parse(updates.technicalDimensions);
