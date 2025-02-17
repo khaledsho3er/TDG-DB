@@ -47,6 +47,7 @@ const productSchema = new mongoose.Schema(
     Additionaldetails: { type: String },
     Additionalcosts: { type: String },
     claimProcess: { type: String },
+    status: { type: Boolean, default: false }, // New attribute to indicate if the product is approved or not
   },
   { timestamps: true }
 );
