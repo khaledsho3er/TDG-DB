@@ -12,6 +12,7 @@ exports.markAsRead = async (req, res) => {
 
     // Mark notification as read
     notification.read = true;
+    notification.readTime = Date.now();
     await notification.save();
 
     res.status(200).json({ message: "Notification marked as read" });

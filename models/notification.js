@@ -12,6 +12,7 @@ const notificationSchema = new mongoose.Schema(
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order" }, // Reference to Order
     read: { type: Boolean, default: false }, // If the notification has been read
     date: { type: Date, default: Date.now }, // Date when the notification was created
+    readAt: { type: Date }, // Date when the notification was read
   },
   { timestamps: true }
 );
