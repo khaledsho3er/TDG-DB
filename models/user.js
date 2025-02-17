@@ -1,13 +1,18 @@
 const mongoose = require("mongoose");
-
+const shippingSchema = new mongoose.Schema({
+  address1: { type: String, required: true },
+  address2: { type: String, required: false },
+  city: { type: String, required: true },
+  postalCode: { type: String, required: true },
+  country: { type: String, required: true },
+  isDefault: { type: Boolean, default: false }, // Flag to mark the default address
+});
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   phoneNumber: { type: String, required: false },
-  address1: { type: String, required: false },
-  address2: { type: String, required: false },
   dateOfBirth: { type: Date, required: false },
   gender: {
     type: String,
@@ -20,12 +25,9 @@ const userSchema = new mongoose.Schema({
     enum: ["User"],
     default: "User",
   },
-  city: { type: String, required: false },
-  postalCode: { type: String, required: false },
-  country: { type: String, required: false },
   language: { type: String, required: false },
   region: { type: String, required: false },
-  shipmentAddress: { type: String, required: false },
+  shipmentAddress: [shippingSchema], // Embed shippingSchema
   createdAt: { type: Date, default: Date.now }, // Automatically set
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }], // Add this line
 });
