@@ -393,7 +393,8 @@ router.put("/updateUser/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-router.put("/changePassword", isAuthenticated, async (req, res) => {
+router.put("/changePassword/:id", async (req, res) => {
+  const userId = req.params.id;
   const { currentPassword, newPassword } = req.body;
 
   // // Check if the new password and confirm password match
@@ -411,8 +412,8 @@ router.put("/changePassword", isAuthenticated, async (req, res) => {
   }
 
   try {
-    // Find the user by their ID stored in the session
-    const user = await User.findById(req.session.userId);
+    // Find the user by their ID
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -431,8 +432,7 @@ router.put("/changePassword", isAuthenticated, async (req, res) => {
 
     // Save the updated user
     await user.save();
-    console.log("Payload:", { currentPassword, newPassword });
-    console.log("Request body received by backend:", req.body);
+
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
     console.error("Error changing password:", error);
