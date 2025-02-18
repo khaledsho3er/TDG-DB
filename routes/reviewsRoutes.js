@@ -7,7 +7,7 @@ const {
 } = require("../controllers/ReviewsController");
 
 // Create a review
-router.post("/createreviews", createReview);
+router.post("/createreviews/:productId", createReview);
 
 // Get reviews
 router.get("/getreviews", getReviews);

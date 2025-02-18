@@ -3,7 +3,8 @@ const Product = require("../models/Products");
 
 exports.createReview = async (req, res) => {
   try {
-    const { reviewerName, userId, rating, comment, productId } = req.body;
+    const { reviewerName, userId, rating, comment } = req.body;
+    const { productId } = req.params; // Get productId from URL parameters
 
     // Ensure all required fields are present
     if (!reviewerName || !userId || !rating || !comment || !productId) {
@@ -25,7 +26,7 @@ exports.createReview = async (req, res) => {
       userId,
       rating,
       comment,
-      productId,
+      productId, // Store productId in the review
     });
 
     await review.save();
