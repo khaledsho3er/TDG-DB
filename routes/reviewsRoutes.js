@@ -9,8 +9,8 @@ const {
 // Create a review
 router.post("/createreviews/:productId", createReview);
 
-// Get reviews
-router.get("/getreviews", getReviews);
+// GET request to fetch reviews for a product (using productId in URL)
+router.get("/reviews/:productId", getReviews);
 
 // Delete a review
 router.delete("/reviews/:reviewId", deleteReview);

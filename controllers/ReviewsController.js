@@ -37,7 +37,7 @@ exports.createReview = async (req, res) => {
   }
 };
 
-exports.getReviews = async (req, res) => {
+exports.getAllReviews = async (req, res) => {
   try {
     const { productId, userId } = req.query;
 
@@ -49,6 +49,35 @@ exports.getReviews = async (req, res) => {
       "userId productId",
       "name email"
     ); // Populate user and product details
+    res.status(200).json(reviews);
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+exports.getReviews = async (req, res) => {
+  try {
+    const { productId } = req.params; // Get productId from URL parameters
+
+    // Ensure the productId is provided
+    if (!productId) {
+      return res.status(400).json({
+        message: "Product ID is required",
+      });
+    }
+
+    // Find reviews for the given productId
+    const reviews = await Review.find({ productId })
+      .populate("userId", "name email") // Populate user details
+      .populate("productId", "name"); // Optionally populate product details
+
+    // Check if there are reviews for the product
+    if (reviews.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No reviews found for this product" });
+    }
+
     res.status(200).json(reviews);
   } catch (error) {
     console.error("Error fetching reviews:", error);
