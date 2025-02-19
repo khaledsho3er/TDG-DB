@@ -2,7 +2,9 @@ const User = require("../models/user"); // For Vendors (user table)
 const Employee = require("../models/employees"); // For Employees (employee table)
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
+const otpGenerator = require("otp-generator");
 const crypto = require("crypto");
+const otpStore = {}; // Temporary storage for OTPs (use Redis in production)
 
 exports.signin = async (req, res) => {
   const { email, password, role } = req.body;
@@ -55,28 +57,27 @@ const transporter = nodemailer.createTransport({
     pass: "lryi gnbd gcew gkpj",
   },
 });
-exports.forgotPassword = async (req, res) => {
+exports.sendOTP = async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email });
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  const otp = crypto.randomInt(100000, 999999).toString();
-  user.otp = otp;
-  user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins expiry
-  await user.save();
+  const otp = otpGenerator.generate(6, {
+    upperCase: false,
+    specialChars: false,
+  });
 
-  const mailOptions = {
-    from: "your-email@gmail.com",
+  otpStore[email] = { otp, expiresAt: Date.now() + 300000 }; // Expires in 5 minutes
+
+  await transporter.sendMail({
+    from: "karimwahba53@gmail.com",
     to: email,
     subject: "Password Reset OTP",
-    text: `Your OTP code is ${otp}. It expires in 10 minutes.`,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) return res.status(500).json({ message: "Email sending failed" });
-    res.json({ message: "OTP sent successfully" });
+    text: `Your OTP is: ${otp}`,
   });
+
+  res.json({ message: "OTP sent to email" });
 };
 exports.verifyOtp = async (req, res) => {
   const { email, otp, newPassword } = req.body;
@@ -92,4 +93,13 @@ exports.verifyOtp = async (req, res) => {
   await user.save();
 
   res.json({ message: "Password updated successfully" });
+};
+// 3. Reset Password
+exports.resetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await User.findOneAndUpdate({ email }, { password: hashedPassword });
+
+  res.json({ message: "Password reset successful" });
 };
