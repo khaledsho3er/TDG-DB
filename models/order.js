@@ -29,7 +29,7 @@ const orderSchema = new mongoose.Schema(
     subtotal: { type: Number, required: true },
     shippingFee: { type: Number, required: true },
     total: { type: Number, required: true },
-
+    deliveryDate: { type: Date },
     orderStatus: {
       type: String,
       default: "Pending",

@@ -64,7 +64,17 @@ exports.createOrder = async (req, res) => {
 
     // Save the notification to the database
     await newNotification.save();
-
+    // Send an email to the customer with the order ID
+    const mailOptions = {
+      from: "karimwahba53@gmail.com",
+      to: customerId.email,
+      subject: "Order Successful",
+      text: `Your order with ID ${savedOrder._id} has been successfully purchased.`,
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) return console.log(error);
+      console.log("Email sent: " + info.response);
+    });
     res.status(201).json(savedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
