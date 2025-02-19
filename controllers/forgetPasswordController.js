@@ -35,19 +35,24 @@ exports.sendOTP = async (req, res) => {
   res.json({ message: "OTP sent to email" });
 };
 exports.verifyOtp = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
-  const user = await User.findOne({ email });
+  const { email, otp } = req.body;
+  const user = users.find((u) => u.email === email);
 
-  if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
+  if (!user) return res.status(400).json({ error: "User not found" });
+
+  console.log("Stored OTP:", user.otp, "Received OTP:", otp);
+
+  const otpExpirationTime = 5 * 60 * 1000; // 5 minutes
+  if (Date.now() - user.otpCreatedAt > otpExpirationTime) {
+    return res.status(400).json({ error: "OTP expired" });
   }
 
-  user.password = newPassword; // Hash password before saving in production
-  user.otp = undefined;
-  user.otpExpires = undefined;
-  await user.save();
+  if (user.otp !== otp.toString()) {
+    return res.status(400).json({ error: "Invalid OTP" });
+  }
 
-  res.json({ message: "Password updated successfully" });
+  user.otp = null; // Invalidate OTP after use
+  res.json({ message: "OTP verified successfully" });
 };
 // 3. Reset Password
 exports.resetPassword = async (req, res) => {
