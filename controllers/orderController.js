@@ -64,14 +64,7 @@ exports.createOrder = async (req, res) => {
 
     // Save the notification to the database
     await newNotification.save();
-    await transporter.sendMail({
-      from: "karimwahba53@gmail.com",
-      to: customerId.email,
-      subject: `New Order #${savedOrder._id}`,
-      text: `You have received a new order with the following details: ${JSON.stringify(
-        savedOrder
-      )}`,
-    });
+
     res.status(201).json(savedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });

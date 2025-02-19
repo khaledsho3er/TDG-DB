@@ -23,16 +23,13 @@ const orderSchema = new mongoose.Schema(
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
         totalPrice: { type: Number, required: true },
-        deliveryDatePerProduct: { type: Date },
       },
     ],
 
     subtotal: { type: Number, required: true },
     shippingFee: { type: Number, required: true },
     total: { type: Number, required: true },
-    deliveryDate: {
-      type: Date,
-    },
+
     orderStatus: {
       type: String,
       default: "Pending",
