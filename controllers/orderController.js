@@ -72,8 +72,17 @@ exports.createOrder = async (req, res) => {
     const mailOptions = {
       from: "karimwahba53@gmail.com",
       to: customer.email,
-      subject: "Order Successful",
-      text: `Your order with ID ${savedOrder._id} has been successfully purchased.`,
+      subject: `Purchase Successfully Order: #${savedOrder._id}`,
+      text: `Your order with ID ${
+        savedOrder._id
+      } has been successfully purchased. ${savedOrder.cartItems
+        .map(
+          (item, index) =>
+            `Item ${index + 1}: ${item.name} with quantity ${
+              item.quantity
+            } and price ${item.price}`
+        )
+        .join(", ")}. Total price: ${savedOrder.total}.`,
     };
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) return console.log(error);
