@@ -406,7 +406,7 @@ exports.updateDeliveryDate = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
     // Fetch customer email from User model
-    const customer = await User.findById(order.customerId).select("email");
+    const customer = await user.findById(order.customerId).select("email");
     if (!customer || !customer.email) {
       return res.status(400).json({ message: "Customer email not found." });
     }
