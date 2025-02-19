@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema({
   shipmentAddress: [shippingSchema], // Embed shippingSchema
   createdAt: { type: Date, default: Date.now }, // Automatically set
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }], // Add this line
+  otp: { type: String },
+  otpExpires: { type: Date },
 });
 
 // Automatically generate an ObjectId for `id` field, MongoDB does this by default
