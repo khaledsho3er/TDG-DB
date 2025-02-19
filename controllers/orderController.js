@@ -3,7 +3,7 @@ const Product = require("../models/Products");
 const mongoose = require("mongoose");
 const Notification = require("../models/notification"); // Import the Notification model
 const nodemailer = require("nodemailer");
-
+const user = require("../models/user");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -50,6 +50,10 @@ exports.createOrder = async (req, res) => {
       billingDetails,
       shippingDetails,
     });
+    const customer = await user.findById(customerId).select("email");
+    if (!customer || !customer.email) {
+      return res.status(400).json({ error: "Customer email not found" });
+    }
 
     const savedOrder = await newOrder.save();
     // Create a new notification for the brand
@@ -67,7 +71,7 @@ exports.createOrder = async (req, res) => {
     // Send an email to the customer with the order ID
     const mailOptions = {
       from: "karimwahba53@gmail.com",
-      to: customerId.email,
+      to: customer.email,
       subject: "Order Successful",
       text: `Your order with ID ${savedOrder._id} has been successfully purchased.`,
     };
