@@ -36,7 +36,7 @@ exports.sendOTP = async (req, res) => {
 };
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
-  const user = users.find((u) => u.email === email);
+  const user = await User.findOne({ email });
 
   if (!user) return res.status(400).json({ error: "User not found" });
 
