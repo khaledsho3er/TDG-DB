@@ -72,3 +72,21 @@ exports.deleteType = async (req, res) => {
     res.status(500).json({ message: "Error deleting type", error });
   }
 };
+
+
+exports.getTypesBySubCategory = async (req, res) => {
+  try {
+    const { subCategoryId } = req.params;
+    const types = await Type.find({ subCategory: subCategoryId });
+
+    if (!types.length) {
+      return res.status(404).json({ message: "No types found for this subcategory" });
+    }
+
+    res.json(types);
+  } catch (error) {
+    console.error("Error fetching types:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
