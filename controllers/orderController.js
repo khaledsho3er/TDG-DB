@@ -2,7 +2,15 @@ const Order = require("../models/order");
 const Product = require("../models/Products");
 const mongoose = require("mongoose");
 const Notification = require("../models/notification"); // Import the Notification model
+const nodemailer = require("nodemailer");
 
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "karimwahba53@gmail.com",
+    pass: "lryi gnbd gcew gkpj",
+  },
+});
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -56,7 +64,14 @@ exports.createOrder = async (req, res) => {
 
     // Save the notification to the database
     await newNotification.save();
-
+    await transporter.sendMail({
+      from: "karimwahba53@gmail.com",
+      to: customerId.email,
+      subject: `New Order #${savedOrder._id}`,
+      text: `You have received a new order with the following details: ${JSON.stringify(
+        savedOrder
+      )}`,
+    });
     res.status(201).json(savedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -223,7 +238,9 @@ exports.getVendorBestSellers = async (req, res) => {
     const { brandId } = req.params; // Extract brandId correctly from URL
 
     if (!brandId) {
-      return res.status(401).json({ error: "Unauthorized: No brandId provided" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: No brandId provided" });
     }
 
     const brandObjectId = new mongoose.Types.ObjectId(brandId);
@@ -275,7 +292,6 @@ exports.getVendorBestSellers = async (req, res) => {
   }
 };
 
-
 // Function to calculate total orders for a given date range
 const calculateTotalOrders = async (startDate, endDate) => {
   try {
@@ -304,19 +320,42 @@ const calculateTotalOrders = async (startDate, endDate) => {
 
 // Export function to calculate percentage change between current and previous month
 exports.getPercentageChange = async (req, res) => {
-  const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1); // Start of current month
-  const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0); // End of current month
+  const currentMonthStart = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1
+  ); // Start of current month
+  const currentMonthEnd = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1,
+    0
+  ); // End of current month
 
-  const lastMonthStart = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1); // Start of previous month
-  const lastMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth(), 0); // End of previous month
+  const lastMonthStart = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() - 1,
+    1
+  ); // Start of previous month
+  const lastMonthEnd = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    0
+  ); // End of previous month
 
   try {
-    const currentMonthTotal = await calculateTotalOrders(currentMonthStart, currentMonthEnd);
-    const lastMonthTotal = await calculateTotalOrders(lastMonthStart, lastMonthEnd);
+    const currentMonthTotal = await calculateTotalOrders(
+      currentMonthStart,
+      currentMonthEnd
+    );
+    const lastMonthTotal = await calculateTotalOrders(
+      lastMonthStart,
+      lastMonthEnd
+    );
 
     let percentageChange = 0;
     if (lastMonthTotal > 0) {
-      percentageChange = ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+      percentageChange =
+        ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
     }
 
     // Return the data as JSON
@@ -324,7 +363,12 @@ exports.getPercentageChange = async (req, res) => {
       totalOrders: currentMonthTotal,
       percentageChange: percentageChange.toFixed(1),
     });
-    console.log("Total Orders:", currentMonthTotal, "Percentage Change:", percentageChange.toFixed(1));
+    console.log(
+      "Total Orders:",
+      currentMonthTotal,
+      "Percentage Change:",
+      percentageChange.toFixed(1)
+    );
   } catch (error) {
     console.error("Error fetching percentage change data:", error);
     res.status(500).json({ error: error.message });
