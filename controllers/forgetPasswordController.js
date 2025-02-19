@@ -79,6 +79,11 @@ exports.resetPassword = async (req, res) => {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   await User.findOneAndUpdate({ email }, { password: hashedPassword });
-
+  await transporter.sendMail({
+    from: "karimwahba53@gmail.com",
+    to: email,
+    subject: "Password has been reset successfully.",
+    text: `Your password has been reset successfully. Welcome Back to The Design Grit!`,
+  });
   res.json({ message: "Password reset successful" });
 };
