@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 });
 exports.sendOTP = async (req, res) => {
   const { email } = req.body;
-  const user = await Users.findOne({ email });
+  const user = await User.findOne({ email });
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
