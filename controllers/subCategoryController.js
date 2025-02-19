@@ -93,7 +93,7 @@ exports.deleteSubCategory = async (req, res) => {
 
 exports.getSubcategoryById = async (req, res) => {
   try {
-    const subcategory = await Subcategory.findById(
+    const subcategory = await SubCategory.findById(
       req.params.subcategoryId
     ).populate("types"); // Populate types for the subcategory
 

@@ -1,4 +1,6 @@
 const Type = require("../models/types");
+const SubCategory = require("../models/subCategory");
+
 
 exports.createType = async (req, res) => {
   try {
