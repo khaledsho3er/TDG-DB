@@ -11,6 +11,7 @@ const {
   getProductsByBrandId,
   getProductsByCategoryName,
   getSearchSuggestions,
+  getProductsByType,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -23,6 +24,11 @@ router.get("/category/:categoryId/:categoryName", getProductsByCategory);
 router.get(
   "/subcategory/:subcategoryId/:subcategoryName",
   getProductsBySubcategory
+);
+
+router.get(
+  "/types/:typeId/:typeName",
+  getProductsByType
 );
 
 router.get("/getsingle/:id", getProductById);

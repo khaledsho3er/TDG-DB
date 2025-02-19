@@ -345,6 +345,31 @@ exports.getProductsBySubcategory = async (req, res) => {
       .json({ message: "Error fetching products by subcategory", error });
   }
 };
+
+
+exports.getProductsByType = async (req, res) => {
+  try {
+    const { typeId, typeName } = req.params;
+
+    // Fetch products for the specified type
+    const products = await Product.find({ type: typeId })
+      .populate("subcategory category vendor type brandId") // Adjust as needed
+      .exec();
+
+    if (!products.length) {
+      return res.status(404).json({
+        message: `No products found for type ${typeName}`,
+      });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products by type:", error);
+    res.status(500).json({ message: "Error fetching products by type", error });
+  }
+};
+
+
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
