@@ -25,7 +25,11 @@ exports.sendOTP = async (req, res) => {
   console.log("Generated OTP:", otp); // 🟢 Log OTP
   console.log("User before saving OTP:", user); // 🟢 Log user object
   otpStore[email] = { otp, expiresAt: Date.now() + 300000 }; // Expires in 5 minutes
-
+  // Store OTP in MongoDB
+  await User.findByIdAndUpdate(user._id, {
+    otp,
+    otpCreatedAt: Date.now(),
+  });
   await transporter.sendMail({
     from: "karimwahba53@gmail.com",
     to: email,
