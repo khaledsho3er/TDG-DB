@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   signin,
-  forgotPassword,
+  sendOTP,
   verifyOtp,
   resetPassword,
 } = require("../controllers/authController");
