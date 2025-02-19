@@ -390,3 +390,51 @@ exports.getPercentageChange = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// Update Order Delivery Date and Notify Customer
+exports.updateDeliveryDate = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { deliveryDate } = req.body; // The vendor provides the delivery date
+
+    if (!deliveryDate) {
+      return res.status(400).json({ message: "Delivery date is required." });
+    }
+
+    // Find order by ID
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+    // Fetch customer email from User model
+    const customer = await User.findById(order.customerId).select("email");
+    if (!customer || !customer.email) {
+      return res.status(400).json({ message: "Customer email not found." });
+    }
+    // Update delivery date and order status
+    order.deliveryDate = deliveryDate;
+    order.orderStatus = "Active"; // Assuming order is now in progress
+
+    await order.save();
+
+    // Send email notification to customer
+    const mailOptions = {
+      from: "karimwahba53@gmail.com",
+      to: customer.email,
+      subject: "Your Order Delivery Date Has Been Updated",
+      text: `Dear ${order.billingDetails.firstName},\n\nYour order (ID: ${
+        order._id
+      }) is scheduled for delivery on ${new Date(
+        deliveryDate
+      ).toDateString()}.\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res
+      .status(200)
+      .json({ message: "Delivery date updated and email sent.", order });
+  } catch (error) {
+    console.error("Error updating delivery date:", error);
+    res.status(500).json({ message: "Server error.", error });
+  }
+};
