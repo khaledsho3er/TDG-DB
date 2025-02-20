@@ -412,7 +412,7 @@ exports.updateDeliveryDate = async (req, res) => {
     }
     // Update delivery date and order status
     order.deliveryDate = deliveryDate;
-    order.orderStatus = "Active"; // Assuming order is now in progress
+    order.orderStatus = "Confirmed"; // Assuming order is now in progress
 
     await order.save();
 
