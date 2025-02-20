@@ -35,9 +35,8 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
       enum: ["Pending", "Confirmed", "Delivered", "Returned", "Cancelled"],
     },
-
+    POD: { type: String }, // proof of Delivery file uploaded by the delivery person
     orderDate: { type: Date, default: Date.now },
-
     paymentDetails: {
       paymentMethod: {
         type: String,
@@ -48,7 +47,6 @@ const orderSchema = new mongoose.Schema(
       expiry: { type: String },
       cvv: { type: String },
     },
-
     billingDetails: {
       firstName: { type: String, required: true },
       lastName: { type: String, required: true },
@@ -59,7 +57,6 @@ const orderSchema = new mongoose.Schema(
       city: { type: String, required: true },
       zipCode: { type: String, required: true },
     },
-
     shippingDetails: {
       firstName: { type: String, required: true },
       lastName: { type: String, required: true },

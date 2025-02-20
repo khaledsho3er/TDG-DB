@@ -438,3 +438,32 @@ exports.updateDeliveryDate = async (req, res) => {
     res.status(500).json({ message: "Server error.", error });
   }
 };
+// Function to handle file upload and update order
+exports.uploadFileAndUpdateOrder = async (req, res) => {
+  try {
+    // Check if a file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const orderId = req.params.orderId; // Get orderId from URL parameters
+    const fileName = req.file.key; // Get the file name from multer's S3 response
+
+    // Update the order with the POD (file name) and set orderStatus to "Delivered"
+    await Order.findByIdAndUpdate(
+      orderId,
+      { POD: fileName, orderStatus: "Delivered" }, // Update POD and orderStatus
+      { new: true }
+    );
+
+    // Respond with success message and file URL
+    const fileUrl = `https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/files/${fileName}`; // Construct the file URL
+    return res.status(200).json({
+      message: "File uploaded successfully and the orderStatus is delivered",
+      fileUrl,
+    });
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
