@@ -58,8 +58,8 @@
 // };
 const Category = require("../models/category");
 const SubCategory = require("../models/subCategory");
-const Type = require("../models/types");  
-const upload = require("../middlewares/multerSetup"); 
+const Type = require("../models/types");
+const upload = require("../middlewares/multerSetup");
 // // Create Category with Subcategories and Types
 // exports.createCategory = async (req, res) => {
 //   try {
@@ -171,18 +171,25 @@ exports.createCategory = async (req, res) => {
   try {
     upload.single("image")(req, res, async (err) => {
       if (err) {
-        return res.status(500).json({ message: "Error uploading image", error: err.message });
+        return res
+          .status(500)
+          .json({ message: "Error uploading image", error: err.message });
       }
 
       const { name, description } = req.body;
-      const categoryImageUrl = req.file ? req.file.location : null;
+      // const categoryImageUrl = req.file ? req.file.location : null;
+      const categoryImageUrl = req.files["image"]
+        ? req.files["image"][0].location
+        : null;
 
       let subCategories = [];
       if (req.body.subCategories) {
         try {
           subCategories = JSON.parse(req.body.subCategories);
         } catch (error) {
-          return res.status(400).json({ message: "Invalid subCategories format" });
+          return res
+            .status(400)
+            .json({ message: "Invalid subCategories format" });
         }
       }
 
@@ -208,11 +215,15 @@ exports.createCategory = async (req, res) => {
         subCategories: subCategoryIds.map((sub) => sub._id),
       });
 
-      res.status(201).json({ message: "Category created successfully", category });
+      res
+        .status(201)
+        .json({ message: "Category created successfully", category });
     });
   } catch (error) {
     console.error("Error creating category:", error);
-    res.status(500).json({ message: "Error creating category", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error creating category", error: error.message });
   }
 };
 
@@ -274,8 +285,8 @@ exports.updateCategory = async (req, res) => {
 
     // ✅ تأكد من أن subCategories موجودة وهي مصفوفة، وإذا لم تكن، اجعلها مصفوفة فارغة []
     const subCategories = Array.isArray(req.body.subCategories)
-  ? req.body.subCategories
-  : JSON.parse(req.body.subCategories || "[]");
+      ? req.body.subCategories
+      : JSON.parse(req.body.subCategories || "[]");
 
     if (!Array.isArray(subCategories)) {
       try {
@@ -286,17 +297,21 @@ exports.updateCategory = async (req, res) => {
     }
 
     // ✅ معالجة الـ SubCategories وتحويلها من JSON إلى كائنات
-    const parsedSubCategories = subCategories.map(subCat => {
-      try {
-        return JSON.parse(subCat);
-      } catch (error) {
-        console.error("Error parsing subCategory:", subCat, error);
-        return null;
-      }
-    }).filter(subCat => subCat !== null);
+    const parsedSubCategories = subCategories
+      .map((subCat) => {
+        try {
+          return JSON.parse(subCat);
+        } catch (error) {
+          console.error("Error parsing subCategory:", subCat, error);
+          return null;
+        }
+      })
+      .filter((subCat) => subCat !== null);
 
     // ✅ تحديث صورة الفئة الرئيسية
-    const categoryImage = req.files["image"] ? req.files["image"][0].filename : req.body.image;
+    const categoryImage = req.files["image"]
+      ? req.files["image"][0].filename
+      : req.body.image;
 
     // ✅ تحديث الفئة الرئيسية
     const updatedCategory = await Category.findByIdAndUpdate(
@@ -312,29 +327,37 @@ exports.updateCategory = async (req, res) => {
     // ✅ تحديث الـ SubCategories ومعالجة الأنواع
     const subCategoryUpdates = await Promise.all(
       parsedSubCategories.map(async (subCategory, index) => {
-        let subCategoryImage = req.files["subCategoryImages"]?.[index]?.filename || subCategory.image;
-    
+        let subCategoryImage =
+          req.files["subCategoryImages"]?.[index]?.filename ||
+          subCategory.image;
+
         if (subCategory._id) {
-          const existingSubCategory = await SubCategory.findById(subCategory._id);
+          const existingSubCategory = await SubCategory.findById(
+            subCategory._id
+          );
           if (!existingSubCategory) return null;
-    
+
           const newTypes = await Promise.all(
             (subCategory.types || []).map(async (type) => {
               if (type._id) {
-                return await Type.findByIdAndUpdate(type._id, { name: type.name }, { new: true });
+                return await Type.findByIdAndUpdate(
+                  type._id,
+                  { name: type.name },
+                  { new: true }
+                );
               } else {
                 return await Type.create({ name: type.name });
               }
             })
           );
-    
+
           return await SubCategory.findByIdAndUpdate(
             subCategory._id,
             {
               name: subCategory.name,
               description: subCategory.description,
               image: subCategoryImage,
-              types: newTypes.map(type => type._id),
+              types: newTypes.map((type) => type._id),
             },
             { new: true }
           );
@@ -342,7 +365,7 @@ exports.updateCategory = async (req, res) => {
           const createdTypes = await Type.insertMany(
             (subCategory.types || []).map((type) => ({ name: type.name }))
           );
-    
+
           return await SubCategory.create({
             name: subCategory.name,
             description: subCategory.description || "",
@@ -353,16 +376,17 @@ exports.updateCategory = async (req, res) => {
         }
       })
     );
-    
+
     // ✅ ربط subCategories بالكاتيجوري
-    updatedCategory.subCategories = subCategoryUpdates.filter(sub => sub !== null).map(sub => sub._id);
+    updatedCategory.subCategories = subCategoryUpdates
+      .filter((sub) => sub !== null)
+      .map((sub) => sub._id);
     await updatedCategory.save();
-    
 
     res.status(200).json({
       message: "Category, SubCategories, and Types updated successfully",
       category: updatedCategory,
-      subCategories: subCategoryUpdates.filter(sub => sub !== null),
+      subCategories: subCategoryUpdates.filter((sub) => sub !== null),
     });
   } catch (error) {
     console.error("Error updating category:", error);
@@ -372,8 +396,6 @@ exports.updateCategory = async (req, res) => {
     });
   }
 };
-
-
 
 // Delete Category and its SubCategories and Types
 exports.deleteCategory = async (req, res) => {
