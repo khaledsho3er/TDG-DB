@@ -167,28 +167,95 @@ const upload = require("../middlewares/multerSetup");
 //   }
 // };
 
+// exports.createCategory = async (req, res) => {
+//   try {
+//     // upload.single("image")(req, res, async (err) => {
+//     //   if (err) {
+//     //     return res
+//     //       .status(500)
+//     //       .json({ message: "Error uploading image", error: err.message });
+//     //   }
+//     console.log("Uploaded files:", req.files); // Debugging
+
+//     if (
+//       !req.files ||
+//       (!req.files["image"] && !req.files["subCategoryImages"])
+//     ) {
+//       return res.status(400).json({ message: "No images uploaded" });
+//     }
+
+//     const { name, description } = req.body;
+//     // const categoryImageUrl = req.file ? req.file.location : null;
+//     const categoryImageUrl = req.files["image"]
+//       ? req.files["image"][0].originalname
+//       : null;
+
+//     let subCategories = [];
+//     if (req.body.subCategories) {
+//       try {
+//         subCategories = JSON.parse(req.body.subCategories);
+//       } catch (error) {
+//         return res
+//           .status(400)
+//           .json({ message: "Invalid subCategories format" });
+//       }
+//     }
+//     const subCategoryImages = req.files["subCategoryImages"] || [];
+//     console.log("Subcategory Images Uploaded:", subCategoryImages); // Debug subcategory images
+
+//     // Match images by filename
+//     const imageMap = {};
+//     subCategoryImages.forEach((file) => {
+//       imageMap[file.originalname] = file.originalname; // Store filename and S3 URL
+//     });
+
+//     const subCategoryIds = await Promise.all(
+//       subCategories.map(async (subCategory) => {
+//         console.log(
+//           "Processing Subcategory:",
+//           subCategory.name,
+//           "Expected Image:",
+//           subCategory.image
+//         );
+//         const createdTypes = await Type.insertMany(
+//           subCategory.types.map((typeName) => ({ name: typeName }))
+//         );
+
+//         return await SubCategory.create({
+//           name: subCategory.name,
+//           description: subCategory.description || "",
+//           image: imageMap[subCategory.image], // Match by filename
+//           types: createdTypes.map((type) => type._id),
+//         });
+//       })
+//     );
+//     console.log("Saving Subcategory:", subCategoryData); // Debug final subcategory data
+
+//     const category = await Category.create({
+//       name,
+//       description,
+//       image: categoryImageUrl,
+//       subCategories: subCategoryIds.map((sub) => sub._id),
+//     });
+
+//     res
+//       .status(201)
+//       .json({ message: "Category created successfully", category });
+//   } catch (error) {
+//     console.error("Error creating category:", error);
+//     res
+//       .status(500)
+//       .json({ message: "Error creating category", error: error.message });
+//   }
+// };
 exports.createCategory = async (req, res) => {
   try {
-    // upload.single("image")(req, res, async (err) => {
-    //   if (err) {
-    //     return res
-    //       .status(500)
-    //       .json({ message: "Error uploading image", error: err.message });
-    //   }
-    console.log("Uploaded files:", req.files); // Debugging
-
-    if (
-      !req.files ||
-      (!req.files["image"] && !req.files["subCategoryImages"])
-    ) {
-      return res.status(400).json({ message: "No images uploaded" });
-    }
+    console.log("Uploaded files:", req.files); // Debug uploaded files
 
     const { name, description } = req.body;
-    // const categoryImageUrl = req.file ? req.file.location : null;
-    const categoryImageUrl = req.files["image"]
-      ? req.files["image"][0].originalname
-      : null;
+    const categoryImageName = req.files["image"]
+      ? req.files["image"][0].key
+      : null; // Store only the key (filename)
 
     let subCategories = [];
     if (req.body.subCategories) {
@@ -200,41 +267,49 @@ exports.createCategory = async (req, res) => {
           .json({ message: "Invalid subCategories format" });
       }
     }
-    const subCategoryImages = req.files["subCategoryImages"] || [];
-    console.log("Subcategory Images Uploaded:", subCategoryImages); // Debug subcategory images
 
-    // Match images by filename
-    const imageMap = {};
-    subCategoryImages.forEach((file) => {
-      imageMap[file.originalname] = file.originalname; // Store filename and S3 URL
+    const subCategoryImages = req.files["subCategoryImages"] || [];
+    console.log("Subcategory Images Uploaded:", subCategoryImages);
+
+    // Map images to subcategories in order
+    subCategories.forEach((subCategory, index) => {
+      if (subCategoryImages[index]) {
+        subCategory.image = subCategoryImages[index].key; // Store only the image key (filename)
+      } else {
+        subCategory.image = null; // No image uploaded
+      }
     });
+
+    console.log("Updated Subcategories with Images:", subCategories);
 
     const subCategoryIds = await Promise.all(
       subCategories.map(async (subCategory) => {
         console.log(
           "Processing Subcategory:",
           subCategory.name,
-          "Expected Image:",
+          "Image:",
           subCategory.image
         );
+
         const createdTypes = await Type.insertMany(
           subCategory.types.map((typeName) => ({ name: typeName }))
         );
 
-        return await SubCategory.create({
+        const subCategoryData = {
           name: subCategory.name,
           description: subCategory.description || "",
-          image: imageMap[subCategory.image], // Match by filename
+          image: subCategory.image, // Store only filename (Cloudflare key)
           types: createdTypes.map((type) => type._id),
-        });
+        };
+
+        return await SubCategory.create(subCategoryData);
       })
     );
-    console.log("Saving Subcategory:", subCategoryData); // Debug final subcategory data
 
     const category = await Category.create({
       name,
       description,
-      image: categoryImageUrl,
+      image: categoryImageName,
       subCategories: subCategoryIds.map((sub) => sub._id),
     });
 
