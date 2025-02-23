@@ -186,8 +186,8 @@ exports.createCategory = async (req, res) => {
 
     const { name, description } = req.body;
     // const categoryImageUrl = req.file ? req.file.location : null;
-    const categoryImageUrl = req.files["image"]
-      ? req.files["image"][0].location
+    const categoryImageName = req.files["image"]
+      ? req.files["image"][0].originalname
       : null;
 
     let subCategories = [];
@@ -205,7 +205,7 @@ exports.createCategory = async (req, res) => {
     // Match images by filename
     const imageMap = {};
     subCategoryImages.forEach((file) => {
-      imageMap[file.originalname] = file.location; // Store filename and S3 URL
+      imageMap[file.originalname] = file.originalname; // Store filename and S3 URL
     });
 
     const subCategoryIds = await Promise.all(
@@ -217,7 +217,7 @@ exports.createCategory = async (req, res) => {
         return await SubCategory.create({
           name: subCategory.name,
           description: subCategory.description || "",
-          image: imageMap[subCategory.image] || null, // Match by filename
+          image: imageMap[subCategory.image], // Match by filename
           types: createdTypes.map((type) => type._id),
         });
       })
