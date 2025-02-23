@@ -34,6 +34,7 @@ router.post(
   upload.fields([
     { name: "image", maxCount: 1 }, // Main category image
     { name: "subCategoryImages", maxCount: 10 }, // Subcategory images
+    { name: "typeImages", maxCount: 10 }, // Type images
   ]),
   createCategory
 );
@@ -45,7 +46,7 @@ router.put(
     { name: "image", maxCount: 1 },
     { name: "subCategoryImages", maxCount: 10 },
   ]),
- updateCategory
+  updateCategory
 );
 router.delete("/categories/:id", deleteCategory);
 
