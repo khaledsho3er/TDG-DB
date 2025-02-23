@@ -41,9 +41,9 @@ app.use(
   })
 );
 // Middleware to parse JSON bodies
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "500mb" }));
 
-app.use(bodyParser.urlencoded({ extended: true })); // Support URL-encoded data
+app.use(bodyParser.urlencoded({ extended: true, limit: "500mb" })); // Support URL-encoded data
 // MongoDB connection URI
 const mongoURI = process.env.Mongo_server;
 
