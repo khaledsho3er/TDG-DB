@@ -291,8 +291,17 @@ exports.createCategory = async (req, res) => {
           subCategory.image
         );
 
-        const createdTypes = await Type.insertMany(
-          subCategory.types.map((typeName) => ({ name: typeName }))
+        const createdTypes = await Promise.all(
+          subCategory.types.map(async (type) => {
+            const typeImage = subCategory.typeImages?.[type.name]
+              ? subCategory.typeImages[type.name]
+              : null;
+            return await Type.create({
+              name: type.name,
+              description: type.description || "",
+              image: typeImage ? typeImage.key : null,
+            });
+          })
         );
 
         const subCategoryData = {

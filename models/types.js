@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const typeSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
+  image: { type: String },
 });
 
 const Type = mongoose.model("types", typeSchema);
