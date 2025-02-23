@@ -186,7 +186,7 @@ exports.createCategory = async (req, res) => {
 
     const { name, description } = req.body;
     // const categoryImageUrl = req.file ? req.file.location : null;
-    const categoryImageName = req.files["image"]
+    const categoryImageUrl = req.files["image"]
       ? req.files["image"][0].originalname
       : null;
 
@@ -201,6 +201,7 @@ exports.createCategory = async (req, res) => {
       }
     }
     const subCategoryImages = req.files["subCategoryImages"] || [];
+    console.log("Subcategory Images Uploaded:", subCategoryImages); // Debug subcategory images
 
     // Match images by filename
     const imageMap = {};
@@ -210,6 +211,12 @@ exports.createCategory = async (req, res) => {
 
     const subCategoryIds = await Promise.all(
       subCategories.map(async (subCategory) => {
+        console.log(
+          "Processing Subcategory:",
+          subCategory.name,
+          "Expected Image:",
+          subCategory.image
+        );
         const createdTypes = await Type.insertMany(
           subCategory.types.map((typeName) => ({ name: typeName }))
         );
@@ -222,6 +229,7 @@ exports.createCategory = async (req, res) => {
         });
       })
     );
+    console.log("Saving Subcategory:", subCategoryData); // Debug final subcategory data
 
     const category = await Category.create({
       name,
