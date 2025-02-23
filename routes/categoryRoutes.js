@@ -34,7 +34,7 @@ router.post(
   upload.fields([
     { name: "image", maxCount: 1 }, // Main category image
     { name: "subCategoryImages", maxCount: 10 }, // Subcategory images
-    { name: "typeImages", maxCount: 10 }, // Type images
+    { name: "typeImages", maxCount: 50 }, // Type images
   ]),
   createCategory
 );
