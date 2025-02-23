@@ -269,7 +269,9 @@ exports.createCategory = async (req, res) => {
     }
 
     const subCategoryImages = req.files["subCategoryImages"] || [];
+    const typeImages = req.files["typeImages"] || [];
     console.log("Subcategory Images Uploaded:", subCategoryImages);
+    console.log("Type Images Uploaded:", typeImages);
 
     // Map images to subcategories in order
     subCategories.forEach((subCategory, index) => {
@@ -291,16 +293,19 @@ exports.createCategory = async (req, res) => {
           subCategory.image
         );
 
-        const createdTypes = await Promise.all(
-          subCategory.types.map(async (type) => {
-            const typeImage = subCategory.typeImages?.[type.name]
-              ? subCategory.typeImages[type.name]
+        const typeIds = await Promise.all(
+          subCategory.types.map(async (type, typeIndex) => {
+            const typeImageKey = typeImages[typeIndex]
+              ? typeImages[typeIndex].key
               : null;
-            return await Type.create({
+
+            const typeData = {
               name: type.name,
               description: type.description || "",
-              image: typeImage ? typeImage.key : null,
-            });
+              image: typeImageKey, // Store only filename (Cloudflare key)
+            };
+
+            return await Type.create(typeData);
           })
         );
 
@@ -308,7 +313,7 @@ exports.createCategory = async (req, res) => {
           name: subCategory.name,
           description: subCategory.description || "",
           image: subCategory.image, // Store only filename (Cloudflare key)
-          types: createdTypes.map((type) => type._id),
+          types: typeIds.map((type) => type._id),
         };
 
         return await SubCategory.create(subCategoryData);
