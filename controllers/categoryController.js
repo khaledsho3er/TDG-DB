@@ -200,6 +200,13 @@ exports.createCategory = async (req, res) => {
           .json({ message: "Invalid subCategories format" });
       }
     }
+    const subCategoryImages = req.files["subCategoryImages"] || [];
+
+    // Match images by filename
+    const imageMap = {};
+    subCategoryImages.forEach((file) => {
+      imageMap[file.originalname] = file.location; // Store filename and S3 URL
+    });
 
     const subCategoryIds = await Promise.all(
       subCategories.map(async (subCategory) => {
@@ -210,7 +217,7 @@ exports.createCategory = async (req, res) => {
         return await SubCategory.create({
           name: subCategory.name,
           description: subCategory.description || "",
-          image: subCategory.image, // يتم إرسال URL إذا كان موجودًا
+          image: imageMap[subCategory.image] || null, // Match by filename
           types: createdTypes.map((type) => type._id),
         });
       })
