@@ -16,7 +16,7 @@ const {
 
 const router = express.Router();
 
-router.post("/addproduct", upload.array("images", 5), createProduct); // Limit to 5 images
+router.post("/addproduct", upload.array("images", 10), createProduct); // Limit to 5 images
 router.get("/getproducts", getProducts);
 router.get("/search-suggestions", getSearchSuggestions);
 router.get("/products/:categoryName", getProductsByCategoryName);
@@ -26,10 +26,7 @@ router.get(
   getProductsBySubcategory
 );
 
-router.get(
-  "/types/:typeId/:typeName",
-  getProductsByType
-);
+router.get("/types/:typeId/:typeName", getProductsByType);
 
 router.get("/getsingle/:id", getProductById);
 router.get("/getproducts/brand/:brandId", getProductsByBrandId);

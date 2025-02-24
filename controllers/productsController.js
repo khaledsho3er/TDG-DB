@@ -145,10 +145,12 @@ exports.createProduct = async (req, res) => {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    // Add image file paths to productData
+    // 🔹 Ensure images are uploaded via Cloudflare R2 and store the correct keys
     if (req.files && req.files.length > 0) {
-      productData.images = req.files.map((file) => file.filename); // Array of file names
-      productData.mainImage = req.files[0].filename; // Set the first image as the main image
+      productData.images = req.files.map((file) => file.key); // Store Cloudflare R2 keys
+      productData.mainImage = req.files[0].key; // First image as main image
+    } else {
+      return res.status(400).json({ message: "Product images are required." });
     }
 
     // Parse nested fields (if sent as JSON strings)
@@ -346,7 +348,6 @@ exports.getProductsBySubcategory = async (req, res) => {
   }
 };
 
-
 exports.getProductsByType = async (req, res) => {
   try {
     const { typeId, typeName } = req.params;
@@ -368,7 +369,6 @@ exports.getProductsByType = async (req, res) => {
     res.status(500).json({ message: "Error fetching products by type", error });
   }
 };
-
 
 exports.updateProduct = async (req, res) => {
   try {
