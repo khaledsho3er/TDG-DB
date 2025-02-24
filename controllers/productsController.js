@@ -116,8 +116,6 @@ exports.createProduct = async (req, res) => {
   try {
     // Extract form data from req.body
     const productData = req.body;
-    const imageNames = req.files.map((file) => file.filename);
-
     // Reconstruct arrays for colors and sizes
     if (req.body.colors) {
       productData.colors = Array.isArray(req.body.colors)
@@ -149,10 +147,11 @@ exports.createProduct = async (req, res) => {
 
     // Add image file paths to productData
     if (req.files && req.files.length > 0) {
-      productData.images = req.files.map((file) => file.filename); // Array of file names
-      productData.mainImage = req.files[0].filename; // Set the first image as the main image
+      const imageFiles = req.files.map((file) => file.filename);
+      console.log("Image files to save:", imageFiles);
+      productData.images = imageFiles;
+      productData.mainImage = imageFiles[0];
     }
-
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
       productData.technicalDimensions = JSON.parse(
@@ -171,18 +170,7 @@ exports.createProduct = async (req, res) => {
     }
 
     // Create and save the product
-    // const product = new Product(productData);
-    // Create a new product with extracted attributes
-    const product = new Product({
-      name,
-      price,
-      description,
-      category,
-      vendor,
-      images: imageNames,
-      mainImage: imageNames.length > 0 ? imageNames[0] : null,
-      ...otherAttributes, // Spread remaining attributes dynamically
-    });
+    const product = new Product(productData);
     await product.save();
 
     res.status(201).json({ message: "Product created successfully", product });
