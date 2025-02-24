@@ -155,7 +155,7 @@ exports.createProduct = async (req, res) => {
     // Handle images from request body (no req.files needed)
     // Handle uploaded images
     if (req.files && req.files.length > 0) {
-      const imageUrls = req.files.map((file) => file.location || file.key); // Use location for URL or key for filename
+      const imageUrls = req.files.map((file) => file.filename || file.key); // Use location for URL or key for filename
       console.log("Uploaded image URLs:", imageUrls);
       productData.images = imageUrls;
       productData.mainImage = req.body.mainImage || imageUrls[0]; // Use mainImage from body if provided
