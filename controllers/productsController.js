@@ -153,11 +153,14 @@ exports.createProduct = async (req, res) => {
     //   productData.mainImage = imageFiles[0];
     // }
     // Handle images from request body (no req.files needed)
-    if (productData.images && productData.images.length > 0) {
-      console.log("Image URLs received:", productData.images);
-      productData.mainImage = productData.mainImage || productData.images[0];
+    // Handle uploaded images
+    if (req.files && req.files.length > 0) {
+      const imageUrls = req.files.map((file) => file.location || file.key); // Use location for URL or key for filename
+      console.log("Uploaded image URLs:", imageUrls);
+      productData.images = imageUrls;
+      productData.mainImage = req.body.mainImage || imageUrls[0]; // Use mainImage from body if provided
     } else {
-      console.log("No images provided in request body");
+      console.log("No images uploaded");
     }
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
