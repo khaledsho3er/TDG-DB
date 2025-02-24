@@ -14,7 +14,7 @@ exports.addFavorite = async (req, res) => {
     }
 
     user.favorites.push(productId);
-    await user.save();
+    await user.save({ validateBeforeSave: false }); // Disable validation
 
     res.status(200).json({ message: "Favorite added" });
   } catch (error) {
