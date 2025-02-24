@@ -16,8 +16,8 @@ const userSchema = new mongoose.Schema({
   dateOfBirth: { type: Date, required: false },
   gender: {
     type: String,
-    enum: ["Male", "Female", "Other"],
-    default: "Other", // Default value
+    enum: ["Male", "Female", "Prefer not to say"],
+    default: "Prefer not to say", // Default value
     required: false, // Optional field
   },
   role: {
