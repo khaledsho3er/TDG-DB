@@ -145,12 +145,10 @@ exports.createProduct = async (req, res) => {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    // 🔹 Ensure images are uploaded via Cloudflare R2 and store the correct keys
+    // Add image file paths to productData
     if (req.files && req.files.length > 0) {
-      productData.images = req.files.map((file) => file.key); // Store Cloudflare R2 keys
-      productData.mainImage = req.files[0].key; // First image as main image
-    } else {
-      return res.status(400).json({ message: "Product images are required." });
+      productData.images = req.files.map((file) => file.filename); // Array of file names
+      productData.mainImage = req.files[0].filename; // Set the first image as the main image
     }
 
     // Parse nested fields (if sent as JSON strings)
