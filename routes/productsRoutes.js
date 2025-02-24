@@ -16,7 +16,7 @@ const {
 
 const router = express.Router();
 
-router.post("/addproduct", upload.array("images", 10), createProduct); // Limit to 5 images
+router.post("/addproduct", createProduct); // Limit to 5 images
 router.get("/getproducts", getProducts);
 router.get("/search-suggestions", getSearchSuggestions);
 router.get("/products/:categoryName", getProductsByCategoryName);

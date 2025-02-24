@@ -145,12 +145,19 @@ exports.createProduct = async (req, res) => {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    // Add image file paths to productData
-    if (req.files && req.files.length > 0) {
-      const imageFiles = req.files.map((file) => file.filename);
-      console.log("Image files to save:", imageFiles);
-      productData.images = imageFiles;
-      productData.mainImage = imageFiles[0];
+    // // Add image file paths to productData
+    // if (req.files && req.files.length > 0) {
+    //   const imageFiles = req.files.map((file) => file.filename);
+    //   console.log("Image files to save:", imageFiles);
+    //   productData.images = imageFiles;
+    //   productData.mainImage = imageFiles[0];
+    // }
+    // Handle images from request body (no req.files needed)
+    if (productData.images && productData.images.length > 0) {
+      console.log("Image URLs received:", productData.images);
+      productData.mainImage = productData.mainImage || productData.images[0];
+    } else {
+      console.log("No images provided in request body");
     }
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
