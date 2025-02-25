@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }], // Add this line
   otp: { type: String },
   otpExpires: { type: Date },
+  resetToken: String, // 🔥 Add this field
 });
 
 // Automatically generate an ObjectId for `id` field, MongoDB does this by default
