@@ -85,7 +85,9 @@ exports.verifyOtp = async (req, res) => {
   }
 
   // OTP is valid, generate a reset token
-  const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, {
+    expiresIn: "15m",
+  });
 
   // Store reset token in the database
   user.resetToken = resetToken;
@@ -112,16 +114,22 @@ exports.verifyOtp = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   const { email, newPassword, token } = req.body;
 
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized: No token provided" });
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Token expires at:", new Date(decoded.exp * 1000));
     if (decoded.email !== email) {
-      return res.status(401).json({ error: "Invalid token" });
+      return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
     const user = await User.findOne({ email });
     if (!user || user.resetToken !== token) {
       return res.status(401).json({ error: "Unauthorized or expired token" });
     }
+    console.log("Received token:", token);
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
