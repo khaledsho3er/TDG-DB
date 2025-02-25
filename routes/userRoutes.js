@@ -6,6 +6,7 @@ const {
   isAuthenticated,
   isAuthorized,
 } = require("../middlewares/authMiddleware");
+const transporter = require("../utils/emailTransporter");
 
 const router = express.Router();
 // Sign Up Route
@@ -432,7 +433,12 @@ router.put("/changePassword/:id", async (req, res) => {
 
     // Save the updated user
     await user.save();
-
+    await transporter.sendMail({
+      from: "karimwahba53@gmail.com",
+      to: user.email,
+      subject: "Password has been reset successfully.",
+      text: `Your password has been reset successfully. Welcome Back to The Design Grit!`,
+    });
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
     console.error("Error changing password:", error);

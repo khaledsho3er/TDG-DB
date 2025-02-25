@@ -4,13 +4,7 @@ const mongoose = require("mongoose");
 const Notification = require("../models/notification"); // Import the Notification model
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "karimwahba53@gmail.com",
-    pass: "lryi gnbd gcew gkpj",
-  },
-});
+const transporter = require("../utils/emailTransporter");
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {

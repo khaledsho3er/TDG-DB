@@ -5,14 +5,8 @@ const otpGenerator = require("otp-generator");
 const crypto = require("crypto");
 const otpStore = {}; // Temporary storage for OTPs (use Redis in production)
 const jwt = require("jsonwebtoken");
+const transporter = require("../utils/emailTransporter");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "karimwahba53@gmail.com",
-    pass: "lryi gnbd gcew gkpj",
-  },
-});
 exports.sendOTP = async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email });
