@@ -112,7 +112,10 @@ exports.verifyOtp = async (req, res) => {
 //   res.json({ message: "Password reset successful" });
 // };
 exports.resetPassword = async (req, res) => {
-  const { email, newPassword, token } = req.body;
+  const token = req.headers.authorization?.split(" ")[1]; // Extract token from Bearer token
+  const { email, newPassword } = req.body;
+
+  console.log("Received token from headers:", token);
 
   if (!token) {
     return res.status(401).json({ error: "Unauthorized: No token provided" });
@@ -120,20 +123,22 @@ exports.resetPassword = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Token expires at:", new Date(decoded.exp * 1000));
+    console.log("Decoded Token:", decoded);
+
     if (decoded.email !== email) {
       return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
     const user = await User.findOne({ email });
+    console.log("User found in DB:", user);
+
     if (!user || user.resetToken !== token) {
       return res.status(401).json({ error: "Unauthorized or expired token" });
     }
-    console.log("Received token:", token);
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-    user.resetToken = null; // Clear the reset token
+    user.resetToken = null;
     await user.save();
     await transporter.sendMail({
       from: "karimwahba53@gmail.com",
