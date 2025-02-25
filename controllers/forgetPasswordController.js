@@ -111,8 +111,37 @@ exports.verifyOtp = async (req, res) => {
 //   });
 //   res.json({ message: "Password reset successful" });
 // };
+const generateResetToken = (email) => {
+  return jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+};
+
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const resetToken = generateResetToken(email);
+    console.log("Generated Reset Token:", resetToken);
+
+    user.resetToken = resetToken; // 🔥 Store the reset token in DB
+    await user.save();
+
+    // Send resetToken via email (simulated)
+    console.log("Reset token sent:", resetToken);
+
+    res.json({ message: "Password reset token sent!", resetToken });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 exports.resetPassword = async (req, res) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Extract token from Bearer token
+  const token = req.headers.authorization?.split(" ")[1];
   const { email, newPassword } = req.body;
 
   console.log("Received token from headers:", token);
@@ -125,20 +154,18 @@ exports.resetPassword = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("Decoded Token:", decoded);
 
-    if (decoded.email !== email) {
-      return res.status(401).json({ error: "Unauthorized: Invalid token" });
-    }
-
     const user = await User.findOne({ email });
     console.log("User found in DB:", user);
 
     if (!user || user.resetToken !== token) {
+      // 🔥 Compare stored token
       return res.status(401).json({ error: "Unauthorized or expired token" });
     }
 
+    // Hash new password and save
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-    user.resetToken = null;
+    user.resetToken = null; // 🔥 Clear the reset token
     await user.save();
     await transporter.sendMail({
       from: "karimwahba53@gmail.com",
@@ -148,6 +175,7 @@ exports.resetPassword = async (req, res) => {
     });
     res.json({ message: "Password reset successful" });
   } catch (error) {
-    res.status(401).json({ error: "Invalid or expired token" });
+    console.error("JWT Verification Error:", error);
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
