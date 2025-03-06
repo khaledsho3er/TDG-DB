@@ -39,7 +39,7 @@ exports.createBrand = async (req, res) => {
       brandDescription,
       fees,
       brandlogo: req.files["brandlogo"]
-        ? req.files["brandlogo"][0].filename
+        ? `${baseURL}/${req.files["brandlogo"][0].key}`
         : null,
       digitalCopiesLogo: req.files["digitalCopiesLogo"]
         ? req.files["digitalCopiesLogo"].map((file) => file.filename)
