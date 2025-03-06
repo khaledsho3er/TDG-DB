@@ -21,8 +21,8 @@ exports.createBrand = async (req, res) => {
       brandDescription,
       fees,
     } = req.body;
-    const baseURL =
-      "https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/images";
+    // const baseURL =
+    //   "https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/images";
 
     const brand = new Brand({
       brandName,
@@ -40,14 +40,13 @@ exports.createBrand = async (req, res) => {
       shippingPolicy,
       brandDescription,
       fees,
-      brandlogo: req.files["brandlogo"]
-        ? `${baseURL}/${req.files["brandlogo"][0].key}`
-        : null,
+      brandlogo: req.files["brandlogo"] ? req.files["brandlogo"][0].key : null,
+
       digitalCopiesLogo: req.files["digitalCopiesLogo"]
         ? req.files["digitalCopiesLogo"].map((file) => file.filename)
         : [],
       coverPhoto: req.files["coverPhoto"]
-        ? `${baseURL}/${req.files["coverPhoto"][0].key}`
+        ? req.files["coverPhoto"][0].key
         : null,
       catalogues: req.files["catalogues"]
         ? req.files["catalogues"].map((file) => file.filename)
