@@ -18,7 +18,7 @@ const BrandSchema = new mongoose.Schema(
     brandlogo: { type: String }, // Single logo path
     digitalCopiesLogo: { type: [String] }, // Array of logo paths
     coverPhoto: { type: String }, // Single cover photo path
-    catalogues: { type: [String] }, // Array of catalogue paths
+    catalogues: { type: [String] }, // Array of catalogue pathss
     brandDescription: { type: String },
     status: {
       type: String,
