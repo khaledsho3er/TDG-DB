@@ -65,6 +65,30 @@ router.post("/signup", async (req, res) => {
     });
 
     const savedUser = await newUser.save();
+    const mailOptions = {
+      from: "karimwahba53@gmail.com",
+      to: email,
+      subject: `Purchase Successfully Order: #${savedOrder._id}`,
+      text: `Hello ${firstName} ${lastName},
+
+Thank you for signing up on our website! We're excited to have you on board.
+
+Here are your details:
+- Email: ${email}
+- Address: ${address1}, ${
+        address2 ? address2 + ", " : ""
+      }${city}, ${region}, ${country}
+- Postal Code: ${postalCode}
+
+If you have any questions or need assistance, feel free to reach out to us.
+
+Best regards,
+The Team`,
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) return console.log(error);
+      console.log("Email sent: " + info.response);
+    });
     res.status(201).json({
       message: "User created successfully",
       user: { id: savedUser._id, email: savedUser.email },

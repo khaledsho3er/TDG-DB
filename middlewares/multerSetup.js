@@ -41,7 +41,8 @@ const upload = multer({
     contentType: multerS3.AUTO_CONTENT_TYPE,
     acl: "public-read", // or "private" if you want private files
     key: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
+      const fileName = file.originalname.replace(/\s+/g, "-");
+      cb(null, `${Date.now()}-${fileName}`);
     },
   }),
 });
