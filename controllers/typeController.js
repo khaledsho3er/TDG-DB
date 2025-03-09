@@ -88,6 +88,12 @@ exports.getTypesForSubCategory = async (req, res) => {
 
     // Fetch types using the IDs stored in the subCategory's "types" field
     const types = await Type.find({ _id: { $in: subCategory.types } });
+    // Encode image URLs before sending response
+    const updatedTypes = types.map((type) => ({
+      ...type._doc,
+      image: type.image ? encodeURIComponent(type.image) : type.image,
+    }));
+    console.log("Updated Types:", updatedTypes);
 
     res.status(200).json(types);
   } catch (error) {
