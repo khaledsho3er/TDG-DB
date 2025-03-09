@@ -68,7 +68,7 @@ router.post("/signup", async (req, res) => {
     const mailOptions = {
       from: "karimwahba53@gmail.com",
       to: email,
-      subject: `Purchase Successfully Order: #${savedOrder._id}`,
+      subject: `Congratulations on Signing Up,${firstName}!`,
       text: `Hello ${firstName} ${lastName},
 
 Thank you for signing up on our website! We're excited to have you on board.
