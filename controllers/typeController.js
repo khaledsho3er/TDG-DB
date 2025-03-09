@@ -74,41 +74,20 @@ exports.deleteType = async (req, res) => {
   }
 };
 
-// exports.getTypesForSubCategory = async (req, res) => {
-//   try {
-//     const subCategoryId = req.params.subCategoryId;
-//     console.log("Received SubCategory ID:", subCategoryId);
-
-//     // Find the subcategory and manually fetch the types
-//     const subCategory = await SubCategory.findById(subCategoryId);
-
-//     if (!subCategory) {
-//       return res.status(404).json({ message: "SubCategory not found" });
-//     }
-
-//     // Fetch types using the IDs stored in the subCategory's "types" field
-//     const types = await Type.find({ _id: { $in: subCategory.types } });
-
-//     res.status(200).json(types);
-//   } catch (error) {
-//     console.error("Error fetching types:", error);
-//     res.status(500).json({ message: "Error fetching types", error });
-//   }
-// };
-
 exports.getTypesForSubCategory = async (req, res) => {
   try {
     const subCategoryId = req.params.subCategoryId;
     console.log("Received SubCategory ID:", subCategoryId);
 
+    // Find the subcategory and manually fetch the types
     const subCategory = await SubCategory.findById(subCategoryId);
+
     if (!subCategory) {
       return res.status(404).json({ message: "SubCategory not found" });
     }
 
+    // Fetch types using the IDs stored in the subCategory's "types" field
     const types = await Type.find({ _id: { $in: subCategory.types } });
-
-    console.log("Fetched Types:", types); // Debugging line
 
     res.status(200).json(types);
   } catch (error) {
