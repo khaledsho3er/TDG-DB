@@ -28,6 +28,8 @@ const favoritesRoute = require("./routes/favoritesRoute");
 const quotationRoutes = require("./routes/quotationRoutes");
 const viewInStoreRoutes = require("./routes/viewInStoreRoutes");
 const forgetPassword = require("./routes/forgetPasswordRoutes");
+const tagRoutes = require("./routes/tagRoutes");
+const productTagRoutes = require("./routes/productTagRoutes");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -101,6 +103,8 @@ app.use("/api/favorites", favoritesRoute);
 app.use("/api/quotation", quotationRoutes);
 app.use("/api/view-in-store", viewInStoreRoutes);
 app.use("/api/forget-password", forgetPassword);
+app.use("/api/tags", tagRoutes);
+app.use("/api/product-tags", productTagRoutes);
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

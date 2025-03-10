@@ -24,6 +24,11 @@ const orderSchema = new mongoose.Schema(
         quantity: { type: Number, required: true },
         totalPrice: { type: Number, required: true },
         subDeliveryDate: { type: Date },
+        subOrderStatus: {
+          type: String,
+          default: "Pending",
+          enum: ["Pending", "Confirmed", "Delivered", "Returned", "Cancelled"],
+        },
       },
     ],
 
