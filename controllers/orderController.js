@@ -384,6 +384,123 @@ exports.getPercentageChange = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+const calculateOrderStatusTotal = async (startDate, endDate, status) => {
+  try {
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          orderDate: {
+            $gte: startDate,
+            $lt: endDate,
+          },
+          orderStatus: status,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$total" },
+        },
+      },
+    ]);
+    return orders.length > 0 ? orders[0].total : 0;
+  } catch (error) {
+    console.error(`Error calculating ${status} orders:`, error);
+    return 0;
+  }
+};
+
+exports.getBrandOrdersStatistics = async (req, res) => {
+  const { brandId } = req.params; // Get Brand ID from URL
+  if (!brandId) return res.status(400).json({ error: "Brand ID is required" });
+
+  const currentMonthStart = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1
+  );
+  const currentMonthEnd = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1,
+    0
+  );
+  const lastMonthStart = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() - 1,
+    1
+  );
+  const lastMonthEnd = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    0
+  );
+
+  try {
+    const calculateBrandTotal = async (startDate, endDate, status = null) => {
+      const matchQuery = {
+        brandId: brandId,
+        orderDate: { $gte: startDate, $lt: endDate },
+      };
+      if (status) matchQuery.orderStatus = status;
+
+      const orders = await Order.aggregate([
+        { $match: matchQuery },
+        { $group: { _id: null, total: { $sum: "$total" } } },
+      ]);
+
+      return orders.length > 0 ? orders[0].total : 0;
+    };
+
+    const [
+      currentTotal,
+      lastTotal,
+      currentActive,
+      lastActive,
+      currentCompleted,
+      lastCompleted,
+      currentReturned,
+      lastReturned,
+    ] = await Promise.all([
+      calculateBrandTotal(currentMonthStart, currentMonthEnd),
+      calculateBrandTotal(lastMonthStart, lastMonthEnd),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Confirmed"),
+      calculateBrandTotal(lastMonthStart, lastMonthEnd, "Confirmed"),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Delivered"),
+      calculateBrandTotal(lastMonthStart, lastMonthEnd, "Delivered"),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Returned"),
+      calculateBrandTotal(lastMonthStart, lastMonthEnd, "Returned"),
+    ]);
+
+    const calculatePercentageChange = (current, last) => {
+      return last > 0 ? (((current - last) / last) * 100).toFixed(1) : 0;
+    };
+
+    res.status(200).json({
+      totalOrders: currentTotal,
+      percentageChange: calculatePercentageChange(currentTotal, lastTotal),
+      activeOrders: currentActive,
+      activePercentageChange: calculatePercentageChange(
+        currentActive,
+        lastActive
+      ),
+      completedOrders: currentCompleted,
+      completedPercentageChange: calculatePercentageChange(
+        currentCompleted,
+        lastCompleted
+      ),
+      returnedOrders: currentReturned,
+      returnedPercentageChange: calculatePercentageChange(
+        currentReturned,
+        lastReturned
+      ),
+    });
+  } catch (error) {
+    console.error("Error fetching brand order statistics:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Update Order Delivery Date and Notify Customer
 exports.updateDeliveryDate = async (req, res) => {
   try {
