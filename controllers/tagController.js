@@ -21,6 +21,19 @@ exports.getAllTags = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Update a tag
+exports.updateTag = async (req, res) => {
+  try {
+    const updatedTag = await Tag.findOneAndUpdate(
+      { _id: req.params._id },
+      req.body,
+      { new: true }
+    );
+    res.json(updatedTag);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // Delete a tag
 exports.deleteTag = async (req, res) => {
