@@ -385,15 +385,18 @@ exports.getPercentageChange = async (req, res) => {
   }
 };
 
-const calculateOrderStatusTotal = async (startDate, endDate, status) => {
+const calculateOrderStatusTotal = async (
+  startDate,
+  endDate,
+  status,
+  brandId
+) => {
   try {
     const orders = await Order.aggregate([
       {
         $match: {
-          orderDate: {
-            $gte: startDate,
-            $lt: endDate,
-          },
+          "cartItems.brandId": new mongoose.Types.ObjectId(brandId), // ✅ Correct filtering
+          orderDate: { $gte: startDate, $lt: endDate },
           orderStatus: status,
         },
       },
@@ -411,10 +414,33 @@ const calculateOrderStatusTotal = async (startDate, endDate, status) => {
   }
 };
 
+const calculateBrandTotal = async (
+  startDate,
+  endDate,
+  status = null,
+  brandId
+) => {
+  const matchQuery = {
+    orderDate: { $gte: startDate, $lt: endDate },
+    "cartItems.brandId": new mongoose.Types.ObjectId(brandId),
+  };
+  if (status) matchQuery.orderStatus = status;
+
+  const orders = await Order.aggregate([
+    { $match: matchQuery },
+    { $unwind: "$cartItems" }, // 🔥 Unwind cartItems to work at the product level
+    { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(brandId) } }, // ✅ Filter again after unwinding
+    { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } }, // ✅ Sum only the brand's products
+  ]);
+
+  return orders.length > 0 ? orders[0].total : 0;
+};
+
 exports.getBrandOrdersStatistics = async (req, res) => {
   const { brandId } = req.params; // Get Brand ID from URL
   if (!brandId) return res.status(400).json({ error: "Brand ID is required" });
 
+  // Define date ranges for current and last month
   const currentMonthStart = new Date(
     new Date().getFullYear(),
     new Date().getMonth(),
@@ -439,19 +465,22 @@ exports.getBrandOrdersStatistics = async (req, res) => {
   try {
     const calculateBrandTotal = async (startDate, endDate, status = null) => {
       const matchQuery = {
-        brandId: brandId,
+        "cartItems.brandId": brandId, // Ensure filtering by brand
         orderDate: { $gte: startDate, $lt: endDate },
       };
       if (status) matchQuery.orderStatus = status;
 
       const orders = await Order.aggregate([
         { $match: matchQuery },
-        { $group: { _id: null, total: { $sum: "$total" } } },
+        { $unwind: "$cartItems" }, // Separate cart items to count only brand-specific totals
+        { $match: { "cartItems.brandId": brandId } }, // Ensure only the brand's items are counted
+        { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } }, // Sum only brand-specific sales
       ]);
 
       return orders.length > 0 ? orders[0].total : 0;
     };
 
+    // Fetch order statistics for current and last month
     const [
       currentTotal,
       lastTotal,
@@ -462,20 +491,22 @@ exports.getBrandOrdersStatistics = async (req, res) => {
       currentReturned,
       lastReturned,
     ] = await Promise.all([
-      calculateBrandTotal(currentMonthStart, currentMonthEnd),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd), // Total Orders (all statuses)
       calculateBrandTotal(lastMonthStart, lastMonthEnd),
-      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Confirmed"),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Confirmed"), // Active Orders
       calculateBrandTotal(lastMonthStart, lastMonthEnd, "Confirmed"),
-      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Delivered"),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Delivered"), // Completed Orders
       calculateBrandTotal(lastMonthStart, lastMonthEnd, "Delivered"),
-      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Returned"),
+      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Returned"), // Returned Orders
       calculateBrandTotal(lastMonthStart, lastMonthEnd, "Returned"),
     ]);
 
+    // Calculate percentage change
     const calculatePercentageChange = (current, last) => {
-      return last > 0 ? (((current - last) / last) * 100).toFixed(1) : 0;
+      return last > 0 ? (((current - last) / last) * 100).toFixed(1) : "0.0";
     };
 
+    // Return response
     res.status(200).json({
       totalOrders: currentTotal,
       percentageChange: calculatePercentageChange(currentTotal, lastTotal),
