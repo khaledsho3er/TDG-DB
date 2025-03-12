@@ -44,3 +44,34 @@ exports.deleteTag = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Get tags by category
+exports.getTagsByCategory = async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    if (!category) {
+      return res.status(400).json({ message: "Category is required" });
+    }
+
+    const validCategories = [
+      "Color",
+      "Style",
+      "Material",
+      "Finish",
+      "Size",
+      "Shape",
+      "Functionality",
+    ];
+
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ message: "Invalid category" });
+    }
+
+    const tags = await Tag.find({ category });
+
+    res.status(200).json(tags);
+  } catch (error) {
+    console.error("Error fetching tags by category:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
