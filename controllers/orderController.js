@@ -609,3 +609,42 @@ exports.uploadFileAndUpdateOrder = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Get sales data grouped by time period
+exports.getSalesData = async (req, res) => {
+  try {
+    const { period } = req.query; // 'weekly', 'monthly', 'yearly'
+
+    let groupFormat;
+    let dateLimit = new Date();
+
+    if (period === "weekly") {
+      groupFormat = {
+        year: { $year: "$orderDate" },
+        week: { $isoWeek: "$orderDate" },
+      };
+      dateLimit.setDate(dateLimit.getDate() - 7);
+    } else if (period === "monthly") {
+      groupFormat = {
+        year: { $year: "$orderDate" },
+        month: { $month: "$orderDate" },
+      };
+      dateLimit.setMonth(dateLimit.getMonth() - 1);
+    } else if (period === "yearly") {
+      groupFormat = { year: { $year: "$orderDate" } };
+      dateLimit.setFullYear(dateLimit.getFullYear() - 1);
+    } else {
+      return res.status(400).json({ error: "Invalid period" });
+    }
+
+    const salesData = await Order.aggregate([
+      { $match: { orderDate: { $gte: dateLimit } } }, // Filter orders from the past period
+      { $group: { _id: groupFormat, totalSales: { $sum: "$total" } } }, // Group by period
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.week": 1 } }, // Sort data
+    ]);
+
+    res.json(salesData);
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};

@@ -7,6 +7,7 @@ router.post("/", orderController.createOrder);
 router.get("/", orderController.getAllOrders);
 router.get("/bestsellers", orderController.getBestSellers);
 router.get("/order/percentage-change", orderController.getPercentageChange);
+router.get("/sales", orderController.getSalesData);
 router.get(
   "/vendor/best-sellers/:brandId",
   orderController.getVendorBestSellers
