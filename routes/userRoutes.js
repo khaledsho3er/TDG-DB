@@ -512,5 +512,47 @@ router.get(
     res.json({ message: "Welcome Vendor!" });
   }
 );
+// Remove a specific shipping address
+router.delete("/removeAddress/:userId/:addressId", async (req, res) => {
+  const { userId, addressId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the address to be removed
+    const addressIndex = user.shipmentAddress.findIndex(
+      (addr) => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      return res.status(404).json({ message: "Address not found" });
+    }
+
+    // Remove the address
+    user.shipmentAddress.splice(addressIndex, 1);
+
+    // If the deleted address was the default, set another one as default
+    if (
+      user.shipmentAddress.length > 0 &&
+      user.shipmentAddress[addressIndex]?.isDefault
+    ) {
+      user.shipmentAddress[0].isDefault = true; // Set first address as default
+    }
+
+    await user.save();
+    res
+      .status(200)
+      .json({
+        message: "Address removed successfully",
+        shipmentAddress: user.shipmentAddress,
+      });
+  } catch (error) {
+    console.error("Error removing address:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;
