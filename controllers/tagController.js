@@ -45,7 +45,7 @@ exports.deleteTag = async (req, res) => {
   }
 };
 // Get tags by category
-exports.getTagsByCategory = async (req, res) => {
+exports.getTagByCategory = async (req, res) => {
   try {
     const { category } = req.query;
 
@@ -73,5 +73,16 @@ exports.getTagsByCategory = async (req, res) => {
   } catch (error) {
     console.error("Error fetching tags by category:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+exports.getTagsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const tags = await Tag.find({ category }); // Ensure Tag model is used correctly
+    res.status(200).json(tags);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching tags", error: error.message });
   }
 };
