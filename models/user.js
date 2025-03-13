@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }], // Add this line
   otp: { type: String },
   otpExpires: { type: Date },
+  cards: [{ type: mongoose.Schema.Types.ObjectId, ref: "Card" }],
   resetToken: String, // 🔥 Add this field
 });
 
