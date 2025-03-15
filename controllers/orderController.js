@@ -229,6 +229,7 @@ exports.getBestSellers = async (req, res) => {
           name: "$productDetails.name",
           image: "$productDetails.mainImage",
           price: "$productDetails.price",
+          mainImage: "$productDetails.mainImage",
           totalSold: 1,
         },
       }, // Format the final output
