@@ -1,5 +1,7 @@
 const Newsletter = require("../models/Newsletter");
-
+const transporter = require("../utils/emailTransporter");
+const fs = require("fs");
+const path = require("path");
 // Subscribe to Newsletter
 exports.subscribe = async (req, res) => {
   try {
@@ -13,6 +15,37 @@ exports.subscribe = async (req, res) => {
 
     const subscriber = new Newsletter({ email });
     await subscriber.save();
+    // Read and modify email template
+    const templatePath = path.join(
+      __dirname,
+      "../templates/newsletterTemplate.html"
+    );
+    let emailTemplate = fs.readFileSync(templatePath, "utf8");
+    emailTemplate = emailTemplate.replace("{{email}}", email);
+
+    // Email options
+    const mailOptions = {
+      from: "karimwahba53@gmail.com",
+      to: email,
+      subject: "Welcome to Our Newsletter!",
+      html: emailTemplate, // Use HTML template instead of plain text
+    };
+
+    // Send email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending email:", error);
+        return res
+          .status(500)
+          .json({
+            message: "Subscription successful, but email failed to send",
+          });
+      }
+      console.log("Email sent: " + info.response);
+      return res
+        .status(201)
+        .json({ message: "Subscribed successfully", subscriber });
+    });
     res.status(201).json({ message: "Subscribed successfully", subscriber });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
