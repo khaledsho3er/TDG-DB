@@ -25,6 +25,15 @@ exports.createOrder = async (req, res) => {
       cartItems.map(async (item) => {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Product not found: ${item.productId}`);
+        // Check if enough stock is available
+        if (product.stock < item.quantity) {
+          throw new Error(`Not enough stock for ${product.name}`);
+        }
+        // Update stock and sales
+        product.stock -= item.quantity;
+        product.sales += item.quantity;
+        await product.save();
+
         return {
           ...item,
           brandId: product.brandId, // Auto-assign brandId from Product schema
