@@ -511,11 +511,22 @@ exports.updateProductPromotion = async (req, res) => {
   try {
     const { salePrice, startDate, endDate } = req.body;
     const { id } = req.params; // Get product ID from URL
-
+    if (!salePrice || !startDate || !endDate) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "All fields (sale price, start date, end date) are required for a promotion.",
+        });
+    }
     const product = await Product.findById(id);
     if (!product) return res.status(404).json({ message: "Product not found" });
+    const discountPercentage =
+      ((product.price - salePrice) / product.price) * 100;
 
     product.salePrice = salePrice;
+    product.discountPercentage = discountPercentage.toFixed(2);
+
     product.promotionStartDate = startDate;
     product.promotionEndDate = endDate;
 
