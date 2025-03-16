@@ -11,6 +11,7 @@ const {
   getProductsByBrandId,
   getProductsByCategoryName,
   getSearchSuggestions,
+  updateProductPromotion,
   getProductsByType,
 } = require("../controllers/productsController");
 
@@ -29,6 +30,7 @@ router.get(
 router.get("/types/:typeId/:typeName", getProductsByType);
 
 router.get("/getsingle/:id", getProductById);
+router.put("/promotion/:id", updateProductPromotion);
 router.get("/getproducts/brand/:brandId", getProductsByBrandId);
 router.put("/:id", upload.array("images", 5), updateProduct);
 router.delete("/:id", deleteProduct);

@@ -507,3 +507,21 @@ exports.getSearchSuggestions = async (req, res) => {
     res.status(500).json({ error: "Error fetching suggestions" });
   }
 };
+exports.updateProductPromotion = async (req, res) => {
+  try {
+    const { salePrice, startDate, endDate } = req.body;
+    const { id } = req.params; // Get product ID from URL
+
+    const product = await Product.findById(id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    product.salePrice = salePrice;
+    product.promotionStartDate = startDate;
+    product.promotionEndDate = endDate;
+
+    await product.save();
+    res.json({ message: "Promotion updated successfully", product });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};

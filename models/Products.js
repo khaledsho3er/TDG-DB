@@ -6,6 +6,9 @@ const productSchema = new mongoose.Schema(
     name: { type: String, required: true, maxlength: 100 },
     price: { type: Number, required: true },
     salePrice: { type: Number }, // Optional field for sale price
+    discountPercentage: { type: Number }, // Automatically calculated
+    promotionStartDate: { type: Date }, // New field for promotion start
+    promotionEndDate: { type: Date }, // New field for promotion end
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, // ObjectId
     subcategory: { type: mongoose.Schema.Types.ObjectId, ref: "subcategories" }, // ObjectId
     vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
@@ -51,5 +54,15 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+// Pre-save hook to calculate discount percentage
+productSchema.pre("save", function (next) {
+  if (this.salePrice && this.salePrice < this.price) {
+    this.discountPercentage = Math.round(
+      ((this.price - this.salePrice) / this.price) * 100
+    );
+  } else {
+    this.discountPercentage = undefined;
+  }
+  next();
+});
 module.exports = mongoose.model("Product", productSchema);
