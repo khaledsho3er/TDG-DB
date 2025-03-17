@@ -20,23 +20,46 @@ exports.createOrder = async (req, res) => {
       shippingDetails,
     } = req.body;
 
-    // Fetch each product from the database to get the brandId
+    // Fetch each product from the database to get brandId and update stock
     const updatedCartItems = await Promise.all(
       cartItems.map(async (item) => {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Product not found: ${item.productId}`);
-        // Check if enough stock is available
+
+        // Check stock availability
         if (product.stock < item.quantity) {
           throw new Error(`Not enough stock for ${product.name}`);
         }
-        // Update stock and sales
+
+        // Calculate revenue based on sale price if available
+        const price = product.salePrice ? product.salePrice : product.price;
+        const revenue = price * item.quantity;
+
+        // Update product stock and sales
         product.stock -= item.quantity;
         product.sales += item.quantity;
         await product.save();
 
+        // Update or create Sales record
+        const salesRecord = await Sales.findOne({ productId: item.productId });
+
+        if (salesRecord) {
+          salesRecord.salesCount += item.quantity;
+          salesRecord.revenue += revenue;
+          salesRecord.lastUpdated = Date.now();
+          await salesRecord.save();
+        } else {
+          await Sales.create({
+            productId: item.productId,
+            vendorId: product.vendorId,
+            salesCount: item.quantity,
+            revenue: revenue,
+          });
+        }
+
         return {
           ...item,
-          brandId: product.brandId, // Auto-assign brandId from Product schema
+          brandId: product.brandId, // Auto-assign brandId
         };
       })
     );
