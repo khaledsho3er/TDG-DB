@@ -33,6 +33,8 @@ const productTagRoutes = require("./routes/productTagRoutes");
 const relatedProductsRoutes = require("./routes/relatedProductsRoutes");
 const cardsRoutes = require("./routes/cardsRoutes");
 const Newsletter = require("./routes/newsletterRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -111,6 +113,8 @@ app.use("/api/product-tags", productTagRoutes);
 app.use("/api/related-products", relatedProductsRoutes);
 app.use("/api/cards", cardsRoutes);
 app.use("/api/newsletter", Newsletter);
+app.use("/api/analytics", analyticsRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

@@ -13,6 +13,7 @@ const {
   getSearchSuggestions,
   updateProductPromotion,
   getProductsByType,
+  getSalesAnalytics,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -43,4 +44,6 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
     res.status(500).json({ message: "Error uploading files", error });
   }
 });
+router.get("/sales", getSalesAnalytics);
+
 module.exports = router;

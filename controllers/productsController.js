@@ -512,12 +512,10 @@ exports.updateProductPromotion = async (req, res) => {
     const { salePrice, startDate, endDate } = req.body;
     const { id } = req.params; // Get product ID from URL
     if (!salePrice || !startDate || !endDate) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "All fields (sale price, start date, end date) are required for a promotion.",
-        });
+      return res.status(400).json({
+        message:
+          "All fields (sale price, start date, end date) are required for a promotion.",
+      });
     }
     const product = await Product.findById(id);
     if (!product) return res.status(404).json({ message: "Product not found" });
@@ -534,5 +532,39 @@ exports.updateProductPromotion = async (req, res) => {
     res.json({ message: "Promotion updated successfully", product });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
+  }
+};
+exports.getSalesAnalytics = async (req, res) => {
+  try {
+    // Get total sales for all products
+    const salesData = await Product.find({}, "name sales");
+
+    // Calculate total revenue (assuming you store `price` in the product schema)
+    const totalRevenue = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $multiply: ["$sales", "$salePrice"] } }, // sales * price
+        },
+      },
+    ]);
+
+    // Calculate total number of sales across all products
+    const totalSalesCount = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: "$sales" }, // Sum of all sales
+        },
+      },
+    ]);
+
+    res.json({
+      totalSalesCount: totalSalesCount[0]?.totalSales || 0,
+      totalRevenue: totalRevenue[0]?.totalRevenue || 0,
+      products: salesData,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching analytics", error });
   }
 };
