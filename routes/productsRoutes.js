@@ -14,6 +14,7 @@ const {
   updateProductPromotion,
   getProductsByType,
   getSalesAnalytics,
+  getProductAnalytics,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -45,5 +46,6 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
   }
 });
 router.get("/sales", getSalesAnalytics);
+router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
 
 module.exports = router;
