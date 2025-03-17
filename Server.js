@@ -33,7 +33,7 @@ const productTagRoutes = require("./routes/productTagRoutes");
 const relatedProductsRoutes = require("./routes/relatedProductsRoutes");
 const cardsRoutes = require("./routes/cardsRoutes");
 const Newsletter = require("./routes/newsletterRoutes");
-const analyticsRoutes = require("./routes/analyticsRoutes");
+const analyticsRoutes = require("./routes/productsRoutes");
 
 const app = express();
 const port = process.env.PORT || 5000;
