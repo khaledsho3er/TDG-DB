@@ -13,7 +13,7 @@ const s3 = new S3Client({
   },
 });
 
-// Multer S3 Storage for Cloudflare R2
+// Multer S3 Storage (Updated Bucket Name)
 const upload = multer({
   storage: multerS3({
     s3: s3,
