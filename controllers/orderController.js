@@ -474,24 +474,41 @@ exports.getBrandOrdersStatistics = async (req, res) => {
   );
 
   try {
-    const calculateBrandTotal = async (startDate, endDate, status = null) => {
-      const matchQuery = {
-        "cartItems.brandId": brandId,
-        orderDate: { $gte: startDate, $lt: endDate },
-      };
+    const calculateBrandTotal = async (
+      req,
+      startDate,
+      endDate,
+      status = null
+    ) => {
+      try {
+        // Extract brandId from request parameters or body
+        const brandId = req.params.brandId || req.body.brandId;
+        if (!brandId) throw new Error("Brand ID is required");
 
-      if (status) {
-        matchQuery["cartItems.subOrderStatus"] = status; // Use subOrderStatus
+        // Convert brandId to ObjectId
+        const brandObjectId = new mongoose.Types.ObjectId(brandId);
+
+        const matchQuery = {
+          "cartItems.brandId": brandObjectId,
+          orderDate: { $gte: startDate, $lt: endDate },
+        };
+
+        if (status) {
+          matchQuery["cartItems.subOrderStatus"] = status; // Use subOrderStatus
+        }
+
+        const orders = await Order.aggregate([
+          { $match: matchQuery },
+          { $unwind: "$cartItems" },
+          { $match: { "cartItems.brandId": brandObjectId } },
+          { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
+        ]);
+
+        return orders.length > 0 ? orders[0].total : 0;
+      } catch (error) {
+        console.error("Error in calculateBrandTotal:", error.message);
+        return 0; // Return 0 in case of an error
       }
-
-      const orders = await Order.aggregate([
-        { $match: matchQuery },
-        { $unwind: "$cartItems" },
-        { $match: { "cartItems.brandId": brandId } }, // Ensure brand-specific filtering
-        { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
-      ]);
-
-      return orders.length > 0 ? orders[0].total : 0;
     };
 
     // Fetch order statistics for current and last month
