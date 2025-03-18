@@ -5,7 +5,7 @@ const Notification = require("../models/notification"); // Import the Notificati
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
-const sales = require("../models/sales");
+const Sale = require("../models/sales");
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -21,49 +21,42 @@ exports.createOrder = async (req, res) => {
       shippingDetails,
     } = req.body;
 
+    // Fetch each product from the database to get the brandId
     const updatedCartItems = await Promise.all(
       cartItems.map(async (item) => {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Product not found: ${item.productId}`);
 
+        // Check if enough stock is available
         if (product.stock < item.quantity) {
           throw new Error(`Not enough stock for ${product.name}`);
         }
 
-        const price = product.salePrice ? product.salePrice : product.price;
-        const revenue = price * item.quantity;
-
+        // Update stock and sales count
         product.stock -= item.quantity;
         product.sales += item.quantity;
         await product.save();
 
-        // ✅ Update Sales with brandId
-        let salesRecord = await Sales.findOne({ productId: item.productId });
+        // ✅ Store sale details in the Sale schema
+        await Sale.create({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtPurchase: item.price,
+          salePrice: item.salePrice || item.price, // Handle case where salePrice isn't set
+          date: new Date(),
+        });
 
-        if (salesRecord) {
-          salesRecord.salesCount += item.quantity;
-          salesRecord.revenue += revenue;
-          salesRecord.lastUpdated = Date.now();
-          await salesRecord.save();
-        } else {
-          salesRecord = await Sales.create({
-            productId: item.productId,
-            brandId: product.brandId, // ✅ Save brandId
-            salesCount: item.quantity,
-            revenue: revenue,
-          });
-        }
-
-        console.log(`Updated Sales Record:`, salesRecord);
-
-        return { ...item, brandId: product.brandId };
+        return {
+          ...item,
+          brandId: product.brandId, // Auto-assign brandId from Product schema
+        };
       })
     );
 
-    // ✅ Store order with brandId in cartItems
+    // Create the order with updated cartItems
     const newOrder = new Order({
       customerId,
-      cartItems: updatedCartItems,
+      cartItems: updatedCartItems, // Updated with brandId
       subtotal,
       shippingFee,
       total,
@@ -73,38 +66,52 @@ exports.createOrder = async (req, res) => {
       shippingDetails,
     });
 
+    const customer = await user.findById(customerId).select("email");
+    if (!customer || !customer.email) {
+      return res.status(400).json({ error: "Customer email not found" });
+    }
+
     const savedOrder = await newOrder.save();
 
-    // ✅ Save notification with brandId
-    const brandId = updatedCartItems[0]?.brandId;
-    if (brandId) {
-      await new Notification({
-        type: "order",
-        description: `You have received a new order from customer ${customerId}.`,
-        brandId,
-        orderId: savedOrder._id,
-        read: false,
-      }).save();
-    }
+    // ✅ Create a new notification for the brand
+    const brandId = updatedCartItems[0].brandId; // Assuming the first item determines the brand
+    const newNotification = new Notification({
+      type: "order",
+      description: `You have received a new order from customer ${customerId}.`,
+      brandId,
+      orderId: savedOrder._id,
+      read: false,
+    });
 
-    // ✅ Email the customer
-    const customer = await user.findById(customerId).select("email");
-    if (customer?.email) {
-      const mailOptions = {
-        from: "karimwahba53@gmail.com",
-        to: customer.email,
-        subject: `Purchase Successful - Order #${savedOrder._id}`,
-        text: `Your order has been placed successfully!`,
-      };
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) console.log(error);
-        else console.log("Email sent: " + info.response);
-      });
-    }
+    await newNotification.save();
+
+    // ✅ Send an email to the customer
+    const mailOptions = {
+      from: "karimwahba53@gmail.com",
+      to: customer.email,
+      subject: `Purchase Successfully Order: #${savedOrder._id}`,
+      text: `Your order with ID ${savedOrder._id} has been successfully placed. 
+      
+      Order Details:
+      ${savedOrder.cartItems
+        .map(
+          (item, index) =>
+            `Item ${index + 1}: ${item.name}, Quantity: ${
+              item.quantity
+            }, Price: ${item.price}`
+        )
+        .join("\n")}
+      
+      Total Price: ${savedOrder.total}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) console.log(error);
+      else console.log("Email sent: " + info.response);
+    });
 
     res.status(201).json(savedOrder);
   } catch (error) {
-    console.error("Order Creation Error:", error);
     res.status(400).json({ error: error.message });
   }
 };
