@@ -509,7 +509,7 @@ exports.getBrandOrdersStatistics = async (req, res) => {
         const orders = await Order.aggregate([
           { $match: matchQuery },
           { $unwind: { path: "$cartItems", preserveNullAndEmptyArrays: true } },
-          { $match: { "cartItems.brandId": brandObjectId } },
+          { $match: { "cartItems.brandId": brandId } },
           { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
         ]);
 
