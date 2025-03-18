@@ -38,13 +38,17 @@ exports.createOrder = async (req, res) => {
         await product.save();
 
         // ✅ Store sale details in the Sale schema
-        await Sale.create({
-          productId: item.productId,
-          quantity: item.quantity,
-          priceAtPurchase: item.price,
-          salePrice: item.salePrice || item.price, // Handle case where salePrice isn't set
-          date: new Date(),
-        });
+        try {
+          await Sale.create({
+            productId: item.productId,
+            quantity: item.quantity,
+            priceAtPurchase: item.price,
+            salePrice: item.salePrice || item.price, // Handle case where salePrice isn't set
+            date: new Date(),
+          });
+        } catch (error) {
+          console.error("Error storing sale details:", error);
+        }
 
         return {
           ...item,
