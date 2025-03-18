@@ -5,7 +5,6 @@ const Notification = require("../models/notification"); // Import the Notificati
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
-const Sale = require("../models/sales");
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -26,29 +25,14 @@ exports.createOrder = async (req, res) => {
       cartItems.map(async (item) => {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Product not found: ${item.productId}`);
-
         // Check if enough stock is available
         if (product.stock < item.quantity) {
           throw new Error(`Not enough stock for ${product.name}`);
         }
-
-        // Update stock and sales count
+        // Update stock and sales
         product.stock -= item.quantity;
         product.sales += item.quantity;
         await product.save();
-
-        // ✅ Store sale details in the Sale schema
-        try {
-          await Sale.create({
-            productId: item.productId,
-            quantity: item.quantity,
-            priceAtPurchase: item.price,
-            salePrice: item.salePrice || item.price, // Handle case where salePrice isn't set
-            date: new Date(),
-          });
-        } catch (error) {
-          console.error("Error storing sale details:", error);
-        }
 
         return {
           ...item,
@@ -69,51 +53,44 @@ exports.createOrder = async (req, res) => {
       billingDetails,
       shippingDetails,
     });
-
     const customer = await user.findById(customerId).select("email");
     if (!customer || !customer.email) {
       return res.status(400).json({ error: "Customer email not found" });
     }
 
     const savedOrder = await newOrder.save();
-
-    // ✅ Create a new notification for the brand
-    const brandId = updatedCartItems[0].brandId; // Assuming the first item determines the brand
+    // Create a new notification for the brand
+    const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item (can be adjusted if necessary)
     const newNotification = new Notification({
       type: "order",
       description: `You have received a new order from customer ${customerId}.`,
-      brandId,
+      brandId, // Associate this notification with the brand
       orderId: savedOrder._id,
       read: false,
     });
 
+    // Save the notification to the database
     await newNotification.save();
-
-    // ✅ Send an email to the customer
+    // Send an email to the customer with the order ID
     const mailOptions = {
       from: "karimwahba53@gmail.com",
       to: customer.email,
       subject: `Purchase Successfully Order: #${savedOrder._id}`,
-      text: `Your order with ID ${savedOrder._id} has been successfully placed. 
-      
-      Order Details:
-      ${savedOrder.cartItems
+      text: `Your order with ID ${
+        savedOrder._id
+      } has been successfully purchased. ${savedOrder.cartItems
         .map(
           (item, index) =>
-            `Item ${index + 1}: ${item.name}, Quantity: ${
+            `Item ${index + 1}: ${item.name} with quantity ${
               item.quantity
-            }, Price: ${item.price}`
+            } and price ${item.price}`
         )
-        .join("\n")}
-      
-      Total Price: ${savedOrder.total}`,
+        .join(", ")}. Total price: ${savedOrder.total}.`,
     };
-
     transporter.sendMail(mailOptions, (error, info) => {
-      if (error) console.log(error);
-      else console.log("Email sent: " + info.response);
+      if (error) return console.log(error);
+      console.log("Email sent: " + info.response);
     });
-
     res.status(201).json(savedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
