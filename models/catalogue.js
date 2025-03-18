@@ -1,17 +1,18 @@
 const mongoose = require("mongoose");
 
-const catalogueSchema = new mongoose.Schema({
-  vendorID: {
+const catalogSchema = new mongoose.Schema({
+  brandId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Vendor",
+    ref: "Brand",
     required: true,
   },
-  name: { type: String, required: true },
+  title: { type: String, required: true },
   year: { type: Number, required: true },
-  image: { type: String, required: true }, // Path to image
-  pdf: { type: String, required: true }, // Path to PDF
+  pdf: { type: String, required: true }, // Cloudflare URL
+  image: { type: String, required: true }, // Cloudflare URL (cover image)
+  model: { type: String, required: true },
   type: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Catalogue", catalogueSchema);
+module.exports = mongoose.model("Catalog", catalogSchema);
