@@ -7,8 +7,8 @@ exports.createCatalog = async (req, res) => {
       return res.status(400).json({ error: "PDF and Image are required" });
     }
 
-    const pdfUrl = req.files.pdf[0].filename;
-    const imageUrl = req.files.image[0].filename;
+    const pdfUrl = req.files.pdf[0].key;
+    const imageUrl = req.files.image[0].key;
 
     const catalog = new Catalog({
       brandId,
