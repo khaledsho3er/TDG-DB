@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const SalesSchema = new mongoose.Schema({
+const saleSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
@@ -11,10 +11,10 @@ const SalesSchema = new mongoose.Schema({
     ref: "Brand",
     required: true,
   },
-  salesCount: { type: Number, default: 0 }, // Number of sales
-  revenue: { type: Number, default: 0 }, // Total revenue from product
-  date: { type: Date, default: Date.now }, // Sales record date
-  lastUpdated: { type: Date, default: Date.now }, // Last update timestamp
+  quantity: { type: Number, required: true },
+  priceAtPurchase: { type: Number, required: true },
+  salePrice: { type: Number, required: true },
+  date: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Sales", SalesSchema);
+module.exports = mongoose.model("Sales", saleSchema);

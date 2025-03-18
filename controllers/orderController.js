@@ -5,6 +5,7 @@ const Notification = require("../models/notification"); // Import the Notificati
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
+
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -40,8 +41,8 @@ exports.createOrder = async (req, res) => {
         product.sales += item.quantity;
         await product.save();
 
-        // Update or create Sales record
-        const salesRecord = await Sales.findOne({ productId: item.productId });
+        // ✅ Fix Sales Data Handling
+        let salesRecord = await Sales.findOne({ productId: item.productId });
 
         if (salesRecord) {
           salesRecord.salesCount += item.quantity;
@@ -49,13 +50,16 @@ exports.createOrder = async (req, res) => {
           salesRecord.lastUpdated = Date.now();
           await salesRecord.save();
         } else {
-          await Sales.create({
+          salesRecord = await Sales.create({
             productId: item.productId,
-            vendorId: product.vendorId,
-            salesCount: item.quantity,
-            revenue: revenue,
+            brandId: product.brandId, // ✅ Save brandId
+            quantity: item.quantity,
+            priceAtPurchase: item.price, // Price when purchased
+            salePrice: item.salePrice,
           });
         }
+
+        console.log(`Updated Sales Record:`, salesRecord);
 
         return {
           ...item,
