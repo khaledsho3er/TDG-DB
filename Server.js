@@ -8,7 +8,6 @@ const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const typeRoutes = require("./routes/typeRoutes");
 const products = require("./routes/productsRoutes");
 const brandRoutes = require("./routes/brandRoutes");
-const catalogueRoutes = require("./routes/catalogueRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const policyRoutes = require("./routes/policiesRoutes");
 const bimcad = require("./routes/bimcadRoutes");
@@ -35,6 +34,7 @@ const cardsRoutes = require("./routes/cardsRoutes");
 const Newsletter = require("./routes/newsletterRoutes");
 const analyticsRoutes = require("./routes/productsRoutes");
 const salesAnalytics = require("./routes/salesRoutes");
+const catalogRoutes = require("./routes/catalogRoutes");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -91,7 +91,6 @@ app.use("/api/subcategories", subCategoryRoutes); // SubCategory routes
 app.use("/api/types", typeRoutes); // Type routes
 app.use("/api/products", products);
 app.use("/api/brand", brandRoutes);
-app.use("/api/catalogues", catalogueRoutes);
 app.use("/api/faqs", faqRoutes);
 app.use("/api/policies", policyRoutes);
 app.use("/api/bimcad", bimcad);
@@ -115,6 +114,7 @@ app.use("/api/cards", cardsRoutes);
 app.use("/api/newsletter", Newsletter);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/sales", salesAnalytics);
+app.use("/api/catalogs", catalogRoutes);
 
 // Start the server
 app.listen(port, () => {

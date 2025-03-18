@@ -4,7 +4,7 @@ const {
   createCatalog,
   getCatalogs,
   deleteCatalog,
-} = require("../controllers/catalogueController");
+} = require("../controllers/catalogController");
 
 const router = express.Router();
 //post request to upload pdf and image

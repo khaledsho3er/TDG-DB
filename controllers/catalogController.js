@@ -1,4 +1,4 @@
-const Catalog = require("../models/Catalogue");
+const Catalog = require("../models/catalog");
 
 exports.createCatalog = async (req, res) => {
   try {
