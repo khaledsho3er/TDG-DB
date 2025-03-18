@@ -5,6 +5,7 @@ const Notification = require("../models/notification"); // Import the Notificati
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
+const brandObjectId = new mongoose.Types.ObjectId(brandId);
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -395,56 +396,56 @@ exports.getPercentageChange = async (req, res) => {
   }
 };
 
-const calculateOrderStatusTotal = async (
-  startDate,
-  endDate,
-  status,
-  brandId
-) => {
-  try {
-    const orders = await Order.aggregate([
-      {
-        $match: {
-          "cartItems.brandId": new mongoose.Types.ObjectId(brandId), // ✅ Correct filtering
-          orderDate: { $gte: startDate, $lt: endDate },
-          orderStatus: status,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$total" },
-        },
-      },
-    ]);
-    return orders.length > 0 ? orders[0].total : 0;
-  } catch (error) {
-    console.error(`Error calculating ${status} orders:`, error);
-    return 0;
-  }
-};
+// const calculateOrderStatusTotal = async (
+//   startDate,
+//   endDate,
+//   status,
+//   brandId
+// ) => {
+//   try {
+//     const orders = await Order.aggregate([
+//       {
+//         $match: {
+//           "cartItems.brandId": new mongoose.Types.ObjectId(brandId), // ✅ Correct filtering
+//           orderDate: { $gte: startDate, $lt: endDate },
+//           orderStatus: status,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: null,
+//           total: { $sum: "$total" },
+//         },
+//       },
+//     ]);
+//     return orders.length > 0 ? orders[0].total : 0;
+//   } catch (error) {
+//     console.error(`Error calculating ${status} orders:`, error);
+//     return 0;
+//   }
+// };
 
-const calculateBrandTotal = async (
-  startDate,
-  endDate,
-  status = null,
-  brandId
-) => {
-  const matchQuery = {
-    orderDate: { $gte: startDate, $lt: endDate },
-    "cartItems.brandId": new mongoose.Types.ObjectId(brandId),
-  };
-  if (status) matchQuery.orderStatus = status;
+// const calculateBrandTotal = async (
+//   startDate,
+//   endDate,
+//   status = null,
+//   brandId
+// ) => {
+//   const matchQuery = {
+//     orderDate: { $gte: startDate, $lt: endDate },
+//     "cartItems.brandId": new mongoose.Types.ObjectId(brandId),
+//   };
+//   if (status) matchQuery.orderStatus = status;
 
-  const orders = await Order.aggregate([
-    { $match: matchQuery },
-    { $unwind: "$cartItems" }, // 🔥 Unwind cartItems to work at the product level
-    { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(brandId) } }, // ✅ Filter again after unwinding
-    { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } }, // ✅ Sum only the brand's products
-  ]);
+//   const orders = await Order.aggregate([
+//     { $match: matchQuery },
+//     { $unwind: "$cartItems" }, // 🔥 Unwind cartItems to work at the product level
+//     { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(brandId) } }, // ✅ Filter again after unwinding
+//     { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } }, // ✅ Sum only the brand's products
+//   ]);
 
-  return orders.length > 0 ? orders[0].total : 0;
-};
+//   return orders.length > 0 ? orders[0].total : 0;
+// };
 
 exports.getBrandOrdersStatistics = async (req, res) => {
   const { brandId } = req.params; // Get Brand ID from URL
@@ -475,16 +476,19 @@ exports.getBrandOrdersStatistics = async (req, res) => {
   try {
     const calculateBrandTotal = async (startDate, endDate, status = null) => {
       const matchQuery = {
-        "cartItems.brandId": brandId, // Ensure filtering by brand
+        "cartItems.brandId": brandId,
         orderDate: { $gte: startDate, $lt: endDate },
       };
-      if (status) matchQuery.orderStatus = status;
+
+      if (status) {
+        matchQuery["cartItems.subOrderStatus"] = status; // Use subOrderStatus
+      }
 
       const orders = await Order.aggregate([
         { $match: matchQuery },
-        { $unwind: "$cartItems" }, // Separate cart items to count only brand-specific totals
-        { $match: { "cartItems.brandId": brandId } }, // Ensure only the brand's items are counted
-        { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } }, // Sum only brand-specific sales
+        { $unwind: "$cartItems" },
+        { $match: { "cartItems.brandId": brandObjectId } }, // Ensure brand-specific filtering
+        { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
       ]);
 
       return orders.length > 0 ? orders[0].total : 0;
