@@ -481,12 +481,16 @@ exports.getBrandOrdersStatistics = async (req, res) => {
       status = null
     ) => {
       try {
-        // Extract brandId from request parameters or body
+        console.log("Request params:", req.params);
+        console.log("Request body:", req.body);
+
         const brandId = req.params.brandId || req.body.brandId;
         if (!brandId) throw new Error("Brand ID is required");
 
-        // Convert brandId to ObjectId
+        console.log("Extracted brandId:", brandId);
+
         const brandObjectId = new mongoose.Types.ObjectId(brandId);
+        console.log("Converted ObjectId:", brandObjectId);
 
         const matchQuery = {
           "cartItems.brandId": brandObjectId,
@@ -494,20 +498,26 @@ exports.getBrandOrdersStatistics = async (req, res) => {
         };
 
         if (status) {
-          matchQuery["cartItems.subOrderStatus"] = status; // Use subOrderStatus
+          matchQuery["cartItems.subOrderStatus"] = status;
         }
+
+        console.log(
+          "Aggregation Match Query:",
+          JSON.stringify(matchQuery, null, 2)
+        );
 
         const orders = await Order.aggregate([
           { $match: matchQuery },
-          { $unwind: "$cartItems" },
+          { $unwind: { path: "$cartItems", preserveNullAndEmptyArrays: true } },
           { $match: { "cartItems.brandId": brandObjectId } },
           { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
         ]);
 
+        console.log("Final Aggregation Query Result:", orders);
         return orders.length > 0 ? orders[0].total : 0;
       } catch (error) {
         console.error("Error in calculateBrandTotal:", error.message);
-        return 0; // Return 0 in case of an error
+        return 0;
       }
     };
 
