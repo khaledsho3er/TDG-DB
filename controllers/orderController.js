@@ -5,7 +5,7 @@ const Notification = require("../models/notification"); // Import the Notificati
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
-const brandObjectId = new mongoose.Types.ObjectId(brandId);
+
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -487,7 +487,7 @@ exports.getBrandOrdersStatistics = async (req, res) => {
       const orders = await Order.aggregate([
         { $match: matchQuery },
         { $unwind: "$cartItems" },
-        { $match: { "cartItems.brandId": brandObjectId } }, // Ensure brand-specific filtering
+        { $match: { "cartItems.brandId": brandId } }, // Ensure brand-specific filtering
         { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
       ]);
 
