@@ -734,13 +734,13 @@ exports.updateDeliveryDate = async (req, res) => {
 };
 exports.updateSubDeliveryDate = async (req, res) => {
   try {
-    const { orderId, productId } = req.params;
-    const { subDeliveryDate, subOrderStatus } = req.body;
+    const { orderId, cartItemId } = req.params; // Using cartItemId instead of productId
+    const { subDeliveryDate } = req.body;
 
-    if (!subDeliveryDate || !subOrderStatus) {
+    if (!subDeliveryDate) {
       return res
         .status(400)
-        .json({ message: "Sub-delivery date and status are required." });
+        .json({ message: "Sub-delivery date is required." });
     }
 
     // Find order by ID
@@ -749,17 +749,18 @@ exports.updateSubDeliveryDate = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    // Find the specific product in cartItems
-    const productItem = order.cartItems.find(
-      (item) => item.productId.toString() === productId
+    // Find the specific cart item in cartItems array
+    const cartItem = order.cartItems.find(
+      (item) => item._id.toString() === cartItemId
     );
-    if (!productItem) {
-      return res.status(404).json({ message: "Product not found in order." });
+
+    if (!cartItem) {
+      return res.status(404).json({ message: "Cart item not found in order." });
     }
 
-    // Update subDeliveryDate and subOrderStatus
-    productItem.subDeliveryDate = subDeliveryDate;
-    productItem.subOrderStatus = subOrderStatus;
+    // Update subDeliveryDate and set subOrderStatus to "Confirmed"
+    cartItem.subDeliveryDate = subDeliveryDate;
+    cartItem.subOrderStatus = "Confirmed";
 
     await order.save();
 
@@ -776,18 +777,20 @@ exports.updateSubDeliveryDate = async (req, res) => {
       subject: "Your Order Item Delivery Date Has Been Updated",
       text: `Dear ${
         order.billingDetails.firstName
-      },\n\nThe delivery date for your item (${
-        productItem.name
-      }) in order (ID: ${order._id}) has been updated to ${new Date(
+      },\n\nThe delivery date for your item (${cartItem.name}) in order (ID: ${
+        order._id
+      }) has been updated to ${new Date(
         subDeliveryDate
-      ).toDateString()}.\n\nStatus: ${subOrderStatus}\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
+      ).toDateString()}.\n\nStatus: Confirmed\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
     };
 
     await transporter.sendMail(mailOptions);
 
-    res
-      .status(200)
-      .json({ message: "Sub-delivery date updated and email sent.", order });
+    res.status(200).json({
+      message:
+        "Sub-delivery date updated, status set to Confirmed, and email sent.",
+      order,
+    });
   } catch (error) {
     console.error("Error updating sub-delivery date:", error);
     res.status(500).json({ message: "Server error.", error });

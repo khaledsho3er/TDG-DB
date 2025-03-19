@@ -28,7 +28,7 @@ router.put(
   orderController.uploadFileAndUpdateOrder
 );
 router.put(
-  "/orders/:orderId/product/:productId/update-sub-delivery",
+  "/orders/:orderId/suborder/:subOrderId/updateSubDeliveryDate",
   orderController.updateSubDeliveryDate
 );
 
