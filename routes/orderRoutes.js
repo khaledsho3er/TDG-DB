@@ -30,8 +30,8 @@ router.put(
   orderController.uploadFileAndUpdateOrder
 );
 router.put(
-  "/orders/:orderId/suborder/:subOrderId/updateSubDeliveryDate",
-  orderController.updateSubDeliveryDate
+  "/orders/:orderId/cart-items/:cartItemId/delivery-date",
+  orderController.updateCartItemDeliveryDate
 );
 
 module.exports = router;

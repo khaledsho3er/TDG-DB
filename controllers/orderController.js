@@ -788,66 +788,41 @@ exports.updateDeliveryDate = async (req, res) => {
     res.status(500).json({ message: "Server error.", error });
   }
 };
-exports.updateSubDeliveryDate = async (req, res) => {
+// Controller function to update cart item delivery date
+exports.updateCartItemDeliveryDate = async (req, res) => {
+  const { orderId, cartItemId } = req.params; // Extract orderId and cartItemId from URL parameters
+  const { deliveryDate } = req.body; // Extract deliveryDate from request body
+
   try {
-    const { orderId, cartItemId } = req.params; // Using cartItemId instead of productId
-    const { subDeliveryDate } = req.body;
-
-    if (!subDeliveryDate) {
-      return res
-        .status(400)
-        .json({ message: "Sub-delivery date is required." });
-    }
-
-    // Find order by ID
+    // Find the order by ID
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ message: "Order not found." });
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    // Find the specific cart item in cartItems array
-    const cartItem = order.cartItems.find(
+    // Find the index of the cart item to update
+    const cartItemIndex = order.cartItems.findIndex(
       (item) => item._id.toString() === cartItemId
     );
-    if (!cartItem) {
-      return res.status(404).json({ message: "Cart item not found in order." });
+    if (cartItemIndex === -1) {
+      return res.status(404).json({ message: "Cart item not found" });
     }
-    // Update subDeliveryDate and set subOrderStatus to "Confirmed"
-    cartItem.subDeliveryDate = subDeliveryDate;
-    cartItem.subOrderStatus = "Confirmed";
 
+    // Update the subDeliveryDate and subOrderStatus
+    order.cartItems[cartItemIndex].subDeliveryDate = deliveryDate;
+    order.cartItems[cartItemIndex].subOrderStatus = "Confirmed";
+
+    // Save the updated order
     await order.save();
 
-    // Fetch customer email from User model
-    const customer = await user.findById(order.customerId).select("email");
-    if (!customer || !customer.email) {
-      return res.status(400).json({ message: "Customer email not found." });
-    }
-
-    // Send email notification to customer
-    const mailOptions = {
-      from: "karimwahba53@gmail.com",
-      to: customer.email,
-      subject: "Your Order Item Delivery Date Has Been Updated",
-      text: `Dear ${
-        order.billingDetails.firstName
-      },\n\nThe delivery date for your item (${cartItem.name}) in order (ID: ${
-        order._id
-      }) has been updated to ${new Date(
-        subDeliveryDate
-      ).toDateString()}.\n\nStatus: Confirmed\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({
-      message:
-        "Sub-delivery date updated, status set to Confirmed, and email sent.",
-      order,
-    });
+    return res
+      .status(200)
+      .json({ message: "Cart item updated successfully", order });
   } catch (error) {
-    console.error("Error updating sub-delivery date:", error);
-    res.status(500).json({ message: "Server error.", error });
+    console.error("Error updating cart item delivery date:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
   }
 };
 
