@@ -581,7 +581,7 @@ exports.getOrderStatisticsByBrand = async (req, res) => {
       return res.status(400).json({ error: "Brand ID is required" });
     }
 
-    const objectIdBrandId = new mongoose.Types.ObjectId(brandId); // Convert brandId to ObjectId
+    const objectIdBrandId = new mongoose.Types.ObjectId(brandId);
 
     const brandStats = await Order.aggregate([
       { $unwind: "$cartItems" }, // Split array to process each cart item separately
@@ -590,6 +590,38 @@ exports.getOrderStatisticsByBrand = async (req, res) => {
         $group: {
           _id: "$cartItems.brandId",
           totalOrders: { $sum: 1 }, // Count all cart items for this brand
+          totalSales: { $sum: "$cartItems.totalPrice" }, // Sum totalPrice of all cart items
+
+          // Sales per status
+          deliveredSales: {
+            $sum: {
+              $cond: [
+                { $eq: ["$cartItems.subOrderStatus", "Delivered"] },
+                "$cartItems.totalPrice",
+                0,
+              ],
+            },
+          },
+          returnedSales: {
+            $sum: {
+              $cond: [
+                { $eq: ["$cartItems.subOrderStatus", "Returned"] },
+                "$cartItems.totalPrice",
+                0,
+              ],
+            },
+          },
+          confirmedSales: {
+            $sum: {
+              $cond: [
+                { $eq: ["$cartItems.subOrderStatus", "Confirmed"] },
+                "$cartItems.totalPrice",
+                0,
+              ],
+            },
+          },
+
+          // Count orders per status
           totalDelivered: {
             $sum: {
               $cond: [
@@ -630,9 +662,13 @@ exports.getOrderStatisticsByBrand = async (req, res) => {
           brandId: "$_id",
           brandName: "$brandInfo.name",
           totalOrders: 1,
+          totalSales: 1,
           totalDelivered: 1,
           totalReturned: 1,
           totalConfirmed: 1,
+          deliveredSales: 1,
+          returnedSales: 1,
+          confirmedSales: 1,
         },
       },
     ]);
