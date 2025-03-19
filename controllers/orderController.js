@@ -753,11 +753,9 @@ exports.updateSubDeliveryDate = async (req, res) => {
     const cartItem = order.cartItems.find(
       (item) => item._id.toString() === cartItemId
     );
-
     if (!cartItem) {
       return res.status(404).json({ message: "Cart item not found in order." });
     }
-
     // Update subDeliveryDate and set subOrderStatus to "Confirmed"
     cartItem.subDeliveryDate = subDeliveryDate;
     cartItem.subOrderStatus = "Confirmed";
