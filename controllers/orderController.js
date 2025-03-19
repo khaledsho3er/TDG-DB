@@ -621,6 +621,68 @@ exports.updateDeliveryDate = async (req, res) => {
     res.status(500).json({ message: "Server error.", error });
   }
 };
+exports.updateSubDeliveryDate = async (req, res) => {
+  try {
+    const { orderId, productId } = req.params;
+    const { subDeliveryDate, subOrderStatus } = req.body;
+
+    if (!subDeliveryDate || !subOrderStatus) {
+      return res
+        .status(400)
+        .json({ message: "Sub-delivery date and status are required." });
+    }
+
+    // Find order by ID
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    // Find the specific product in cartItems
+    const productItem = order.cartItems.find(
+      (item) => item.productId.toString() === productId
+    );
+    if (!productItem) {
+      return res.status(404).json({ message: "Product not found in order." });
+    }
+
+    // Update subDeliveryDate and subOrderStatus
+    productItem.subDeliveryDate = subDeliveryDate;
+    productItem.subOrderStatus = subOrderStatus;
+
+    await order.save();
+
+    // Fetch customer email from User model
+    const customer = await user.findById(order.customerId).select("email");
+    if (!customer || !customer.email) {
+      return res.status(400).json({ message: "Customer email not found." });
+    }
+
+    // Send email notification to customer
+    const mailOptions = {
+      from: "karimwahba53@gmail.com",
+      to: customer.email,
+      subject: "Your Order Item Delivery Date Has Been Updated",
+      text: `Dear ${
+        order.billingDetails.firstName
+      },\n\nThe delivery date for your item (${
+        productItem.name
+      }) in order (ID: ${order._id}) has been updated to ${new Date(
+        subDeliveryDate
+      ).toDateString()}.\n\nStatus: ${subOrderStatus}\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res
+      .status(200)
+      .json({ message: "Sub-delivery date updated and email sent.", order });
+  } catch (error) {
+    console.error("Error updating sub-delivery date:", error);
+    res.status(500).json({ message: "Server error.", error });
+  }
+};
+
 // Function to handle file upload and update order
 exports.uploadFileAndUpdateOrder = async (req, res) => {
   try {

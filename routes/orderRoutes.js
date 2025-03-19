@@ -30,5 +30,9 @@ router.put(
   uploadFile.single("file"),
   orderController.uploadFileAndUpdateOrder
 );
+router.put(
+  "/orders/:orderId/product/:productId/update-sub-delivery",
+  orderController.updateSubDeliveryDate
+);
 
 module.exports = router;
