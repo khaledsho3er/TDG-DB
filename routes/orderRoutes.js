@@ -12,10 +12,7 @@ router.get(
   "/vendor/best-sellers/:brandId",
   orderController.getVendorBestSellers
 );
-router.get(
-  "/order/statistics/:brandId",
-  orderController.getBrandOrdersStatistics
-);
+router.get("/statistics/:brandId", orderController.getOrderStatisticsByBrand);
 router.get("/:id", orderController.getOrderById);
 router.get(
   "/orders/customer/:customerId",
