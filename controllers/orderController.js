@@ -447,129 +447,201 @@ exports.getPercentageChange = async (req, res) => {
 //   return orders.length > 0 ? orders[0].total : 0;
 // };
 
-exports.getBrandOrdersStatistics = async (req, res) => {
-  const { brandId } = req.params; // Get Brand ID from URL
-  if (!brandId) return res.status(400).json({ error: "Brand ID is required" });
+// exports.getBrandOrdersStatistics = async (req, res) => {
+//   const { brandId } = req.params; // Get Brand ID from URL
+//   if (!brandId) return res.status(400).json({ error: "Brand ID is required" });
 
-  // Define date ranges for current and last month
-  const currentMonthStart = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    1
-  );
-  const currentMonthEnd = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth() + 1,
-    0
-  );
-  const lastMonthStart = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth() - 1,
-    1
-  );
-  const lastMonthEnd = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    0
-  );
+//   // Define date ranges for current and last month
+//   const currentMonthStart = new Date(
+//     new Date().getFullYear(),
+//     new Date().getMonth(),
+//     1
+//   );
+//   const currentMonthEnd = new Date(
+//     new Date().getFullYear(),
+//     new Date().getMonth() + 1,
+//     0
+//   );
+//   const lastMonthStart = new Date(
+//     new Date().getFullYear(),
+//     new Date().getMonth() - 1,
+//     1
+//   );
+//   const lastMonthEnd = new Date(
+//     new Date().getFullYear(),
+//     new Date().getMonth(),
+//     0
+//   );
 
+//   try {
+//     const calculateBrandTotal = async (
+//       req,
+//       startDate,
+//       endDate,
+//       status = null
+//     ) => {
+//       try {
+//         console.log("Request params:", req.params);
+//         console.log("Request body:", req.body);
+
+//         const brandId = req.params.brandId || req.body.brandId;
+//         if (!brandId) throw new Error("Brand ID is required");
+
+//         console.log("Extracted brandId:", brandId);
+
+//         const brandObjectId = new mongoose.Types.ObjectId(brandId);
+//         console.log("Converted ObjectId:", brandObjectId);
+
+//         const matchQuery = {
+//           "cartItems.brandId": brandObjectId,
+//           orderDate: { $gte: startDate, $lt: endDate },
+//         };
+
+//         if (status) {
+//           matchQuery["cartItems.subOrderStatus"] = status;
+//         }
+
+//         console.log(
+//           "Aggregation Match Query:",
+//           JSON.stringify(matchQuery, null, 2)
+//         );
+
+//         const orders = await Order.aggregate([
+//           { $match: matchQuery },
+//           { $unwind: { path: "$cartItems", preserveNullAndEmptyArrays: true } },
+//           { $match: { "cartItems.brandId": brandId } },
+//           { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
+//         ]);
+
+//         console.log("Final Aggregation Query Result:", orders);
+//         return orders.length > 0 ? orders[0].total : 0;
+//       } catch (error) {
+//         console.error("Error in calculateBrandTotal:", error.message);
+//         return 0;
+//       }
+//     };
+
+//     // Fetch order statistics for current and last month
+//     const [
+//       currentTotal,
+//       lastTotal,
+//       currentActive,
+//       lastActive,
+//       currentCompleted,
+//       lastCompleted,
+//       currentReturned,
+//       lastReturned,
+//     ] = await Promise.all([
+//       calculateBrandTotal(currentMonthStart, currentMonthEnd), // Total Orders (all statuses)
+//       calculateBrandTotal(lastMonthStart, lastMonthEnd),
+//       calculateBrandTotal(currentMonthStart, currentMonthEnd, "Confirmed"), // Active Orders
+//       calculateBrandTotal(lastMonthStart, lastMonthEnd, "Confirmed"),
+//       calculateBrandTotal(currentMonthStart, currentMonthEnd, "Delivered"), // Completed Orders
+//       calculateBrandTotal(lastMonthStart, lastMonthEnd, "Delivered"),
+//       calculateBrandTotal(currentMonthStart, currentMonthEnd, "Returned"), // Returned Orders
+//       calculateBrandTotal(lastMonthStart, lastMonthEnd, "Returned"),
+//     ]);
+
+//     // Calculate percentage change
+//     const calculatePercentageChange = (current, last) => {
+//       return last > 0 ? (((current - last) / last) * 100).toFixed(1) : "0.0";
+//     };
+
+//     // Return response
+//     res.status(200).json({
+//       totalOrders: currentTotal,
+//       percentageChange: calculatePercentageChange(currentTotal, lastTotal),
+//       activeOrders: currentActive,
+//       activePercentageChange: calculatePercentageChange(
+//         currentActive,
+//         lastActive
+//       ),
+//       completedOrders: currentCompleted,
+//       completedPercentageChange: calculatePercentageChange(
+//         currentCompleted,
+//         lastCompleted
+//       ),
+//       returnedOrders: currentReturned,
+//       returnedPercentageChange: calculatePercentageChange(
+//         currentReturned,
+//         lastReturned
+//       ),
+//     });
+//   } catch (error) {
+//     console.error("Error fetching brand order statistics:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+exports.getOrderStatisticsByBrand = async (req, res) => {
   try {
-    const calculateBrandTotal = async (
-      req,
-      startDate,
-      endDate,
-      status = null
-    ) => {
-      try {
-        console.log("Request params:", req.params);
-        console.log("Request body:", req.body);
+    const { brandId } = req.params;
 
-        const brandId = req.params.brandId || req.body.brandId;
-        if (!brandId) throw new Error("Brand ID is required");
+    if (!brandId) {
+      return res.status(400).json({ error: "Brand ID is required" });
+    }
 
-        console.log("Extracted brandId:", brandId);
-
-        const brandObjectId = new mongoose.Types.ObjectId(brandId);
-        console.log("Converted ObjectId:", brandObjectId);
-
-        const matchQuery = {
-          "cartItems.brandId": brandObjectId,
-          orderDate: { $gte: startDate, $lt: endDate },
-        };
-
-        if (status) {
-          matchQuery["cartItems.subOrderStatus"] = status;
-        }
-
-        console.log(
-          "Aggregation Match Query:",
-          JSON.stringify(matchQuery, null, 2)
-        );
-
-        const orders = await Order.aggregate([
-          { $match: matchQuery },
-          { $unwind: { path: "$cartItems", preserveNullAndEmptyArrays: true } },
-          { $match: { "cartItems.brandId": brandId } },
-          { $group: { _id: null, total: { $sum: "$cartItems.totalPrice" } } },
-        ]);
-
-        console.log("Final Aggregation Query Result:", orders);
-        return orders.length > 0 ? orders[0].total : 0;
-      } catch (error) {
-        console.error("Error in calculateBrandTotal:", error.message);
-        return 0;
-      }
-    };
-
-    // Fetch order statistics for current and last month
-    const [
-      currentTotal,
-      lastTotal,
-      currentActive,
-      lastActive,
-      currentCompleted,
-      lastCompleted,
-      currentReturned,
-      lastReturned,
-    ] = await Promise.all([
-      calculateBrandTotal(currentMonthStart, currentMonthEnd), // Total Orders (all statuses)
-      calculateBrandTotal(lastMonthStart, lastMonthEnd),
-      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Confirmed"), // Active Orders
-      calculateBrandTotal(lastMonthStart, lastMonthEnd, "Confirmed"),
-      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Delivered"), // Completed Orders
-      calculateBrandTotal(lastMonthStart, lastMonthEnd, "Delivered"),
-      calculateBrandTotal(currentMonthStart, currentMonthEnd, "Returned"), // Returned Orders
-      calculateBrandTotal(lastMonthStart, lastMonthEnd, "Returned"),
+    const brandStats = await Order.aggregate([
+      { $unwind: "$cartItems" },
+      { $match: { "cartItems.brandId": brandId } }, // Filter by brandId
+      {
+        $group: {
+          _id: "$cartItems.brandId",
+          totalOrders: { $sum: 1 },
+          totalDelivered: {
+            $sum: {
+              $cond: [
+                { $eq: ["$cartItems.subOrderStatus", "Delivered"] },
+                1,
+                0,
+              ],
+            },
+          },
+          totalReturned: {
+            $sum: {
+              $cond: [{ $eq: ["$cartItems.subOrderStatus", "Returned"] }, 1, 0],
+            },
+          },
+          totalConfirmed: {
+            $sum: {
+              $cond: [
+                { $eq: ["$cartItems.subOrderStatus", "Confirmed"] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "brands",
+          localField: "_id",
+          foreignField: "_id",
+          as: "brandInfo",
+        },
+      },
+      { $unwind: "$brandInfo" },
+      {
+        $project: {
+          _id: 0,
+          brandId: "$_id",
+          brandName: "$brandInfo.name",
+          totalOrders: 1,
+          totalDelivered: 1,
+          totalReturned: 1,
+          totalConfirmed: 1,
+        },
+      },
     ]);
 
-    // Calculate percentage change
-    const calculatePercentageChange = (current, last) => {
-      return last > 0 ? (((current - last) / last) * 100).toFixed(1) : "0.0";
-    };
+    if (!brandStats.length) {
+      return res.status(404).json({ error: "No orders found for this brand" });
+    }
 
-    // Return response
-    res.status(200).json({
-      totalOrders: currentTotal,
-      percentageChange: calculatePercentageChange(currentTotal, lastTotal),
-      activeOrders: currentActive,
-      activePercentageChange: calculatePercentageChange(
-        currentActive,
-        lastActive
-      ),
-      completedOrders: currentCompleted,
-      completedPercentageChange: calculatePercentageChange(
-        currentCompleted,
-        lastCompleted
-      ),
-      returnedOrders: currentReturned,
-      returnedPercentageChange: calculatePercentageChange(
-        currentReturned,
-        lastReturned
-      ),
-    });
+    res.status(200).json(brandStats[0]); // Return only one object instead of an array
   } catch (error) {
-    console.error("Error fetching brand order statistics:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to fetch brand statistics" });
   }
 };
 
