@@ -683,6 +683,62 @@ exports.getOrderStatisticsByBrand = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch brand statistics" });
   }
 };
+exports.getSalesGraphDataByBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    if (!brandId) {
+      return res.status(400).json({ error: "Brand ID is required" });
+    }
+
+    const objectIdBrandId = new mongoose.Types.ObjectId(brandId);
+
+    const salesData = await Order.aggregate([
+      { $unwind: "$cartItems" },
+      { $match: { "cartItems.brandId": objectIdBrandId } },
+      {
+        $group: {
+          _id: {
+            week: { $week: "$createdAt" },
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          weeklySales: { $sum: "$cartItems.totalPrice" },
+          monthlySales: { $sum: "$cartItems.totalPrice" },
+          yearlySales: { $sum: "$cartItems.totalPrice" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          weeklySales: { $push: { week: "$_id.week", sales: "$weeklySales" } },
+          monthlySales: {
+            $push: { month: "$_id.month", sales: "$monthlySales" },
+          },
+          yearlySales: { $push: { year: "$_id.year", sales: "$yearlySales" } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          weeklySales: 1,
+          monthlySales: 1,
+          yearlySales: 1,
+        },
+      },
+    ]);
+
+    if (!salesData.length) {
+      return res
+        .status(404)
+        .json({ error: "No sales data found for this brand" });
+    }
+
+    res.status(200).json(salesData[0]); // Return sales data formatted for the frontend
+  } catch (error) {
+    console.error("Error in getSalesGraphDataByBrand:", error);
+    res.status(500).json({ error: "Failed to fetch sales graph data" });
+  }
+};
 
 // Update Order Delivery Date and Notify Customer
 exports.updateDeliveryDate = async (req, res) => {
