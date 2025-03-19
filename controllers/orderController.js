@@ -573,6 +573,8 @@ exports.getPercentageChange = async (req, res) => {
 //   }
 // };
 
+const mongoose = require("mongoose");
+
 exports.getOrderStatisticsByBrand = async (req, res) => {
   try {
     const { brandId } = req.params;
@@ -581,13 +583,15 @@ exports.getOrderStatisticsByBrand = async (req, res) => {
       return res.status(400).json({ error: "Brand ID is required" });
     }
 
+    const objectIdBrandId = new mongoose.Types.ObjectId(brandId); // Convert brandId to ObjectId
+
     const brandStats = await Order.aggregate([
-      { $unwind: "$cartItems" },
-      { $match: { "cartItems.brandId": brandId } }, // Filter by brandId
+      { $unwind: "$cartItems" }, // Split array to process each cart item separately
+      { $match: { "cartItems.brandId": objectIdBrandId } }, // Match only cartItems of this brand
       {
         $group: {
           _id: "$cartItems.brandId",
-          totalOrders: { $sum: 1 },
+          totalOrders: { $sum: 1 }, // Count all cart items for this brand
           totalDelivered: {
             $sum: {
               $cond: [
@@ -641,6 +645,7 @@ exports.getOrderStatisticsByBrand = async (req, res) => {
 
     res.status(200).json(brandStats[0]); // Return only one object instead of an array
   } catch (error) {
+    console.error("Error in getOrderStatisticsByBrand:", error);
     res.status(500).json({ error: "Failed to fetch brand statistics" });
   }
 };
