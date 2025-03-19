@@ -573,8 +573,6 @@ exports.getPercentageChange = async (req, res) => {
 //   }
 // };
 
-const mongoose = require("mongoose");
-
 exports.getOrderStatisticsByBrand = async (req, res) => {
   try {
     const { brandId } = req.params;
