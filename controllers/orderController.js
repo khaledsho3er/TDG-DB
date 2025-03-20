@@ -923,7 +923,7 @@ exports.addOrderNote = async (req, res) => {
     await order.save();
     // Send email to the customer
     const mailOptions = {
-      from: "your-email@gmail.com",
+      from: "karimwahba53@gmail.com",
       to: customer.email,
       subject: "Order Note Added",
       text: `Dear Customer,\n\nA note has been added to your order (ID: ${order._id}).\n\nNote: "${note}"\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
