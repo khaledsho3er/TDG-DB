@@ -33,5 +33,6 @@ router.put(
   "/orders/:orderId/cart-items/:cartItemId/delivery-date",
   orderController.updateCartItemDeliveryDate
 );
+router.put("/orders/:orderId/note", orderController.addOrderNote);
 
 module.exports = router;

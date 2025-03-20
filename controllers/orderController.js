@@ -894,3 +894,46 @@ exports.getSalesData = async (req, res) => {
     res.status(500).json({ error: "Server error", details: error.message });
   }
 };
+exports.addOrderNote = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { note } = req.body;
+
+    if (!note) {
+      return res.status(400).json({ message: "Note is required." });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    // Check if a note already exists
+    if (order.note) {
+      return res.status(400).json({
+        message: "A note has already been added. It cannot be modified.",
+      });
+    }
+    const customer = await user.findById(customerId).select("email");
+    if (!customer || !customer.email) {
+      return res.status(400).json({ error: "Customer email not found" });
+    }
+    // Update note field
+    order.note = note;
+    await order.save();
+    // Send email to the customer
+    const mailOptions = {
+      from: "your-email@gmail.com",
+      to: customer.email,
+      subject: "Order Note Added",
+      text: `Dear Customer,\n\nA note has been added to your order (ID: ${order._id}).\n\nNote: "${note}"\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Note added successfully.", order });
+  } catch (error) {
+    console.error("Error adding note:", error);
+    res.status(500).json({ message: "Server error.", error });
+  }
+};
