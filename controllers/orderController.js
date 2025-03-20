@@ -804,6 +804,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
     const cartItemIndex = order.cartItems.findIndex(
       (item) => item._id.toString() === cartItemId
     );
+
     if (cartItemIndex === -1) {
       return res.status(404).json({ message: "Cart item not found" });
     }
@@ -812,12 +813,23 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
     order.cartItems[cartItemIndex].subDeliveryDate = deliveryDate;
     order.cartItems[cartItemIndex].subOrderStatus = "Confirmed";
 
+    // Check if all cart items have subOrderStatus as "Confirmed"
+    const allConfirmed = order.cartItems.every(
+      (item) => item.subOrderStatus === "Confirmed"
+    );
+
+    if (allConfirmed) {
+      order.orderStatus = "Confirmed"; // Update orderStatus if all items are confirmed
+    }
+
     // Save the updated order
     await order.save();
 
-    return res
-      .status(200)
-      .json({ message: "Cart item updated successfully", order });
+    return res.status(200).json({
+      message: "Cart item updated successfully",
+      orderStatusUpdated: allConfirmed, // Indicate if order status was updated
+      order,
+    });
   } catch (error) {
     console.error("Error updating cart item delivery date:", error);
     return res
