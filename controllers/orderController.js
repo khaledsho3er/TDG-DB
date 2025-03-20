@@ -914,7 +914,18 @@ exports.addOrderNote = async (req, res) => {
         message: "A note has already been added. It cannot be modified.",
       });
     }
-    const customer = await user.findById(customerId).select("email");
+    // 🔍 Fetch order to get customerId
+
+    const customerId = order.customerId; // ✅ Extract customerId from order
+
+    if (!customerId) {
+      return res
+        .status(400)
+        .json({ error: "Customer ID is missing from order" });
+    }
+
+    // 🔍 Fetch customer email
+    const customer = await User.findById(customerId).select("email");
     if (!customer || !customer.email) {
       return res.status(400).json({ error: "Customer email not found" });
     }
