@@ -42,7 +42,7 @@ const orderSchema = new mongoose.Schema(
       enum: ["Pending", "Confirmed", "Delivered", "Returned", "Cancelled"],
     },
     POD: { type: String }, // proof of Delivery file uploaded by the delivery person
-    note: { type: String, default: null, immutable: true }, // Note can be written once and cannot be changed
+    note: { type: String, default: null }, // Note can be written once and cannot be changed
     orderDate: { type: Date, default: Date.now },
     paymentDetails: {
       paymentMethod: {
