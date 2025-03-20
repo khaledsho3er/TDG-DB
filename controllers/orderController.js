@@ -925,7 +925,7 @@ exports.addOrderNote = async (req, res) => {
     }
 
     // 🔍 Fetch customer email
-    const customer = await User.findById(customerId).select("email");
+    const customer = await user.findById(customerId).select("email");
     if (!customer || !customer.email) {
       return res.status(400).json({ error: "Customer email not found" });
     }
