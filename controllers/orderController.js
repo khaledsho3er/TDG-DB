@@ -930,6 +930,7 @@ exports.addOrderNote = async (req, res) => {
 
     // Update the order's note field
     order.note = note;
+    order.notePostedAt = new Date();
     await order.save();
 
     // Send email notification to the customer

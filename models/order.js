@@ -43,6 +43,8 @@ const orderSchema = new mongoose.Schema(
     },
     POD: { type: String }, // proof of Delivery file uploaded by the delivery person
     note: { type: String, default: null }, // Note can be written once and cannot be changed
+    notePostedAt: { type: Date, default: null }, // You can mark this as immutable if desired
+
     orderDate: { type: Date, default: Date.now },
     paymentDetails: {
       paymentMethod: {
