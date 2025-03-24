@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.post("/create", upload.single("image"), createType);
 router.get("/", getTypes);
-router.get | ("/", getTypesNoConditions);
+router.get("/getAll", getTypesNoConditions);
 router.get("/subcategories/:subCategoryId/types", getTypesForSubCategory);
 router.get("/types/:id", getTypeById);
 router.put("/:id", upload.single("image"), updateType);
