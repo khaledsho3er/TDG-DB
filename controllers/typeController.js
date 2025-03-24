@@ -28,6 +28,14 @@ exports.getTypes = async (req, res) => {
     res.status(500).json({ message: "Error fetching types", error });
   }
 };
+exports.getTypesNoConditions = async (req, res) => {
+  try {
+    const types = await Type.find();
+    res.status(200).json(types);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching types", error });
+  }
+};
 exports.getTypeById = async (req, res) => {
   try {
     const { id } = req.params;
