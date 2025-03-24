@@ -20,6 +20,7 @@ const BrandSchema = new mongoose.Schema(
     coverPhoto: { type: String }, // Single cover photo path
     catalogues: { type: [String] }, // Array of catalogue pathss
     brandDescription: { type: String },
+    types: [{ type: mongoose.Schema.Types.ObjectId, ref: "types" }], // Store allowed types
     status: {
       type: String,
       enum: ["deactivated", "active", "pending", "rejected"],

@@ -20,9 +20,15 @@ exports.createBrand = async (req, res) => {
       shippingPolicy,
       brandDescription,
       fees,
+      types, // Array of type IDs
     } = req.body;
-    // const baseURL =
-    //   "https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/images";
+
+    // Validate types and ensure they exist
+    let typeIds = [];
+    if (types && Array.isArray(types)) {
+      typeIds = await Type.find({ _id: { $in: types } }).select("_id");
+      typeIds = typeIds.map((type) => type._id); // Extract only valid IDs
+    }
 
     const brand = new Brand({
       brandName,
@@ -40,8 +46,8 @@ exports.createBrand = async (req, res) => {
       shippingPolicy,
       brandDescription,
       fees,
+      types: typeIds, // Associate types with the brand
       brandlogo: req.files["brandlogo"] ? req.files["brandlogo"][0].key : null,
-
       digitalCopiesLogo: req.files["digitalCopiesLogo"]
         ? req.files["digitalCopiesLogo"].map((file) => file.filename)
         : [],
@@ -55,8 +61,10 @@ exports.createBrand = async (req, res) => {
         ? req.files["documents"].map((file) => file.filename)
         : [],
     });
+
     console.log("Received data:", req.body);
     console.log("Received files:", req.files);
+
     await brand.save();
     res.status(201).json(brand);
   } catch (error) {
