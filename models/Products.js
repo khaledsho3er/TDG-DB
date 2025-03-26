@@ -28,6 +28,7 @@ const productSchema = new mongoose.Schema(
     images: [{ type: String }], // Array of image paths
     mainImage: { type: String }, // Highlighted main image
     description: { type: String, maxlength: 2000 },
+    cadFile: { type: String },
     technicalDimensions: {
       length: { type: Number },
       width: { type: Number },

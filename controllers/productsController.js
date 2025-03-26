@@ -162,6 +162,11 @@ exports.createProduct = async (req, res) => {
     } else {
       console.log("No images uploaded");
     }
+    // Handle uploaded CAD file
+    if (req.files?.cadFile) {
+      productData.cadFile =
+        req.files.cadFile[0].filename || req.files.cadFile[0].key;
+    }
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
       productData.technicalDimensions = JSON.parse(
