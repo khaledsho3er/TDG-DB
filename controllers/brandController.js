@@ -24,12 +24,22 @@ exports.createBrand = async (req, res) => {
       types, // Array of type IDs
     } = req.body;
 
+    console.log("Types received:", types);
+
     // Validate types and ensure they exist
     let typeIds = [];
     if (types && Array.isArray(types)) {
-      typeIds = await Type.find({ _id: { $in: types } }).select("_id");
-      typeIds = typeIds.map((type) => type._id); // Extract only valid IDs
+      try {
+        typeIds = await Type.find({ _id: { $in: types } }).select("_id");
+        console.log("Found types:", typeIds);
+        typeIds = typeIds.map((type) => type._id); // Extract only valid IDs
+      } catch (typeError) {
+        console.error("Error finding types:", typeError);
+        throw new Error(`Error validating types: ${typeError.message}`);
+      }
     }
+
+    console.log("Final typeIds:", typeIds);
 
     const brand = new Brand({
       brandName,
@@ -63,13 +73,17 @@ exports.createBrand = async (req, res) => {
         : [],
     });
 
-    console.log("Received data:", req.body);
-    console.log("Received files:", req.files);
+    console.log("Brand object created:", brand);
 
     await brand.save();
     res.status(201).json(brand);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error in createBrand:", error);
+    res.status(400).json({
+      message: error.message,
+      stack: error.stack,
+      details: error,
+    });
   }
 };
 
