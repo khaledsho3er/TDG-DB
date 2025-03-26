@@ -19,7 +19,14 @@ const {
 
 const router = express.Router();
 
-router.post("/addproduct", upload.array("images", 10), createProduct);
+router.post(
+  "/addproduct",
+  upload.fields([
+    { name: "images", maxCount: 10 },
+    { name: "cadFile", maxCount: 1 }, // Add CAD file field
+  ]),
+  createProduct
+);
 router.get("/getproducts", getProducts);
 router.get("/search-suggestions", getSearchSuggestions);
 router.get("/products/:categoryName", getProductsByCategoryName);
