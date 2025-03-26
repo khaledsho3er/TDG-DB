@@ -65,30 +65,30 @@ exports.createProduct = async (req, res) => {
     } else {
       productData.reviews = []; // Set to empty array if not provided
     }
-    // Handle variants
-    if (productData.hasVariants && productData.variants) {
-      productData.variants = JSON.parse(productData.variants).map((variant) => {
-        return {
-          ...variant,
-          sku: `${productData.sku}-${variant.color
-            .toLowerCase()
-            .replace(/\s+/g, "-")}-${variant.material
-            .toLowerCase()
-            .replace(/\s+/g, "-")}-${variant.size
-            .toLowerCase()
-            .replace(/\s+/g, "-")}`,
-          image: variant.image || "", // Ensure image field exists
-        };
-      });
+    // // Handle variants
+    // if (productData.hasVariants && productData.variants) {
+    //   productData.variants = JSON.parse(productData.variants).map((variant) => {
+    //     return {
+    //       ...variant,
+    //       sku: `${productData.sku}-${variant.color
+    //         .toLowerCase()
+    //         .replace(/\s+/g, "-")}-${variant.material
+    //         .toLowerCase()
+    //         .replace(/\s+/g, "-")}-${variant.size
+    //         .toLowerCase()
+    //         .replace(/\s+/g, "-")}`,
+    //       image: variant.image || "", // Ensure image field exists
+    //     };
+    //   });
 
-      // Set default variant if provided
-      if (productData.defaultVariant) {
-        const defaultVariantId = productData.variants.find(
-          (v) => v.sku === productData.defaultVariant
-        )?._id;
-        productData.defaultVariant = defaultVariantId || null;
-      }
-    }
+    //   // Set default variant if provided
+    //   if (productData.defaultVariant) {
+    //     const defaultVariantId = productData.variants.find(
+    //       (v) => v.sku === productData.defaultVariant
+    //     )?._id;
+    //     productData.defaultVariant = defaultVariantId || null;
+    //   }
+    // }
     // Create and save the product
     const product = new Product(productData);
     await product.save();
