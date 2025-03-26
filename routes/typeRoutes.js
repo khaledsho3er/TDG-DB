@@ -16,7 +16,7 @@ router.post("/create", upload.single("image"), createType);
 router.get("/", getTypes);
 router.get("/getAll", getTypesNoConditions);
 router.get("/subcategories/:subCategoryId/types", getTypesForSubCategory);
-router.get("/types/:id", getTypeById);
+router.get("/:id", getTypeById);
 router.put("/:id", upload.single("image"), updateType);
 router.delete("/:id", deleteType);
 
