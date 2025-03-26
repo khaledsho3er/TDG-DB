@@ -64,14 +64,18 @@ const upload = multer({
         );
       }
     } else if (file.fieldname === "cadFile") {
-      if (
-        file.mimetype === "application/dwg" ||
-        file.mimetype === "application/dxf"
-      ) {
+      // Check file extension for CAD files
+      const allowedExtensions = [".dwg", ".dxf", ".cad"];
+      const fileExtension =
+        "." + file.originalname.split(".").pop().toLowerCase();
+
+      if (allowedExtensions.includes(fileExtension)) {
         cb(null, true);
       } else {
         cb(
-          new Error("Only CAD files are allowed for the cadFile field"),
+          new Error(
+            "Only CAD files (.dwg, .dxf, .cad) are allowed for the cadFile field"
+          ),
           false
         );
       }
