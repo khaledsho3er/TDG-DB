@@ -1,117 +1,6 @@
 const Product = require("../models/Products");
 const mongoose = require("mongoose"); // Import mongoose
 
-// exports.createProduct = async (req, res) => {
-//   try {
-//     const {
-//       name,
-//       description,
-//       category,
-//       subcategory,
-//       colors,
-//       sizes,
-//       price,
-//       salePrice,
-//       tags,
-//       manufacturer,
-//       collection,
-//       type,
-//       manufactureYear,
-//       reviews,
-//       images,
-//       mainImage,
-//       technicalDimensions,
-//       brandId,
-//       brandName,
-//       leadTime,
-//       stock,
-//       sku,
-//       warrantyInfo,
-//       materialCareInstructions,
-//       productSpecificRecommendations,
-//       Estimatedtimeleadforcustomization,
-//       Customizationoptions,
-//       Additionaldetails,
-//       Additionalcosts,
-//       claimProcess,
-//     } = req.body;
-
-//     console.log(req.body);
-
-//     const productImages = req.files
-//       ? req.files.map((file) => `/uploads/${file.filename}`)
-//       : [];
-
-//     if (!name || !price || !category) {
-//       return res
-//         .status(400)
-//         .json({ message: "Name, price, and category are required" });
-//     }
-
-//     const product = new Product({
-//       name,
-//       description,
-//       category,
-//       subcategory,
-//       colors,
-//       sizes,
-//       price,
-//       salePrice,
-//       tags,
-//       manufacturer,
-//       collection,
-//       type,
-//       manufactureYear,
-//       reviews,
-//       images: productImages,
-//       mainImage,
-//       technicalDimensions,
-//       brandId,
-//       brandName,
-//       leadTime,
-//       stock,
-//       sku,
-//       warrantyInfo,
-//       materialCareInstructions,
-//       productSpecificRecommendations,
-//       Estimatedtimeleadforcustomization,
-//       Customizationoptions,
-//       Additionaldetails,
-//       Additionalcosts,
-//       claimProcess,
-//       vendor: "placeholderVendorId", // Temporary placeholder vendor ID for testing
-//     });
-
-//     await product.save();
-//     res.status(201).json({ message: "Product created successfully", product });
-//   } catch (error) {
-//     console.error("Error creating product:", error);
-//     res.status(500).json({ message: "Error creating product", error });
-//   }
-// };
-// exports.createProduct = async (req, res) => {
-//   try {
-//     const productData = req.body;
-//     console.log("Received product data:", productData);
-
-//     const product = new Product(productData);
-
-//     // Validate the product data against the schema
-//     await product.validate(); // This will throw an error if validation fails
-
-//     await product.save();
-//     res.status(201).json({ message: "Product created successfully", product });
-//   } catch (error) {
-//     console.error("Error creating product:", error);
-
-//     // Log validation errors
-//     if (error.name === "ValidationError") {
-//       console.error("Validation Errors:", error.errors);
-//     }
-
-//     res.status(500).json({ message: "Error creating product", error });
-//   }
-// };
 exports.createProduct = async (req, res) => {
   try {
     // Extract form data from req.body
@@ -176,7 +65,30 @@ exports.createProduct = async (req, res) => {
     } else {
       productData.reviews = []; // Set to empty array if not provided
     }
+    // Handle variants
+    if (productData.hasVariants && productData.variants) {
+      productData.variants = JSON.parse(productData.variants).map((variant) => {
+        return {
+          ...variant,
+          sku: `${productData.sku}-${variant.color
+            .toLowerCase()
+            .replace(/\s+/g, "-")}-${variant.material
+            .toLowerCase()
+            .replace(/\s+/g, "-")}-${variant.size
+            .toLowerCase()
+            .replace(/\s+/g, "-")}`,
+          image: variant.image || "", // Ensure image field exists
+        };
+      });
 
+      // Set default variant if provided
+      if (productData.defaultVariant) {
+        const defaultVariantId = productData.variants.find(
+          (v) => v.sku === productData.defaultVariant
+        )?._id;
+        productData.defaultVariant = defaultVariantId || null;
+      }
+    }
     // Create and save the product
     const product = new Product(productData);
     await product.save();

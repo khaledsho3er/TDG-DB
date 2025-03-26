@@ -15,6 +15,10 @@ const {
   getProductsByType,
   getSalesAnalytics,
   getProductAnalytics,
+  updateVariantStock,
+  updateVariantPrice,
+  addVariant,
+  removeVariant,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -23,7 +27,8 @@ router.post(
   "/addproduct",
   upload.fields([
     { name: "images", maxCount: 10 },
-    { name: "cadFile", maxCount: 1 }, // Add CAD file field
+    { name: "cadFile", maxCount: 1 },
+    { name: "variantImages", maxCount: 20 },
   ]),
   createProduct
 );
@@ -45,7 +50,7 @@ router.put("/:id", upload.array("images", 5), updateProduct);
 router.delete("/:id", deleteProduct);
 router.post("/upload", upload.array("images", 10), (req, res) => {
   try {
-    const filePaths = req.files.map((file) => file.path); // Get file paths
+    const filePaths = req.files.map((file) => file.path);
     res.status(200).json({ message: "Files uploaded successfully", filePaths });
   } catch (error) {
     console.error("Error uploading files:", error);
@@ -53,6 +58,11 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
   }
 });
 router.get("/sales", getSalesAnalytics);
-router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
+router.get("/sales/:productId", getProductAnalytics);
+
+router.put("/:productId/variants/:variantId/stock", updateVariantStock);
+router.put("/:productId/variants/:variantId/price", updateVariantPrice);
+router.post("/:productId/variants", upload.single("variantImage"), addVariant);
+router.delete("/:productId/variants/:variantId", removeVariant);
 
 module.exports = router;
