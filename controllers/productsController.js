@@ -144,21 +144,14 @@ exports.createProduct = async (req, res) => {
     if (productData.type) {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
-
-    // // Add image file paths to productData
-    // if (req.files && req.files.length > 0) {
-    //   const imageFiles = req.files.map((file) => file.filename);
-    //   console.log("Image files to save:", imageFiles);
-    //   productData.images = imageFiles;
-    //   productData.mainImage = imageFiles[0];
-    // }
-    // Handle images from request body (no req.files needed)
     // Handle uploaded images
-    if (req.files && req.files.length > 0) {
-      const imageUrls = req.files.map((file) => file.filename || file.key); // Use location for URL or key for filename
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      const imageUrls = req.files.images.map(
+        (file) => file.filename || file.key
+      );
       console.log("Uploaded image URLs:", imageUrls);
       productData.images = imageUrls;
-      productData.mainImage = req.body.mainImage || imageUrls[0]; // Use mainImage from body if provided
+      productData.mainImage = req.body.mainImage || imageUrls[0];
     } else {
       console.log("No images uploaded");
     }

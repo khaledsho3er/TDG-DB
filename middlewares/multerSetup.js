@@ -25,8 +25,8 @@ require("dotenv").config();
 
 // Cloudflare R2 Configuration
 const s3 = new S3Client({
-  region: "auto", // Cloudflare R2 uses 'auto' for region
-  endpoint: "https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com", // Replace with your actual R2 endpoint
+  region: "auto",
+  endpoint: "https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com",
   credentials: {
     accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID,
     secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
@@ -37,14 +37,48 @@ const s3 = new S3Client({
 const upload = multer({
   storage: multerS3({
     s3: s3,
-    bucket: "images", // Replace with your Cloudflare R2 bucket name
+    bucket: "images",
     contentType: multerS3.AUTO_CONTENT_TYPE,
-    acl: "public-read", // or "private" if you want private files
+    acl: "public-read",
     key: (req, file, cb) => {
       const fileName = file.originalname.replace(/\s+/g, "-");
-      cb(null, `${Date.now()}-${fileName}`);
+      const uniqueFileName = `${Date.now()}-${fileName}`;
+      cb(null, uniqueFileName);
+    },
+    metadata: (req, file, cb) => {
+      cb(null, { fieldName: file.fieldname });
     },
   }),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images and CAD files
+    if (file.fieldname === "images") {
+      if (file.mimetype.startsWith("image/")) {
+        cb(null, true);
+      } else {
+        cb(
+          new Error("Only image files are allowed for the images field"),
+          false
+        );
+      }
+    } else if (file.fieldname === "cadFile") {
+      if (
+        file.mimetype === "application/dwg" ||
+        file.mimetype === "application/dxf"
+      ) {
+        cb(null, true);
+      } else {
+        cb(
+          new Error("Only CAD files are allowed for the cadFile field"),
+          false
+        );
+      }
+    } else {
+      cb(new Error("Unexpected field"), false);
+    }
+  },
 });
 
 module.exports = upload;
