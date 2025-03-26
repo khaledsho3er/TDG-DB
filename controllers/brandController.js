@@ -1,4 +1,5 @@
 const Brand = require("../models/Brand");
+const Type = require("../models/types");
 const upload = require("../middlewares/brandMulterSetup");
 
 // Create a new brand
