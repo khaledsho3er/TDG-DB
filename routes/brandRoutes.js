@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const brandController = require("../controllers/brandController");
-const upload = require("../middlewares/multerSetup");
+const upload = require("../middlewares/brandMulterSetup");
 
 // Create a new brand
 router.post(
   "/brand",
   upload.fields([
-    { name: "images", maxCount: 1 },
-    { name: "images", maxCount: 5 },
-    { name: "images", maxCount: 1 },
-    { name: "images", maxCount: 10 },
-    { name: "images", maxCount: 10 },
+    { name: "brandlogo", maxCount: 1 },
+    { name: "digitalCopiesLogo", maxCount: 5 },
+    { name: "coverPhoto", maxCount: 1 },
+    { name: "catalogues", maxCount: 10 },
+    { name: "documents", maxCount: 10 },
   ]),
   brandController.createBrand
 );
