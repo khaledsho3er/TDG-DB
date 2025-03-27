@@ -7,11 +7,11 @@ const upload = require("../middlewares/multerSetup");
 router.post(
   "/brand",
   upload.fields([
-    { name: "brandlogo", maxCount: 1 },
-    { name: "digitalCopiesLogo", maxCount: 5 },
-    { name: "coverPhoto", maxCount: 1 },
-    { name: "catalogues", maxCount: 10 },
-    { name: "documents", maxCount: 10 },
+    { name: "images", maxCount: 1 },
+    { name: "images", maxCount: 5 },
+    { name: "images", maxCount: 1 },
+    { name: "images", maxCount: 10 },
+    { name: "images", maxCount: 10 },
   ]),
   brandController.createBrand
 );
