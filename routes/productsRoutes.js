@@ -1,5 +1,6 @@
 const express = require("express");
 const upload = require("../middlewares/multerSetup");
+const Product = require("../models/Products");
 const {
   createProduct,
   getProducts,
@@ -15,7 +16,6 @@ const {
   getProductsByType,
   getSalesAnalytics,
   getProductAnalytics,
-  getReadyToShipProducts,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -55,5 +55,15 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
 });
 router.get("/sales", getSalesAnalytics);
 router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
+// GET all products that are ready to ship
+router.get("/products/readytoship", async (req, res) => {
+  try {
+    const products = await Product.find({ readyToShip: true, status: true }); // You can also filter approved products only
+    res.status(200).json(products);
+  } catch (err) {
+    console.error("Error fetching ready-to-ship products:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;
