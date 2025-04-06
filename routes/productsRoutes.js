@@ -55,6 +55,5 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
 });
 router.get("/sales", getSalesAnalytics);
 router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
-router.get("/products/readytoship",getReadyToShipProducts);
 
 module.exports = router;

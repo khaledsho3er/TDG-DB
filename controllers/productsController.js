@@ -495,21 +495,3 @@ exports.getProductAnalytics = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-exports.getReadyToShipProducts = async (req, res) => {
-  try {
-    const products = await Product.find({ readyToShip: true })
-      .populate("category subcategory vendor type brandId")
-      .exec();
-
-    if (!products.length) {
-      return res
-        .status(404)
-        .json({ message: "No ready to ship products found" });
-    }
-
-    res.status(200).json(products);
-  } catch (error) {
-    console.error("Error fetching ready to ship products:", error);
-    res.status(500).json({ message: "Error fetching products", error });
-  }
-};
