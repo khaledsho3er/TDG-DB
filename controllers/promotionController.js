@@ -1,10 +1,15 @@
 const Product = require("../models/Products");
 
 // Fetch current promotions (active promotions)
+// Fetch current promotions for a specific brand
 exports.getCurrentPromotions = async (req, res) => {
   try {
+    const { brandId } = req.params; // Get brandId from URL or authenticated user
     const today = new Date();
+
+    // Fetch products with active promotions for the specified brand
     const currentPromotions = await Product.find({
+      brandId: brandId, // Filter by brandId
       promotionStartDate: { $lte: today },
       promotionEndDate: { $gte: today },
     }).populate("category subcategory vendor type brandId");
@@ -16,10 +21,15 @@ exports.getCurrentPromotions = async (req, res) => {
 };
 
 // Fetch past promotions (promotions that have ended)
+// Fetch past promotions for a specific brand
 exports.getPastPromotions = async (req, res) => {
   try {
+    const { brandId } = req.params; // Get brandId from URL or authenticated user
     const today = new Date();
+
+    // Fetch past promotions for the specified brand
     const pastPromotions = await Product.find({
+      brandId: brandId, // Filter by brandId
       promotionEndDate: { $lt: today },
     }).populate("category subcategory vendor type brandId");
 
@@ -28,21 +38,21 @@ exports.getPastPromotions = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 // Create or update product promotion
+// Create or update product promotion for a specific brand
 exports.updateProductPromotion = async (req, res) => {
   try {
-    const { salePrice, startDate, endDate } = req.body;
+    const { salePrice, startDate, endDate, brandId } = req.body;
     const { id } = req.params; // Get product ID from URL
 
-    if (!salePrice || !startDate || !endDate) {
-      return res.status(400).json({
-        message:
-          "Sale price, start date, and end date are required for a promotion.",
-      });
-    }
-
+    // Ensure the product belongs to the logged-in brand
     const product = await Product.findById(id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product || product.brandId.toString() !== brandId) {
+      return res
+        .status(404)
+        .json({ message: "Product not found or does not belong to the brand" });
+    }
 
     // Calculate discount percentage
     const discountPercentage =
@@ -59,13 +69,21 @@ exports.updateProductPromotion = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 // End promotion early
+// End promotion early for a specific brand
 exports.endPromotion = async (req, res) => {
   try {
     const { id } = req.params; // Get product ID from URL
-    const product = await Product.findById(id);
+    const { brandId } = req.body; // Get brandId from request body or authenticated user
 
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    // Ensure the product belongs to the logged-in brand
+    const product = await Product.findById(id);
+    if (!product || product.brandId.toString() !== brandId) {
+      return res
+        .status(404)
+        .json({ message: "Product not found or does not belong to the brand" });
+    }
 
     // Set the promotion end date to today
     product.promotionEndDate = new Date();
