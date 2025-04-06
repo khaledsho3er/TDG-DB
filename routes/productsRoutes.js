@@ -60,21 +60,14 @@ router.get("/getproducts/readytoship", async (req, res) => {
     const readyToShipProducts = await Product.find({
       readyToShip: true,
       status: true, // Only approved products
-    });
+    })
+      .populate("category", "name")
+      .populate("subcategory", "name")
+      .populate("brandId", "name logo")
+      .populate("vendor", "name email")
+      .sort({ createdAt: -1 }); // Sort by newest first by default
 
-    if (readyToShipProducts.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No ready-to-ship products found",
-        data: [],
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      count: readyToShipProducts.length,
-      data: readyToShipProducts,
-    });
+    return res.status(200).json(readyToShipProducts);
   } catch (error) {
     console.error("Error fetching ready-to-ship products:", error);
     return res.status(500).json({
