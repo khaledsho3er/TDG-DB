@@ -1,20 +1,25 @@
 const express = require("express");
 const router = express.Router();
-const promotionController = require("../controllers/promotionController");
+const {
+  getCurrentPromotions,
+  getPastPromotions,
+  updateProductPromotion,
+  createProductPromotion,
+  endPromotion,
+} = require("../controllers/promotionController");
 
-// Get current promotions
-router.get(
-  "/promotions/current/:brandId",
-  promotionController.getCurrentPromotions
-);
+// Route to create a promotion for a specific product
+router.post("/create/:id", createProductPromotion);
+// Route to get current (active) promotions for a specific brand
+router.get("/current/:brandId", getCurrentPromotions);
 
-// Get past promotions
-router.get("/promotions/past/:brandId", promotionController.getPastPromotions);
+// Route to get past (ended) promotions for a specific brand
+router.get("/past/:brandId", getPastPromotions);
 
-// Create or update promotion
-router.post("/promotions/:id", promotionController.updateProductPromotion);
+// Route to update or create a promotion for a product (for a specific brand)
+router.put("/update/:id", updateProductPromotion);
 
-// End promotion early
-router.post("/promotions/end/:id", promotionController.endPromotion);
+// Route to end a promotion early for a specific product
+router.put("/end/:id", endPromotion);
 
 module.exports = router;
