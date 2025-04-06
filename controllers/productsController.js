@@ -1,4 +1,5 @@
 const Product = require("../models/Products");
+const Category = require("../models/category");
 const mongoose = require("mongoose"); // Import mongoose
 
 exports.createProduct = async (req, res) => {
