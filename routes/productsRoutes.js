@@ -57,10 +57,7 @@ router.get("/sales", getSalesAnalytics);
 router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
 router.get("/products/readytoship", async (req, res) => {
   try {
-    // Fetch products and populate category
-    const products = await Product.find({ readyToShip: true, status: true })
-      .populate("category") // Ensure category is populated
-      .exec();
+    const products = await Product.find({ readyToShip: true });
 
     if (!products.length) {
       return res
