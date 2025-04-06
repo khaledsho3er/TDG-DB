@@ -496,3 +496,69 @@ exports.getProductAnalytics = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+exports.getPastPromotionsByBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    const today = new Date();
+
+    const pastPromotions = await Product.find({
+      brandId,
+      promotionStartDate: { $exists: true },
+      promotionEndDate: { $exists: true, $lt: today },
+    }).sort({ promotionEndDate: -1 });
+
+    res.json(pastPromotions);
+  } catch (error) {
+    console.error("Failed to fetch past promotions:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+exports.endPromotionNow = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // Clear promotion fields
+    product.salePrice = undefined;
+    product.discountPercentage = undefined;
+    product.promotionStartDate = undefined;
+    product.promotionEndDate = undefined;
+
+    await product.save();
+    res.json({ message: "Promotion ended", product });
+  } catch (error) {
+    console.error("Failed to end promotion:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+exports.calculatePastPromotionMetrics = async (req, res) => {
+  try {
+    const products = await Product.find({
+      promotionEndDate: { $lt: new Date() },
+    });
+
+    // Calculate metrics for each product in past promotions
+    const metrics = products.map((product) => {
+      const salesDuringPromotion = product.sales;
+      const viewsDuringPromotion = product.promotionViews; // Add this field to your schema if it doesn't exist
+      const turnoverIncrease = (
+        ((product.salePrice - product.price) / product.price) *
+        100
+      ).toFixed(2);
+
+      return {
+        productId: product._id,
+        salesDuringPromotion,
+        viewsDuringPromotion,
+        turnoverIncrease,
+      };
+    });
+
+    res.json(metrics);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error calculating promotion metrics", error });
+  }
+};

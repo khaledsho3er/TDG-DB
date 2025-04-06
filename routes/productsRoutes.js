@@ -16,6 +16,9 @@ const {
   getProductsByType,
   getSalesAnalytics,
   getProductAnalytics,
+  getPastPromotionsByBrand,
+  endPromotionNow,
+  calculatePastPromotionMetrics,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -77,5 +80,8 @@ router.get("/getproducts/readytoship", async (req, res) => {
     });
   }
 });
+router.get("/past-promotions/brand/:brandId", getPastPromotionsByBrand);
+router.put("/promotion/end/:id", endPromotionNow);
+router.get("/past-promotions/metrics", calculatePastPromotionMetrics);
 
 module.exports = router;
