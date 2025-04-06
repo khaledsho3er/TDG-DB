@@ -55,14 +55,20 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
 });
 router.get("/sales", getSalesAnalytics);
 router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
-// GET all products that are ready to ship
 router.get("/products/readytoship", async (req, res) => {
   try {
+    console.log("Fetching ready-to-ship products...");
     const products = await Product.find({ readyToShip: true, status: true }); // You can also filter approved products only
+    if (!products.length) {
+      console.log("No products found.");
+      return res
+        .status(404)
+        .json({ message: "No ready-to-ship products found" });
+    }
     res.status(200).json(products);
   } catch (err) {
     console.error("Error fetching ready-to-ship products:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
