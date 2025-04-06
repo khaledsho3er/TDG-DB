@@ -55,20 +55,30 @@ router.post("/upload", upload.array("images", 10), (req, res) => {
 });
 router.get("/sales", getSalesAnalytics);
 router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
-router.get("/products/readytoship", async (req, res) => {
+router.get("/getproducts/readytoship", async (req, res) => {
   try {
-    const products = await Product.find({ readyToShip: true });
+    const readyToShipProducts = await Product.find({ readyToShip: true });
 
-    if (!products.length) {
-      return res
-        .status(404)
-        .json({ message: "No ready-to-ship products found" });
+    if (readyToShipProducts.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No ready-to-ship products found",
+        data: [],
+      });
     }
 
-    res.status(200).json(products);
-  } catch (err) {
-    console.error("Error fetching ready-to-ship products:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    return res.status(200).json({
+      success: true,
+      count: readyToShipProducts.length,
+      data: readyToShipProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching ready-to-ship products:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching ready-to-ship products",
+      error: error.message,
+    });
   }
 });
 
