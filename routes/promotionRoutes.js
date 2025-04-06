@@ -3,10 +3,13 @@ const router = express.Router();
 const promotionController = require("../controllers/promotionController");
 
 // Get current promotions
-router.get("/promotions/current", promotionController.getCurrentPromotions);
+router.get(
+  "/promotions/current/:brandId",
+  promotionController.getCurrentPromotions
+);
 
 // Get past promotions
-router.get("/promotions/past", promotionController.getPastPromotions);
+router.get("/promotions/past/:brandId", promotionController.getPastPromotions);
 
 // Create or update promotion
 router.post("/promotions/:id", promotionController.updateProductPromotion);
