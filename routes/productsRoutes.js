@@ -57,14 +57,17 @@ router.get("/sales", getSalesAnalytics);
 router.get("/sales/:productId", getProductAnalytics); // Fetch analytics for one product
 router.get("/products/readytoship", async (req, res) => {
   try {
-    console.log("Fetching ready-to-ship products...");
-    const products = await Product.find({ readyToShip: true, status: true }); // You can also filter approved products only
+    // Fetch products and populate category
+    const products = await Product.find({ readyToShip: true, status: true })
+      .populate("category") // Ensure category is populated
+      .exec();
+
     if (!products.length) {
-      console.log("No products found.");
       return res
         .status(404)
         .json({ message: "No ready-to-ship products found" });
     }
+
     res.status(200).json(products);
   } catch (err) {
     console.error("Error fetching ready-to-ship products:", err);
