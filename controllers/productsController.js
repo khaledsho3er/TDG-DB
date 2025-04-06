@@ -215,7 +215,7 @@ exports.getProductsByCategoryName = async (req, res) => {
     const { categoryName } = req.params;
 
     // Fetch category by name
-    const category = await Category.findOne({ name: categoryName });
+    const category = await category.findOne({ name: categoryName });
 
     if (!category) {
       return res
@@ -497,7 +497,7 @@ exports.getProductAnalytics = async (req, res) => {
 };
 exports.getReadyToShipProducts = async (req, res) => {
   try {
-    const products = await Product.find({ readyToShip: true, status: true });
+    const products = await Product.find({ readyToShip: true });
     res.status(200).json(products);
   } catch (error) {
     console.error("Error fetching ready-to-ship products:", error.message);
