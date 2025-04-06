@@ -516,17 +516,30 @@ exports.getPastPromotionsByBrand = async (req, res) => {
 exports.endPromotionNow = async (req, res) => {
   try {
     const { id } = req.params;
+
     const product = await Product.findById(id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-    // Clear promotion fields
-    product.salePrice = undefined;
-    product.discountPercentage = undefined;
-    product.promotionStartDate = undefined;
-    product.promotionEndDate = undefined;
+    // Clear promotion fields using unset
+    await Product.updateOne(
+      { _id: id },
+      {
+        $unset: {
+          salePrice: "",
+          discountPercentage: "",
+          promotionStartDate: "",
+          promotionEndDate: "",
+        },
+        $set: {
+          isPromotionActive: false, // if you're using this flag
+        },
+      }
+    );
 
-    await product.save();
-    res.json({ message: "Promotion ended", product });
+    const updatedProduct = await Product.findById(id);
+    res.json({ message: "Promotion ended", product: updatedProduct });
   } catch (error) {
     console.error("Failed to end promotion:", error);
     res.status(500).json({ message: "Server error", error });
