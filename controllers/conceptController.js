@@ -110,6 +110,7 @@ const updateConceptImage = async (req, res) => {
 // DELETE concept image
 const deleteConceptImage = async (req, res) => {
   try {
+    console.log("Deleting concept with ID:", req.params.id); // Add logging
     const concept = await ConceptImage.findById(req.params.id);
     if (!concept) {
       return res
