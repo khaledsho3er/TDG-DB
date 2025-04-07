@@ -35,6 +35,7 @@ const Newsletter = require("./routes/newsletterRoutes");
 const analyticsRoutes = require("./routes/productsRoutes");
 const salesAnalytics = require("./routes/salesRoutes");
 const catalogRoutes = require("./routes/catalogRoutes");
+const conceptRoutes = require("./routes/conceptRoutes");
 const promotionsRoutes = require("./routes/promotionRoutes"); // Import the promotions routes
 const app = express();
 const port = process.env.PORT || 5000;
@@ -117,6 +118,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/sales", salesAnalytics);
 app.use("/api/catalogs", catalogRoutes);
 app.use("/api/promotions", promotionsRoutes); // Use the promotions routes
+app.use("/api/concepts", conceptRoutes); // Use the concept routes
 
 // Start the server
 app.listen(port, () => {
