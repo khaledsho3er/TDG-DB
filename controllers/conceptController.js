@@ -1,47 +1,58 @@
-const ConceptImage = require("../models/conceptImages"); // Assuming model path
-const upload = require("../middlewares/conceptsMulter"); // Multer configuration
+const ConceptImage = require("../models/conceptImages");
 const mongoose = require("mongoose");
 
 // CREATE: Add a new concept image
 const createConceptImage = async (req, res) => {
   try {
+    console.log("Incoming POST request body:", req.body);
+    console.log("Uploaded file info:", req.file);
+
     const { title, description, nodes } = req.body;
 
-    // Check if an image was uploaded
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Image is required." });
+    if (!req.file || !req.file.key) {
+      return res.status(400).json({
+        success: false,
+        message: "Image file is required.",
+      });
     }
 
-    // Save concept image in the database (only storing the image name)
+    let parsedNodes = [];
+    try {
+      parsedNodes = nodes ? JSON.parse(nodes) : [];
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid JSON format for nodes.",
+      });
+    }
+
     const newConceptImage = new ConceptImage({
       title,
       description,
-      imageUrl: req.file.key, // Save the image file name (key) in the database
-      nodes: JSON.parse(nodes) || [], // Convert string to array if necessary
+      imageUrl: req.file.key,
+      nodes: parsedNodes,
     });
 
     await newConceptImage.save();
     res.status(201).json({ success: true, concept: newConceptImage });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ Error in createConceptImage:", error);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 };
 
-// GET: Get all concept images
+// GET all concepts
 const getAllConceptImages = async (req, res) => {
   try {
     const concepts = await ConceptImage.find().populate("nodes.productId");
     res.status(200).json({ success: true, concepts });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ Error in getAllConceptImages:", error);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 };
 
-// GET: Get a single concept image by ID
+// GET one concept by ID
 const getConceptImageById = async (req, res) => {
   try {
     const concept = await ConceptImage.findById(req.params.id).populate(
@@ -50,16 +61,16 @@ const getConceptImageById = async (req, res) => {
     if (!concept) {
       return res
         .status(404)
-        .json({ success: false, message: "Concept not found" });
+        .json({ success: false, message: "Concept not found." });
     }
     res.status(200).json({ success: true, concept });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ Error in getConceptImageById:", error);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 };
 
-// PUT: Edit a concept image by ID
+// UPDATE concept image
 const updateConceptImage = async (req, res) => {
   try {
     const { title, description, nodes } = req.body;
@@ -68,43 +79,49 @@ const updateConceptImage = async (req, res) => {
     if (!concept) {
       return res
         .status(404)
-        .json({ success: false, message: "Concept not found" });
+        .json({ success: false, message: "Concept not found." });
     }
 
-    // Update concept fields
+    let parsedNodes = concept.nodes;
+    try {
+      parsedNodes = nodes ? JSON.parse(nodes) : concept.nodes;
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid JSON format for nodes." });
+    }
+
     concept.title = title || concept.title;
     concept.description = description || concept.description;
-    concept.nodes = JSON.parse(nodes) || concept.nodes;
+    concept.nodes = parsedNodes;
 
-    // If a new image is uploaded, update the imageUrl field
-    if (req.file) {
-      concept.imageUrl = req.file.key; // Save new image name in the database
+    if (req.file && req.file.key) {
+      concept.imageUrl = req.file.key;
     }
 
     await concept.save();
     res.status(200).json({ success: true, concept });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ Error in updateConceptImage:", error);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 };
 
-// DELETE: Delete a concept image by ID
+// DELETE concept image
 const deleteConceptImage = async (req, res) => {
   try {
     const concept = await ConceptImage.findById(req.params.id);
-
     if (!concept) {
       return res
         .status(404)
-        .json({ success: false, message: "Concept not found" });
+        .json({ success: false, message: "Concept not found." });
     }
 
     await concept.remove();
-    res.status(200).json({ success: true, message: "Concept deleted" });
+    res.status(200).json({ success: true, message: "Concept deleted." });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ Error in deleteConceptImage:", error);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 };
 
