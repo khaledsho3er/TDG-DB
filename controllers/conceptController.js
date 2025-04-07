@@ -110,15 +110,13 @@ const updateConceptImage = async (req, res) => {
 // DELETE concept image
 const deleteConceptImage = async (req, res) => {
   try {
-    console.log("Deleting concept with ID:", req.params.id); // Add logging
-    const concept = await ConceptImage.findById(req.params.id);
+    const concept = await ConceptImage.findByIdAndDelete(req.params.id);
     if (!concept) {
       return res
         .status(404)
         .json({ success: false, message: "Concept not found." });
     }
 
-    await concept.remove();
     res.status(200).json({ success: true, message: "Concept deleted." });
   } catch (error) {
     console.error("❌ Error in deleteConceptImage:", error);
