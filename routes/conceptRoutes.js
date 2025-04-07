@@ -1,21 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const conceptController = require("../controllers/conceptController");
-const upload = require("../middlewares/conceptsMulter");
+const {
+  createConceptImage,
+  getAllConceptImages,
+  getConceptImageById,
+  updateConceptImage,
+  deleteConceptImage,
+} = require("../controllers/conceptController");
+const upload = require("../middlewares/conceptsMulter"); // Multer middleware
 
-// Create
-router.post("/", upload.single("image"), conceptController.createConcept);
-
-// Get All
-router.get("/", conceptController.getAllConcepts);
-
-// Get One
-router.get("/:id", conceptController.getOneConcept);
-
-// Edit
-router.put("/:id", upload.single("image"), conceptController.editConcept);
-
-// Delete
-router.delete("/:id", conceptController.deleteConcept);
+// Routes for concept image management
+router.post("/concepts", upload.single("image"), createConceptImage); // POST request to upload concept image
+router.get("/concepts", getAllConceptImages); // GET request to get all concepts
+router.get("/concepts/:id", getConceptImageById); // GET request to get one concept
+router.put("/concepts/:id", upload.single("image"), updateConceptImage); // PUT request to update concept image
+router.delete("/concepts/:id", deleteConceptImage); // DELETE request to delete a concept image
 
 module.exports = router;
