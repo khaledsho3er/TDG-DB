@@ -94,51 +94,6 @@ The Design Grit Team`,
   }
 });
 
-// Sign In Route
-// Sign In Route
-// router.post("/signin", async (req, res) => {
-//   const { email, password } = req.body;
-
-//   if (!email || !password) {
-//     return res
-//       .status(400)
-//       .json({ message: "Email and password are required." });
-//   }
-
-//   try {
-//     const user = await User.findOne({ email });
-
-//     if (!user) {
-//       return res.status(400).json({ message: "Invalid credentials" });
-//     }
-
-//     const isMatch = await bcrypt.compare(password, user.password);
-
-//     if (!isMatch) {
-//       return res.status(400).json({ message: "Invalid credentials" });
-//     }
-
-//     // Store the userId in the session
-//     req.session.userId = user._id;
-//     console.log("Session ID:", req.session.id); // Log session ID to check
-//     console.log("Session User ID after login:", req.session.userId); // Log session user ID to check
-
-//     req.session.save((err) => {
-//       if (err) {
-//         console.error("Error saving session:", err);
-//         return res.status(500).json({ message: "Error saving session" });
-//       }
-//       res.status(200).json({
-//         message: "User logged in successfully",
-//         user: { id: user._id, email: user.email },
-//       });
-//     });
-//   } catch (error) {
-//     console.error("Error signing in user:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
-
 router.post("/signin", async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -165,41 +120,6 @@ router.post("/signin", async (req, res) => {
   }
 });
 
-// router.post("/signin", async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     // Verify user credentials
-//     const user = await User.findOne({ email });
-//     console.log("User:", user);
-
-//     if (!user || !(await bcrypt.compare(password, user.password))) {
-//       return res.status(401).json({ message: "Invalid credentials" });
-//     }
-
-//     // Set session data
-//     req.session.userId = user._id;
-//     req.session.email = user.email;
-//     console.log("session:", req.session.userId);
-
-//     // Send user data without sensitive information
-//     res.json({
-//       id: user._id,
-//       email: user.email,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       phoneNumber: user.phoneNumber,
-//       address1: user.address1,
-//       address2: user.address2,
-//       dateOfBirth: user.dateOfBirth,
-//       gender: user.gender,
-//       role: user.role,
-//       // other non-sensitive user info
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
 // Add a route to check session
 router.get("/check-session", (req, res) => {
   if (req.session.userId) {
@@ -213,122 +133,12 @@ router.get("/check-session", (req, res) => {
     });
   }
 });
-// Protected route to update user information
-// router.put("/update", isAuthenticated, async (req, res) => {
-//   console.log("Request Body:", req.body); // Log the incoming request body
-
-//   const { firstName, lastName, phoneNumber, address1 } = req.body;
-
-//   if (!req.session.userId) {
-//     return res.status(401).json({ message: "User not authenticated" });
-//   }
-
-//   const user = await User.findById(req.session.userId);
-//   if (!user) {
-//     return res.status(404).json({ message: "User not found" });
-//   }
-
-//   user.firstName = firstName || user.firstName;
-//   user.lastName = lastName || user.lastName;
-//   user.phoneNumber = phoneNumber || user.phoneNumber;
-//   user.address1 = address1 || user.address1;
-
-//   const updatedUser = await user.save();
-//   res.status(200).json({ message: "User updated", user: updatedUser });
-// });
 
 // Route to test if user is logged in
 router.get("/test", isAuthenticated, (req, res) => {
   res.status(200).json({ message: "You are logged in!" });
 });
 
-// Route to fetch user data (Profile)
-// function isAuthenticated(req, res, next) {
-//   console.log("Session ID in isAuthenticated:", req.session.id); // Log session ID to check
-//   if (!req.session.userId) {
-//     return res.status(401).json({ message: "User not authenticated" });
-//   }
-//   next();
-// }
-
-// router.get("/profile", isAuthenticated, async (req, res) => {
-//   console.log("Session User ID in profile route:", req.session.userId); // Log session user ID
-
-//   try {
-//     const user = await User.findById(req.session.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     res.status(200).json({
-//       id: user._id,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       email: user.email,
-//       phoneNumber: user.phoneNumber,
-//       address1: user.address1,
-//       address2: user.address2,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching user data:", error);
-//     res.status(500).json({ message: "Internal server error" });
-// //   }
-// // });
-// router.get("/profile", isAuthenticated, async (req, res) => {
-//   try {
-//     console.log("Session User ID in profile route:", req.session.userId); // Log session user ID
-//     // Fetch user data from the database using the userId stored in the session
-//     const user = await User.findById(req.session.userId);
-
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     // Send back the user data
-//     res.status(200).json({
-//       id: user._id,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       email: user.email,
-//       phoneNumber: user.phoneNumber,
-//       address1: user.address1,
-//       address2: user.address2,
-//       dateOfBirth: user.dateOfBirth,
-//       gender: user.gender,
-//       language: user.language,
-//       region: user.region,
-//       shipmentAddress: user.shipmentAddress,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching user data:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
-
-///old user router get function
-// router.get("/getUser", async (req, res) => {
-//   console.log("Session on getUser:", req.session); // Debugging
-//   if (!req.session.userId) {
-//     return res.status(401).json({ message: "Not authenticated" });
-//   }
-
-//   try {
-//     const user = await User.findById(req.session.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     console.log("Fetched user:", user); // Log user object
-//     res.json({
-//       firstName: user.firstName, // Explicitly send the firstName field
-//       lastName: user.lastName,
-//       email: user.email,
-//     });
-//   } catch (err) {
-//     console.error("Error fetching user:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
 router.get("/getUser", async (req, res) => {
   console.log("Session on getUser:", req.session); // Debugging
 
@@ -543,12 +353,10 @@ router.delete("/removeAddress/:userId/:addressId", async (req, res) => {
     }
 
     await user.save();
-    res
-      .status(200)
-      .json({
-        message: "Address removed successfully",
-        shipmentAddress: user.shipmentAddress,
-      });
+    res.status(200).json({
+      message: "Address removed successfully",
+      shipmentAddress: user.shipmentAddress,
+    });
   } catch (error) {
     console.error("Error removing address:", error);
     res.status(500).json({ message: "Server error" });

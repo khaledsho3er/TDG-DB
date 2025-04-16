@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const shippingSchema = new mongoose.Schema({
   address1: { type: String, required: true },
   address2: { type: String, required: false },
+  label: { type: String, required: true },
+  floor: { type: String, required: false },
+  apartment: { type: String, required: false },
+  landmark: { type: String, required: false },
   city: { type: String, required: true },
   postalCode: { type: String, required: true },
   country: { type: String, required: true },
