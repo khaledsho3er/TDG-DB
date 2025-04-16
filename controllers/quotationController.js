@@ -15,7 +15,11 @@ exports.createQuotation = async (req, res) => {
     if (!userId || !brandId || !productId || !material || !size || !color) {
       return res.status(400).json({ message: "All fields are required" });
     }
-
+    // Fetch user to get the full name
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     // Create the quotation
     const newQuotation = new Quotation({
       userId,
@@ -31,7 +35,7 @@ exports.createQuotation = async (req, res) => {
     const savedQuotation = await newQuotation.save();
     const newNotification = new Notification({
       type: "quotation",
-      description: `You have received a new Quotation from customer ${userId}.`,
+      description: `You have received a new Quotation from customer ${user.firstName} ${user.lastName} (${userId}).`,
       brandId, // Associate this notification with the brand
       quotation: savedQuotation._id,
       read: false,

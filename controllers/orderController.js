@@ -54,18 +54,21 @@ exports.createOrder = async (req, res) => {
       billingDetails,
       shippingDetails,
     });
-    const customer = await user.findById(customerId).select("email");
-    if (!customer || !customer.email) {
+    const customer = await user
+      .findById(customerId)
+      .select("email firstName LastName");
+    if (!customer || !customer.email || !customer.name) {
       return res.status(400).json({ error: "Customer email not found" });
     }
+    const fullName = `${customer.firstName} ${customer.lastName}`.trim();
 
     const savedOrder = await newOrder.save();
     // Create a new notification for the brand
     const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item (can be adjusted if necessary)
     const newNotification = new Notification({
       type: "order",
-      description: `You have received a new order from customer ${customerId}.`,
-      brandId, // Associate this notification with the brand
+      description: `You have received a new order from customer  ${fullName} (${customerId}).`,
+      customerId, // Associate this notification with the customer ID and name
       orderId: savedOrder._id,
       read: false,
     });
@@ -77,7 +80,7 @@ exports.createOrder = async (req, res) => {
       from: "karimwahba53@gmail.com",
       to: customer.email,
       subject: `Purchase Successfully Order: #${savedOrder._id}`,
-      text: `Your order with ID ${
+      text: `Hi ${fullName},\n\nYour order with ID ${
         savedOrder._id
       } has been successfully purchased. ${savedOrder.cartItems
         .map(
