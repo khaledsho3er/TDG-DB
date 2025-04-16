@@ -21,7 +21,9 @@ const upload = multer({
     contentType: multerS3.AUTO_CONTENT_TYPE,
     acl: "public-read",
     key: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
+      // Replace spaces with underscores in the original file name
+      const sanitizedFileName = file.originalname.replace(/\s+/g, "_");
+      cb(null, `${Date.now()}-${sanitizedFileName}`);
     },
   }),
 });
