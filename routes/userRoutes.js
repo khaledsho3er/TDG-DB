@@ -107,8 +107,19 @@ router.post("/signin", async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       phoneNumber: user.phoneNumber,
-      address1: user.address1,
-      address2: user.address2,
+      shipmentAddress: user.shipmentAddress.map((address) => ({
+        id: address._id,
+        address1: address.address1,
+        address2: address.address2,
+        label: address.label,
+        floor: address.floor,
+        apartment: address.apartment,
+        landmark: address.landmark,
+        city: address.city,
+        postalCode: address.postalCode,
+        country: address.country,
+        isDefault: address.isDefault,
+      })),
       dateOfBirth: user.dateOfBirth,
     };
     res.json({
