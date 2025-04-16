@@ -34,6 +34,14 @@ router.put(
   ]),
   brandController.updateBrand
 );
+router.put(
+  "/:id/media",
+  upload.fields([
+    { name: "brandlogo", maxCount: 1 },
+    { name: "coverPhoto", maxCount: 1 },
+  ]),
+  brandController.updateBrandMedia
+);
 
 // Delete a brand by ID
 router.delete("/:id", brandController.deleteBrand);

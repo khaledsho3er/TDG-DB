@@ -176,6 +176,36 @@ exports.getBrandsByStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+exports.updateBrandMedia = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+    const existingBrand = await Brand.findById(brandId);
+    if (!existingBrand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    const updateFields = {};
+
+    if (req.files?.brandlogo) {
+      updateFields.brandLogo = req.files.brandlogo[0].filename;
+    }
+
+    if (req.files?.coverPhoto) {
+      updateFields.coverPhoto = req.files.coverPhoto[0].filename;
+    }
+
+    const updatedBrand = await Brand.findByIdAndUpdate(
+      brandId,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    res.status(200).json(updatedBrand);
+  } catch (err) {
+    console.error("Error updating brand media:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 exports.updateBrandStatus = async (req, res) => {
   try {
