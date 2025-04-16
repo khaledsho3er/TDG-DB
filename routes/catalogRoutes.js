@@ -3,6 +3,7 @@ const upload = require("../middlewares/catalogsUpload");
 const {
   createCatalog,
   getCatalogs,
+  updateCatalog,
   deleteCatalog,
 } = require("../controllers/catalogController");
 
@@ -18,7 +19,14 @@ router.post(
 );
 //get request to get all catalogs based on brandId
 router.get("/:brandId", getCatalogs);
-
+router.put(
+  "/:id",
+  upload.fields([
+    { name: "pdf", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ]),
+  updateCatalog
+);
 router.delete("/:id", deleteCatalog);
 
 module.exports = router;
