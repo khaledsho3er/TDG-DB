@@ -97,6 +97,7 @@ exports.createOrder = async (req, res) => {
     });
     res.status(201).json(savedOrder);
   } catch (error) {
+    console.error(error);
     res.status(400).json({ error: error.message });
   }
 };
