@@ -141,6 +141,7 @@ exports.updateBrand = async (req, res) => {
     await brand.save();
     res.status(200).json(brand);
   } catch (error) {
+    console.error("Error in updateBrand:", error);
     res.status(400).json({ message: error.message });
   }
 };
