@@ -184,7 +184,7 @@ exports.updateBrandMedia = async (req, res) => {
       return res.status(404).json({ message: "Brand not found" });
     }
 
-    const updateFields = {};
+    const updateFields = req.body;
 
     if (req.files?.brandlogo) {
       updateFields.brandLogo = req.files.brandlogo[0].filename;
