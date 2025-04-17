@@ -71,17 +71,50 @@ exports.createProduct = async (req, res) => {
     // Create and save the product
     const product = new Product(productData);
     await product.save();
-    if (
-      productData.hasVariants === "true" ||
-      productData.hasVariants === true
-    ) {
-      const variations = JSON.parse(productData.variations); // Must be stringified JSON sent from frontend
+    // Handle variants if they exist
+    const hasVariants =
+      productData.hasVariants === true || productData.hasVariants === "true";
 
-      for (const variant of variations) {
-        const sku = `SKU-${product._id}-${variant.color || ""}-${
-          variant.size || ""
-        }-${variant.material || ""}-${Math.floor(Math.random() * 10000)}`;
+    if (hasVariants) {
+      // Validate variants data
+      if (!productData.variations) {
+        throw new Error("Variations data is required when hasVariants is true");
+      }
 
+      let variations;
+      try {
+        variations = JSON.parse(productData.variations);
+        if (!Array.isArray(variations)) {
+          throw new Error("Variations must be an array");
+        }
+      } catch (e) {
+        throw new Error("Invalid variations data format");
+      }
+
+      // Process each variant
+      const variantCreationPromises = variations.map(async (variant) => {
+        // Validate variant data
+        if (!variant.price) {
+          throw new Error("Each variant must have a price");
+        }
+
+        if (variant.salePrice && variant.salePrice >= variant.price) {
+          throw new Error("Sale price must be less than regular price");
+        }
+
+        // Generate SKU
+        const skuParts = [
+          "SKU",
+          product._id,
+          variant.color || "",
+          variant.size || "",
+          variant.material || "",
+          Math.floor(Math.random() * 10000),
+        ].filter(Boolean);
+
+        const sku = skuParts.join("-");
+
+        // Create variant
         const newVariant = new ProductVariant({
           parentProduct: product._id,
           color: variant.color,
@@ -89,15 +122,18 @@ exports.createProduct = async (req, res) => {
           size: variant.size,
           price: variant.price,
           salePrice: variant.salePrice,
-          images: variant.images || [], // These should be passed as array of filenames
+          images: variant.images || [],
           mainImage: variant.mainImage || variant.images?.[0] || "",
           sku: sku,
-          leadTime: variant.leadTime || "", // Optional
+          leadTime: variant.leadTime || productData.leadTime || "",
         });
 
-        await newVariant.save();
-      }
+        return newVariant.save({ session });
+      });
+
+      await Promise.all(variantCreationPromises);
     }
+
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
     console.error("Error creating product:", error);
