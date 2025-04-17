@@ -26,14 +26,12 @@ const router = express.Router();
 router.post(
   "/addproduct",
   upload.fields([
-    { name: "images", maxCount: 10 },
-    { name: "cadFile", maxCount: 1 }, // Add CAD file field
+    { name: "images", maxCount: 10 }, // Main product images
+    { name: "cadFile", maxCount: 1 }, // CAD file
+    { name: "variantImages[*]", maxCount: 10 }, // Variant images (array)
+    { name: "variantMainImages[*]", maxCount: 1 }, // Variant main images (array)
   ]),
-  (req, res) => {
-    console.log("Files:", req.files);
-    console.log("Body:", req.body);
-    res.send("Check logs");
-  },
+  upload.errorHandler,
   createProduct
 );
 router.get("/getproducts", getProducts);
