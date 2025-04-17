@@ -53,7 +53,8 @@ const productSchema = new mongoose.Schema(
     claimProcess: { type: String },
     readyToShip: { type: Boolean, default: false },
     sales: { type: Number, default: 0 },
-    status: { type: Boolean, default: false }, // New attribute to indicate if the product is approved or not
+    status: { type: Boolean, default: false }, // New attribute to indicate if the product is approved or not.
+    hasVariants: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

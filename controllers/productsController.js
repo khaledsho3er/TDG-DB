@@ -1,6 +1,7 @@
 const Product = require("../models/Products");
 const Category = require("../models/category");
 const mongoose = require("mongoose"); // Import mongoose
+const ProductVariant = require("../models/productVariant");
 
 exports.createProduct = async (req, res) => {
   try {
@@ -66,34 +67,37 @@ exports.createProduct = async (req, res) => {
     } else {
       productData.reviews = []; // Set to empty array if not provided
     }
-    // // Handle variants
-    // if (productData.hasVariants && productData.variants) {
-    //   productData.variants = JSON.parse(productData.variants).map((variant) => {
-    //     return {
-    //       ...variant,
-    //       sku: `${productData.sku}-${variant.color
-    //         .toLowerCase()
-    //         .replace(/\s+/g, "-")}-${variant.material
-    //         .toLowerCase()
-    //         .replace(/\s+/g, "-")}-${variant.size
-    //         .toLowerCase()
-    //         .replace(/\s+/g, "-")}`,
-    //       image: variant.image || "", // Ensure image field exists
-    //     };
-    //   });
 
-    //   // Set default variant if provided
-    //   if (productData.defaultVariant) {
-    //     const defaultVariantId = productData.variants.find(
-    //       (v) => v.sku === productData.defaultVariant
-    //     )?._id;
-    //     productData.defaultVariant = defaultVariantId || null;
-    //   }
-    // }
     // Create and save the product
     const product = new Product(productData);
     await product.save();
+    if (
+      productData.hasVariants === "true" ||
+      productData.hasVariants === true
+    ) {
+      const variations = JSON.parse(productData.variations); // Must be stringified JSON sent from frontend
 
+      for (const variant of variations) {
+        const sku = `SKU-${product._id}-${variant.color || ""}-${
+          variant.size || ""
+        }-${variant.material || ""}-${Math.floor(Math.random() * 10000)}`;
+
+        const newVariant = new ProductVariant({
+          parentProduct: product._id,
+          color: variant.color,
+          material: variant.material,
+          size: variant.size,
+          price: variant.price,
+          salePrice: variant.salePrice,
+          images: variant.images || [], // These should be passed as array of filenames
+          mainImage: variant.mainImage || variant.images?.[0] || "",
+          sku: sku,
+          leadTime: variant.leadTime || "", // Optional
+        });
+
+        await newVariant.save();
+      }
+    }
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
     console.error("Error creating product:", error);
