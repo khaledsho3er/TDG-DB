@@ -29,6 +29,11 @@ router.post(
     { name: "images", maxCount: 10 },
     { name: "cadFile", maxCount: 1 }, // Add CAD file field
   ]),
+  (req, res) => {
+    console.log("Files:", req.files);
+    console.log("Body:", req.body);
+    res.send("Check logs");
+  },
   createProduct
 );
 router.get("/getproducts", getProducts);
