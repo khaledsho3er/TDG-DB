@@ -4,9 +4,13 @@ const mongoose = require("mongoose"); // Import mongoose
 const ProductVariant = require("../models/productVariant");
 
 exports.createProduct = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     // Extract form data from req.body
     const productData = req.body;
+
     // Reconstruct arrays for colors and sizes
     if (req.body.colors) {
       productData.colors = Array.isArray(req.body.colors)
@@ -23,64 +27,74 @@ exports.createProduct = async (req, res) => {
             .filter((key) => key.startsWith("sizes["))
             .map((key) => req.body[key]);
     }
-    // Convert category, subcategory, and type to ObjectIDs
-    if (productData.category) {
-      productData.category = new mongoose.Types.ObjectId(productData.category); // Use 'new'
-    }
-    if (productData.subcategory) {
-      productData.subcategory = new mongoose.Types.ObjectId(
-        productData.subcategory
-      ); // Use 'new'
-    }
-    if (productData.type) {
-      productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
-    }
-    // Handle uploaded images
-    if (req.files && req.files.images && req.files.images.length > 0) {
-      const imageUrls = req.files.images.map(
-        (file) => file.filename || file.key
+
+    // Convert IDs to ObjectIDs
+    ["category", "subcategory", "type"].forEach((field) => {
+      if (productData[field]) {
+        productData[field] = new mongoose.Types.ObjectId(productData[field]);
+      }
+    });
+
+    // Handle uploaded main product images
+    if (req.files?.images?.length > 0) {
+      productData.images = req.files.images.map(
+        (file) => file.location || file.key
       );
-      console.log("Uploaded image URLs:", imageUrls);
-      productData.images = imageUrls;
-      productData.mainImage = req.body.mainImage || imageUrls[0];
-    } else {
-      console.log("No images uploaded");
+      productData.mainImage = productData.mainImage || productData.images[0];
     }
+
     // Handle uploaded CAD file
     if (req.files?.cadFile) {
       productData.cadFile =
-        req.files.cadFile[0].filename || req.files.cadFile[0].key;
-    }
-    // Parse nested fields (if sent as JSON strings)
-    if (productData.technicalDimensions) {
-      productData.technicalDimensions = JSON.parse(
-        productData.technicalDimensions
-      );
-    }
-    if (productData.warrantyInfo) {
-      productData.warrantyInfo = JSON.parse(productData.warrantyInfo);
+        req.files.cadFile[0].location || req.files.cadFile[0].key;
     }
 
-    // Ensure reviews is an array of objects
-    if (productData.reviews) {
-      productData.reviews = JSON.parse(productData.reviews); // Parse the stringified array
-    } else {
-      productData.reviews = []; // Set to empty array if not provided
-    }
+    // Parse nested fields if they were sent as JSON strings
+    ["technicalDimensions", "warrantyInfo", "reviews"].forEach((field) => {
+      if (productData[field] && typeof productData[field] === "string") {
+        productData[field] = JSON.parse(productData[field]);
+      }
+    });
 
     // Create and save the product
     const product = new Product(productData);
-    await product.save();
+    await product.save({ session });
+
     // Handle variants if they exist
     const hasVariants =
       productData.hasVariants === true || productData.hasVariants === "true";
 
-    if (hasVariants) {
-      // Validate variants data
-      if (!productData.variations) {
-        throw new Error("Variations data is required when hasVariants is true");
+    if (hasVariants && req.files) {
+      // Process variant images if they exist
+      const variantImagesMap = {};
+      const variantMainImagesMap = {};
+
+      // Group variant images by their index
+      if (req.files.variantImages) {
+        req.files.variantImages.forEach((file) => {
+          const match = file.fieldname.match(/variantImages\[(\d+)\]/);
+          if (match) {
+            const index = match[1];
+            if (!variantImagesMap[index]) {
+              variantImagesMap[index] = [];
+            }
+            variantImagesMap[index].push(file.location || file.key);
+          }
+        });
       }
 
+      // Group variant main images by their index
+      if (req.files.variantMainImages) {
+        req.files.variantMainImages.forEach((file) => {
+          const match = file.fieldname.match(/variantMainImages\[(\d+)\]/);
+          if (match) {
+            const index = match[1];
+            variantMainImagesMap[index] = file.location || file.key;
+          }
+        });
+      }
+
+      // Parse variations data
       let variations;
       try {
         variations = JSON.parse(productData.variations);
@@ -91,8 +105,8 @@ exports.createProduct = async (req, res) => {
         throw new Error("Invalid variations data format");
       }
 
-      // Process each variant
-      const variantCreationPromises = variations.map(async (variant) => {
+      // Create each variant
+      const variantCreationPromises = variations.map(async (variant, index) => {
         // Validate variant data
         if (!variant.price) {
           throw new Error("Each variant must have a price");
@@ -101,6 +115,11 @@ exports.createProduct = async (req, res) => {
         if (variant.salePrice && variant.salePrice >= variant.price) {
           throw new Error("Sale price must be less than regular price");
         }
+
+        // Get images for this variant
+        const variantImages = variantImagesMap[index] || [];
+        const variantMainImage =
+          variantMainImagesMap[index] || variantImages[0] || "";
 
         // Generate SKU
         const skuParts = [
@@ -122,8 +141,8 @@ exports.createProduct = async (req, res) => {
           size: variant.size,
           price: variant.price,
           salePrice: variant.salePrice,
-          images: variant.images || [],
-          mainImage: variant.mainImage || variant.images?.[0] || "",
+          images: variantImages,
+          mainImage: variantMainImage,
           sku: sku,
           leadTime: variant.leadTime || productData.leadTime || "",
         });
@@ -134,10 +153,22 @@ exports.createProduct = async (req, res) => {
       await Promise.all(variantCreationPromises);
     }
 
-    res.status(201).json({ message: "Product created successfully", product });
+    await session.commitTransaction();
+    res.status(201).json({
+      message: "Product created successfully",
+      product,
+      hasVariants,
+      variantCount: hasVariants ? variations.length : 0,
+    });
   } catch (error) {
+    await session.abortTransaction();
     console.error("Error creating product:", error);
-    res.status(500).json({ message: "Error creating product", error });
+    res.status(500).json({
+      message: error.message || "Error creating product",
+      error: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  } finally {
+    session.endSession();
   }
 };
 exports.getProducts = async (req, res) => {
