@@ -26,12 +26,21 @@ const router = express.Router();
 router.post(
   "/addproduct",
   upload.fields([
-    { name: "images", maxCount: 10 }, // Main product images
-    { name: "cadFile", maxCount: 1 }, // CAD file
-    { name: "variantImages[*]", maxCount: 10 }, // Variant images (array)
-    { name: "variantMainImages[*]", maxCount: 1 }, // Variant main images (array)
+    { name: "images", maxCount: 10 },
+    { name: "cadFile", maxCount: 1 },
+    { name: "variantImages", maxCount: 50 }, // Allow up to 50 variant images total
+    { name: "variantMainImages", maxCount: 10 }, // Allow up to 10 variant main images
   ]),
-  upload.errorHandler,
+  (err, req, res, next) => {
+    if (err) {
+      console.error("Upload error:", err);
+      return res.status(400).json({
+        error: err.message,
+        field: err.field,
+      });
+    }
+    next();
+  },
   createProduct
 );
 router.get("/getproducts", getProducts);
