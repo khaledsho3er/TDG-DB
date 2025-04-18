@@ -4,39 +4,49 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // Register a new admin
-exports.registerAdmin = async (req, res) => {
+// signup admin
+exports.signupAdmin = async (req, res) => {
+  const { username, email, password } = req.body;
   try {
-    const { email, password, name } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const admin = new Admin({ email, password: hashedPassword, name });
-    await admin.save();
-    res.status(201).json({ message: "Admin registered successfully" });
+    const existing = await Admin.findOne({ email });
+    if (existing)
+      return res.status(400).json({ message: "Admin already exists" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const newAdmin = new Admin({ username, email, password: hashed });
+    await newAdmin.save();
+
+    res.status(201).json({ message: "Admin created successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
 // Login admin
 exports.loginAdmin = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const { email, password } = req.body;
     const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ error: "Admin not found" });
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
 
     const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign(
       { id: admin._id, role: admin.role },
-      "your_jwt_secret",
-      {
-        expiresIn: "1d",
-      }
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
     );
 
-    res.status(200).json({ token, admin });
+    res
+      .status(200)
+      .json({
+        token,
+        admin: { id: admin._id, username: admin.username, role: admin.role },
+      });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
