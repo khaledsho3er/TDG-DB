@@ -5,6 +5,19 @@ const upload = require("../middlewares/multerSetup");
 const uploadFile = require("../middlewares/multerFiles");
 router.post("/", orderController.createOrder);
 router.get("/", orderController.getAllOrders);
+router.get("/admin-orders", async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("customerId", "firstName lastName email")
+      .populate("cartItems.productId", "name price")
+      .populate("cartItems.brandId", "name");
+
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
 router.get("/bestsellers", orderController.getBestSellers);
 router.get("/order/percentage-change", orderController.getPercentageChange);
 router.get("/sales", orderController.getSalesData);
@@ -34,17 +47,5 @@ router.put(
   orderController.updateCartItemDeliveryDate
 );
 router.put("/orders/:orderId/note", orderController.addOrderNote);
-router.get("/admin-orders", async (req, res) => {
-  try {
-    const orders = await Order.find()
-      .populate("customerId", "firstName lastName email")
-      .populate("cartItems.productId", "name price")
-      .populate("cartItems.brandId", "name");
 
-    res.status(200).json(orders);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch orders" });
-  }
-});
 module.exports = router;
