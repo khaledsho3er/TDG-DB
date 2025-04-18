@@ -121,7 +121,7 @@ app.use("/api/sales", salesAnalytics);
 app.use("/api/catalogs", catalogRoutes);
 app.use("/api/promotions", promotionsRoutes); // Use the promotions routes
 app.use("/api/concepts", conceptRoutes); // Use the concept routes
-app.use("/admin", adminRoutes); // All admin routes prefixed with /adminpanel
+app.use("/api/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 
 // Start the server
 app.listen(port, () => {
