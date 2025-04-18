@@ -962,3 +962,21 @@ exports.addOrderNote = async (req, res) => {
     res.status(500).json({ message: "Server error.", error });
   }
 };
+exports.getAllOrdersAdmin = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("customerId", "firstName lastName email")
+      .populate("cartItems.productId", "name price")
+      .populate("cartItems.brandId", "name")
+      .sort({ createdAt: -1 });
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "No orders found" });
+    }
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Error getting all orders:", error);
+    res.status(500).json({ message: "Server error.", error });
+  }
+};

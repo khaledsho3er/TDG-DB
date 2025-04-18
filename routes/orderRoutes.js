@@ -34,5 +34,5 @@ router.put(
   orderController.updateCartItemDeliveryDate
 );
 router.put("/orders/:orderId/note", orderController.addOrderNote);
-
+router.get("/admin-orders", orderController.getAllOrdersAdmin);
 module.exports = router;
