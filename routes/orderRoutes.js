@@ -34,5 +34,17 @@ router.put(
   orderController.updateCartItemDeliveryDate
 );
 router.put("/orders/:orderId/note", orderController.addOrderNote);
-router.get("/admin-orders", orderController.getAllOrdersAdmin);
+router.get("/admin-orders", async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("customerId", "firstName lastName email")
+      .populate("cartItems.productId", "name price")
+      .populate("cartItems.brandId", "name");
+
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
 module.exports = router;
