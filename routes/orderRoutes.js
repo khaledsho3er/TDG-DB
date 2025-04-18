@@ -11,7 +11,7 @@ router.get("/admin-orders", async (req, res) => {
     const orders = await Order.find()
       .populate("customerId", "firstName lastName email")
       .populate("cartItems.productId", "name price")
-      .populate("cartItems.brandId", "name");
+      .populate("cartItems.brandId", "brandName");
 
     res.status(200).json(orders);
   } catch (err) {
