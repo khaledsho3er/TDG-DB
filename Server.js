@@ -37,6 +37,8 @@ const salesAnalytics = require("./routes/salesRoutes");
 const catalogRoutes = require("./routes/catalogRoutes");
 const conceptRoutes = require("./routes/conceptRoutes");
 const promotionsRoutes = require("./routes/promotionRoutes"); // Import the promotions routes
+const adminRoutes = require("./routes/adminRoutes");
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -119,6 +121,7 @@ app.use("/api/sales", salesAnalytics);
 app.use("/api/catalogs", catalogRoutes);
 app.use("/api/promotions", promotionsRoutes); // Use the promotions routes
 app.use("/api/concepts", conceptRoutes); // Use the concept routes
+app.use("/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 
 // Start the server
 app.listen(port, () => {
