@@ -66,7 +66,7 @@ router.get("/getproducts/readytoship", async (req, res) => {
     })
       .populate("category", "name")
       .populate("subcategory", "name")
-      .populate("brandId", "name logo")
+      .populate("brandId", "brandName brandlogo")
       .populate("vendor", "name email")
       .sort({ createdAt: -1 }); // Sort by newest first by default
 
