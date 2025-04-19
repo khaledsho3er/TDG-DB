@@ -241,7 +241,6 @@ exports.getBestSellers = async (req, res) => {
           image: "$productDetails.mainImage",
           price: "$productDetails.price",
           mainImage: "$productDetails.mainImage",
-          brandName: "$productDetails.brandId.brandName",
           totalSold: 1,
         },
       }, // Format the final output
