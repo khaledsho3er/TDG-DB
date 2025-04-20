@@ -44,7 +44,12 @@ const createConceptImage = async (req, res) => {
 // GET all concepts
 const getAllConceptImages = async (req, res) => {
   try {
-    const concepts = await ConceptImage.find().populate("nodes.productId");
+    const concepts = await ConceptImage.find()
+      .populate("nodes.productId")
+      .populate("category", "name")
+      .populate("subcategory", "name")
+      .populate("type", "name")
+      .populate("brandId", "brandName");
     res.status(200).json({ success: true, concepts });
   } catch (error) {
     console.error("❌ Error in getAllConceptImages:", error);
@@ -55,9 +60,12 @@ const getAllConceptImages = async (req, res) => {
 // GET one concept by ID
 const getConceptImageById = async (req, res) => {
   try {
-    const concept = await ConceptImage.findById(req.params.id).populate(
-      "nodes.productId"
-    );
+    const concept = await ConceptImage.findById(req.params.id)
+      .populate("nodes.productId")
+      .populate("category", "name")
+      .populate("subcategory", "name")
+      .populate("type", "name")
+      .populate("brandId", "brandName");
     if (!concept) {
       return res
         .status(404)
