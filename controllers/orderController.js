@@ -162,7 +162,7 @@ exports.getOrdersByCustomerId = async (req, res) => {
 
     // Find orders where customerId matches and populate the necessary fields
     const orders = await Order.find({ customerId })
-      .populate("cartItems.productId", "name price")
+      .populate("cartItems.productId", "name price mainImage")
       .populate("cartItems.brandId", "name")
       .populate("customerId", "firstName lastName email"); // Populate user info if necessary
 
