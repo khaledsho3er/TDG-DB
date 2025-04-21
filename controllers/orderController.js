@@ -242,13 +242,13 @@ exports.getBestSellers = async (req, res) => {
           price: "$productDetails.price",
           mainImage: "$productDetails.mainImage",
           salePrice: "$productDetails.salePrice",
+          stock: "$productDetails.stock",
           totalSold: 1,
         },
       }, // Format the final output
     ]);
 
     res.status(200).json(bestSellers);
-    console.log("Bestsellers:", bestSellers);
   } catch (error) {
     console.error("Error fetching bestsellers:", error);
     res.status(500).json({ error: error.message });
@@ -301,6 +301,7 @@ exports.getVendorBestSellers = async (req, res) => {
           name: "$productDetails.name",
           image: "$productDetails.mainImage",
           price: "$productDetails.price",
+          stock: "$productDetails.stock",
           totalSold: 1,
         },
       }, // Format the final output
