@@ -124,7 +124,7 @@ app.use("/api/concepts", conceptRoutes); // Use the concept routes
 app.use("/api/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 
 // Start the server
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
 });
 
