@@ -80,7 +80,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true, // More secure
-      secure: true, // Use true only if HTTPS is enabled
+      secure: false, // Use true only if HTTPS is enabled
       sameSite: "None",
     },
   })
@@ -124,7 +124,8 @@ app.use("/api/concepts", conceptRoutes); // Use the concept routes
 app.use("/api/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 
 // Start the server
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
 });
+
 // Export the Express app for testing
