@@ -65,7 +65,7 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log("Connected to MongoDB - TDG-DB");
+    console.log("Now Connected to MongoDB - TDG-DB");
   })
   .catch((error) => {
     console.error("Error connecting to MongoDB:", error);
