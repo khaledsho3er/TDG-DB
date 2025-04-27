@@ -7,6 +7,7 @@ exports.createProduct = async (req, res) => {
   try {
     // Extract form data from req.body
     const productData = req.body;
+
     // Reconstruct arrays for colors and sizes
     if (req.body.colors) {
       productData.colors = Array.isArray(req.body.colors)
@@ -23,6 +24,7 @@ exports.createProduct = async (req, res) => {
             .filter((key) => key.startsWith("sizes["))
             .map((key) => req.body[key]);
     }
+
     // Convert category, subcategory, and type to ObjectIDs
     if (productData.category) {
       productData.category = new mongoose.Types.ObjectId(productData.category); // Use 'new'
@@ -35,6 +37,7 @@ exports.createProduct = async (req, res) => {
     if (productData.type) {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
+
     // Handle uploaded images
     if (req.files && req.files.images && req.files.images.length > 0) {
       const imageUrls = req.files.images.map(
@@ -46,11 +49,13 @@ exports.createProduct = async (req, res) => {
     } else {
       console.log("No images uploaded");
     }
+
     // Handle uploaded CAD file
     if (req.files?.cadFile) {
       productData.cadFile =
         req.files.cadFile[0].filename || req.files.cadFile[0].key;
     }
+
     // Parse nested fields (if sent as JSON strings)
     if (productData.technicalDimensions) {
       productData.technicalDimensions = JSON.parse(
@@ -67,34 +72,41 @@ exports.createProduct = async (req, res) => {
     } else {
       productData.reviews = []; // Set to empty array if not provided
     }
-    // // Handle variants
-    // if (productData.hasVariants && productData.variants) {
-    //   productData.variants = JSON.parse(productData.variants).map((variant) => {
-    //     return {
-    //       ...variant,
-    //       sku: `${productData.sku}-${variant.color
-    //         .toLowerCase()
-    //         .replace(/\s+/g, "-")}-${variant.material
-    //         .toLowerCase()
-    //         .replace(/\s+/g, "-")}-${variant.size
-    //         .toLowerCase()
-    //         .replace(/\s+/g, "-")}`,
-    //       image: variant.image || "", // Ensure image field exists
-    //     };
-    //   });
 
-    //   // Set default variant if provided
-    //   if (productData.defaultVariant) {
-    //     const defaultVariantId = productData.variants.find(
-    //       (v) => v.sku === productData.defaultVariant
-    //     )?._id;
-    //     productData.defaultVariant = defaultVariantId || null;
-    //   }
-    // }
-    // Create and save the product
-    const product = new Product(productData);
+    // Handle variants (if present)
+    let variantIds = [];
+    if (productData.variants) {
+      // Create variants and push their IDs
+      const variants = JSON.parse(productData.variants); // Parse the variants JSON string
+      const variantPromises = variants.map(async (variant) => {
+        const newVariant = new ProductVariant({
+          size: variant.size,
+          color: variant.color,
+          price: variant.price,
+          quantity: variant.quantity,
+          images: variant.images,
+          sku: variant.sku,
+          available: variant.available,
+        });
+
+        const savedVariant = await newVariant.save();
+        variantIds.push(savedVariant._id);
+      });
+
+      // Wait for all variants to be saved
+      await Promise.all(variantPromises);
+    }
+
+    // Create the product with variant references (if variants were created)
+    const product = new Product({
+      ...productData,
+      variants: variantIds, // Link the variants to the product
+    });
+
+    // Save the product
     await product.save();
 
+    // Return the response
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
     console.error("Error creating product:", error);

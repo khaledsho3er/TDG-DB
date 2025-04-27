@@ -1,22 +1,41 @@
 // models/ProductVariant.js
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
+// Variant Schema
 const productVariantSchema = new mongoose.Schema(
   {
-    parentProduct: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required: true,
+    size: {
+      type: String,
+      required: true, // Size like 'Small', 'Medium', 'Large'
     },
-    color: { type: String },
-    material: { type: String },
-    size: { type: String },
-    price: { type: Number },
-    salePrice: { type: Number },
-    images: [{ type: String }],
-    mainImage: { type: String },
-    sku: { type: String, unique: true },
-    leadTime: { type: String }, // Optional: could be days/weeks based on the variation
+    color: {
+      type: String,
+      required: true, // Color like 'Red', 'Blue', etc.
+    },
+    price: {
+      type: Number,
+      required: true, // Price specific to this variant
+    },
+    quantity: {
+      type: Number,
+      required: true, // Stock quantity specific to this variant
+      default: 0,
+    },
+    images: [
+      {
+        type: String, // Array of image paths for this variant
+      },
+    ],
+    sku: {
+      type: String,
+      required: true,
+      unique: true, // Each variant must have a unique SKU
+    },
+    available: {
+      type: Boolean,
+      default: true, // Availability flag (default to true)
+    },
   },
   { timestamps: true }
 );
