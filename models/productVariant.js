@@ -7,19 +7,15 @@ const productVariantSchema = new mongoose.Schema(
   {
     size: {
       type: String,
-      required: true, // Size like 'Small', 'Medium', 'Large'
     },
     color: {
       type: String,
-      required: true, // Color like 'Red', 'Blue', etc.
     },
     price: {
       type: Number,
-      required: true, // Price specific to this variant
     },
     quantity: {
       type: Number,
-      required: true, // Stock quantity specific to this variant
       default: 0,
     },
     images: [
@@ -29,7 +25,6 @@ const productVariantSchema = new mongoose.Schema(
     ],
     sku: {
       type: String,
-      required: true,
       unique: true, // Each variant must have a unique SKU
     },
     available: {
