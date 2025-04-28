@@ -39,7 +39,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER }}
+          username: ${{ secrets.DOCKER_USERNAME }}
           key: ${{ secrets.HETZNER_PRIVATE_KEY }}
           script: |
             docker pull username/tdg-db
