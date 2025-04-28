@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-silm
 
 # Set working directory inside container
 WORKDIR /app
