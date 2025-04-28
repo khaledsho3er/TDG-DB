@@ -36,13 +36,18 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/tdg-db
 
       - name: SSH to Hetzner server and update
-        uses: appleboy/ssh-action@v1.0.0 # Updated to v1.0.0
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
-          key: ${{ secrets.HETZNER_PRIVATE_KEY }}
+          password: ${{ secrets.HETZNER_PASSWORD }} # Add password for SSH login
+          port: 22 # Optional: specify the SSH port if it's not the default (22)
           script: |
+            echo "Pulling the Docker image from Docker Hub..."
             docker pull ${{ secrets.DOCKER_USERNAME }}/tdg-db
+            echo "Stopping existing container (if any)..."
             docker stop tdg-db || true
+            echo "Removing existing container (if any)..."
             docker rm tdg-db || true
+            echo "Starting the new container..."
             docker run -d -p 5000:5000 --name tdg-db ${{ secrets.DOCKER_USERNAME }}/tdg-db
