@@ -36,7 +36,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/tdg-db
 
       - name: SSH to Hetzner server and update
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1.0.0 # Updated to v1.0.0
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
