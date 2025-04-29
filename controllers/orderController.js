@@ -1,6 +1,5 @@
 const Order = require("../models/order");
 const Product = require("../models/Products");
-const Brand = require("../models/Brand"); // Import the Brand model
 const mongoose = require("mongoose");
 const Notification = require("../models/notification"); // Import the Notification model
 const nodemailer = require("nodemailer");
@@ -22,20 +21,16 @@ exports.createOrder = async (req, res) => {
       shippingDetails,
     } = req.body;
 
+    // Fetch each product from the database to get the brandId
     const updatedCartItems = await Promise.all(
       cartItems.map(async (item) => {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Product not found: ${item.productId}`);
+        // Check if enough stock is available
         if (product.stock < item.quantity) {
           throw new Error(`Not enough stock for ${product.name}`);
         }
-
-        const brand = await Brand.findById(item.brandId);
-        if (!brand) throw new Error(`Brand not found: ${item.brandId}`);
-
-        const commissionAmount = item.totalPrice * brand.commissionRate;
-        const taxAmount = item.totalPrice * brand.taxRate;
-
+        // Update stock and sales
         product.stock -= item.quantity;
         product.sales += item.quantity;
         await product.save();
@@ -43,15 +38,14 @@ exports.createOrder = async (req, res) => {
         return {
           ...item,
           brandId: product.brandId, // Auto-assign brandId from Product schema
-          commissionAmount, // Calculate and assign commission
-          taxAmount, // Calculate and assign tax
         };
       })
     );
 
+    // Create the order with updated cartItems
     const newOrder = new Order({
       customerId,
-      cartItems: updatedCartItems, // Updated with brandId, commission, and tax
+      cartItems: updatedCartItems, // Updated with brandId
       subtotal,
       shippingFee,
       total,
@@ -66,16 +60,19 @@ exports.createOrder = async (req, res) => {
     }
 
     const savedOrder = await newOrder.save();
-    const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item
+    // Create a new notification for the brand
+    const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item (can be adjusted if necessary)
     const newNotification = new Notification({
       type: "order",
       description: `You have received a new order from customer ${customerId}.`,
-      brandId,
+      brandId, // Associate this notification with the brand
       orderId: savedOrder._id,
       read: false,
     });
-    await newNotification.save();
 
+    // Save the notification to the database
+    await newNotification.save();
+    // Send an email to the customer with the order ID
     const mailOptions = {
       from: "karimwahba53@gmail.com",
       to: customer.email,
@@ -399,54 +396,6 @@ exports.getPercentageChange = async (req, res) => {
   } catch (error) {
     console.error("Error fetching percentage change data:", error);
     res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getBrandSalesAndEarnings = async (req, res) => {
-  try {
-    const { brandId } = req.params;
-    const { startDate, endDate } = req.query;
-
-    if (!brandId) {
-      return res.status(400).json({ error: "Brand ID is required" });
-    }
-
-    const matchQuery = {
-      "cartItems.brandId": new mongoose.Types.ObjectId(brandId),
-      orderDate: { $gte: new Date(startDate), $lt: new Date(endDate) }, // Date range
-    };
-
-    const result = await Order.aggregate([
-      { $unwind: "$cartItems" },
-      { $match: matchQuery },
-      {
-        $group: {
-          _id: null,
-          totalSales: { $sum: "$cartItems.totalPrice" },
-          totalCommission: { $sum: "$cartItems.commissionAmount" },
-          totalTax: { $sum: "$cartItems.taxAmount" },
-        },
-      },
-    ]);
-
-    const salesData = result[0] || {
-      totalSales: 0,
-      totalCommission: 0,
-      totalTax: 0,
-    }; // Handle case where no data is found
-
-    const netEarnings =
-      salesData.totalSales - salesData.totalCommission - salesData.totalTax;
-
-    res.status(200).json({
-      totalSales: salesData.totalSales,
-      totalCommission: salesData.totalCommission,
-      totalTax: salesData.totalTax,
-      netEarnings,
-    });
-  } catch (error) {
-    console.error("Error fetching sales and earnings:", error);
-    res.status(500).json({ error: "Failed to fetch sales and earnings" });
   }
 };
 
