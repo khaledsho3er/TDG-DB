@@ -29,6 +29,8 @@ const orderSchema = new mongoose.Schema(
           default: "Pending",
           enum: ["Pending", "Confirmed", "Delivered", "Returned", "Cancelled"],
         },
+        commissionAmount: { type: Number }, // Added commissionAmount
+        taxAmount: { type: Number },
       },
     ],
 
