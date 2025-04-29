@@ -28,6 +28,8 @@ const BrandSchema = new mongoose.Schema(
     },
     documents: { type: [String] }, // Array of tax document paths
     fees: { type: Number },
+    commissionRate: { type: Number, default: 0.15 }, // Added commission rate (15%)
+    taxRate: { type: Number, default: 0.14 }, // Added tax rate (14%)
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

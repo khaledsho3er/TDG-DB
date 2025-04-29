@@ -26,7 +26,10 @@ router.get(
   "/vendor/best-sellers/:brandId",
   orderController.getVendorBestSellers
 );
-
+router.get(
+  "/brands/:brandId/accounting/sales-and-earnings",
+  orderController.getBrandSalesAndEarnings
+);
 router.get("/sales-graph/:brandId", orderController.getSalesGraphDataByBrand);
 router.get("/statistics/:brandId", orderController.getOrderStatisticsByBrand);
 router.get("/:id", orderController.getOrderById);
