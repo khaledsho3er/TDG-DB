@@ -33,8 +33,9 @@ exports.createOrder = async (req, res) => {
         const brand = await Brand.findById(item.brandId);
         if (!brand) throw new Error(`Brand not found: ${item.brandId}`);
 
-        const commissionAmount = item.totalPrice * brand.commissionRate;
-        const taxAmount = item.totalPrice * brand.taxRate;
+        const commissionAmount =
+          item.totalPrice * (brand.commissionRate || 0.15);
+        const taxAmount = item.totalPrice * (brand.taxRate || 0.14);
 
         product.stock -= item.quantity;
         product.sales += item.quantity;
