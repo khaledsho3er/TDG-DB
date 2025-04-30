@@ -1,4 +1,3 @@
-
 const Category = require("../models/category");
 const SubCategory = require("../models/subCategory");
 const Type = require("../models/types");
@@ -18,7 +17,9 @@ exports.createCategory = async (req, res) => {
       try {
         subCategories = JSON.parse(req.body.subCategories);
       } catch (error) {
-        return res.status(400).json({ message: "Invalid subCategories format" });
+        return res
+          .status(400)
+          .json({ message: "Invalid subCategories format" });
       }
     }
 
@@ -103,6 +104,7 @@ exports.getAllCategories = async (req, res) => {
         },
       })
       .exec();
+    console.log("got fetched right!");
 
     res.status(200).json(categories);
   } catch (error) {
