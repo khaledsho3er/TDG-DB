@@ -36,7 +36,8 @@ exports.createOrder = async (req, res) => {
         const commissionAmount =
           item.totalPrice * (brand.commissionRate || 0.15);
         const taxAmount = item.totalPrice * (brand.taxRate || 0.14);
-
+        console.log("brand.taxRate:", brand.taxRate);
+        console.log("brand.commissionRate:", brand.commissionRate);
         product.stock -= item.quantity;
         product.sales += item.quantity;
         await product.save();
