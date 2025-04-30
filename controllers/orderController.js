@@ -30,7 +30,7 @@ exports.createOrder = async (req, res) => {
           throw new Error(`Not enough stock for ${product.name}`);
         }
         console.log("Product:", product); // <===== ADD THIS LINE
-        console.log("item.brandId:", item.brandId);
+        console.log("item.brandId:", product.brandId);
 
         const brand = await Brand.findById(item.brandId);
         if (!brand) throw new Error(`Brand not found: ${item.brandId}`);
