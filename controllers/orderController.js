@@ -29,15 +29,16 @@ exports.createOrder = async (req, res) => {
         if (product.stock < item.quantity) {
           throw new Error(`Not enough stock for ${product.name}`);
         }
+        console.log("Product:", product); // <===== ADD THIS LINE
+        console.log("item.brandId:", item.brandId);
 
         const brand = await Brand.findById(item.brandId);
         if (!brand) throw new Error(`Brand not found: ${item.brandId}`);
 
-        // const commissionAmount =
-        //   item.totalPrice * (brand.commissionRate || 0.15);
-        // const taxAmount = item.totalPrice * (brand.taxRate || 0.14);
-        // console.log("brand.taxRate:", brand.taxRate);
-        // console.log("brand.commissionRate:", brand.commissionRate);
+        const commissionAmount =
+          item.totalPrice * (brand.commissionRate || 0.15);
+        const taxAmount = item.totalPrice * (brand.taxRate || 0.14);
+
         product.stock -= item.quantity;
         product.sales += item.quantity;
         await product.save();
@@ -45,8 +46,8 @@ exports.createOrder = async (req, res) => {
         return {
           ...item,
           brandId: product.brandId, // Auto-assign brandId from Product schema
-          // commissionAmount, // Calculate and assign commission
-          // taxAmount, // Calculate and assign tax
+          commissionAmount, // Calculate and assign commission
+          taxAmount, // Calculate and assign tax
         };
       })
     );
