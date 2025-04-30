@@ -32,7 +32,7 @@ exports.createOrder = async (req, res) => {
         console.log("Product:", product); // <===== ADD THIS LINE
         console.log("item.brandId:", product.brandId);
 
-        const brand = await Brand.findById(item.brandId);
+        const brand = await Brand.findById(product.brandId);
         if (!brand) throw new Error(`Brand not found: ${item.brandId}`);
 
         const commissionAmount =
