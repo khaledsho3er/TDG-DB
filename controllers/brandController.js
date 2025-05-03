@@ -30,13 +30,9 @@ exports.createBrand = async (req, res) => {
     let typeIds = [];
     if (types && Array.isArray(types)) {
       try {
-        typeIds = await Type.find({ _id: { $in: types } }).select("_id name");
+        typeIds = await Type.find({ _id: { $in: types } }).select("_id");
         console.log("Found types:", typeIds);
         typeIds = typeIds.map((type) => type._id); // Extract only valid IDs
-        typesWithNames = foundTypes.map((type) => ({
-          id: type._id,
-          name: type.name,
-        })); // Extract IDs and names
       } catch (typeError) {
         console.error("Error finding types:", typeError);
         throw new Error(`Error validating types: ${typeError.message}`);
@@ -61,7 +57,8 @@ exports.createBrand = async (req, res) => {
       shippingPolicy,
       brandDescription,
       fees,
-      types: typesWithNames,
+      types: typeIds, // Associate types with the brand
+      brandlogo: req.files["brandlogo"] ? req.files["brandlogo"][0].key : null,
       digitalCopiesLogo: req.files["digitalCopiesLogo"]
         ? req.files["digitalCopiesLogo"].map((file) => file.filename)
         : [],
