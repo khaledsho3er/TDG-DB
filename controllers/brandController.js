@@ -228,17 +228,21 @@ exports.updateBrandStatus = async (req, res) => {
   }
 };
 // Update brand logo and cover photo
+const path = require("path");
+
 exports.updateBrandImages = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = {};
 
     if (req.files["brandlogo"] && req.files["brandlogo"][0]) {
-      updateData.brandlogo = req.files["brandlogo"][0].location; // Cloudflare R2 public URL
+      const fullUrl = req.files["brandlogo"][0].location;
+      updateData.brandlogo = path.basename(fullUrl); // Get only the filename
     }
 
     if (req.files["coverPhoto"] && req.files["coverPhoto"][0]) {
-      updateData.coverPhoto = req.files["coverPhoto"][0].location;
+      const fullUrl = req.files["coverPhoto"][0].location;
+      updateData.coverPhoto = path.basename(fullUrl); // Get only the filename
     }
 
     const updatedBrand = await Brand.findByIdAndUpdate(id, updateData, {
