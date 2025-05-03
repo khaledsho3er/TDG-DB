@@ -47,5 +47,12 @@ router.put(
 router.delete("/:id", brandController.deleteBrand);
 router.get("/status/:status", brandController.getBrandsByStatus);
 router.put("/partners/:id/status", brandController.updateBrandStatus);
-
+router.put(
+  "/brands/:id/update-images",
+  upload.fields([
+    { name: "brandlogo", maxCount: 1 },
+    { name: "coverPhoto", maxCount: 1 },
+  ]),
+  brandController.updateBrandImages
+);
 module.exports = router;

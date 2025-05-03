@@ -227,3 +227,33 @@ exports.updateBrandStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Update brand logo and cover photo
+exports.updateBrandImages = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = {};
+
+    if (req.files["brandlogo"] && req.files["brandlogo"][0]) {
+      updateData.brandlogo = req.files["brandlogo"][0].location; // Cloudflare R2 public URL
+    }
+
+    if (req.files["coverPhoto"] && req.files["coverPhoto"][0]) {
+      updateData.coverPhoto = req.files["coverPhoto"][0].location;
+    }
+
+    const updatedBrand = await Brand.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    if (!updatedBrand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Images updated successfully", brand: updatedBrand });
+  } catch (error) {
+    console.error("Error updating brand images:", error);
+    res.status(500).json({ message: "Server error while updating images" });
+  }
+};
