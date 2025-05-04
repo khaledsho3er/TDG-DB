@@ -104,8 +104,6 @@ exports.getAllCategories = async (req, res) => {
         },
       })
       .exec();
-    console.log("got fetched right!");
-
     res.status(200).json(categories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching categories", error });
