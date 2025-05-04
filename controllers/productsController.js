@@ -41,19 +41,20 @@ exports.createProduct = async (req, res) => {
       productData.type = new mongoose.Types.ObjectId(productData.type); // Use 'new'
     }
 
-    // Handle uploaded images
-    // Resize and upload images to R2
+    // Handle image uploads
     if (req.files && req.files.images && req.files.images.length > 0) {
       const sizes = [
         { name: "thumb", width: 150 },
         { name: "medium", width: 500 },
         { name: "large", width: 1000 },
       ];
-      const imageUrls = [];
+      const imageFilenames = [];
 
       for (const file of req.files.images) {
         const originalName = file.originalname.replace(/\s+/g, "-");
-        const baseName = `${Date.now()}-${path.parse(originalName).name}`;
+        const baseName = `${Date.now()}-${path
+          .parse(originalName)
+          .name.toLowerCase()}`;
 
         for (const size of sizes) {
           const resizedBuffer = await sharp(file.buffer)
@@ -61,33 +62,30 @@ exports.createProduct = async (req, res) => {
             .toFormat("webp")
             .toBuffer();
 
-          const key = `${baseName}-${size.name}.webp`;
+          const filename = `${baseName}-${size.name}.webp`;
 
           await s3.send(
             new PutObjectCommand({
               Bucket: "images",
-              Key: key,
+              Key: filename,
               Body: resizedBuffer,
               ContentType: "image/webp",
               ACL: "public-read",
             })
           );
 
-          // You can customize this URL depending on your R2 setup
-          const imageUrl = `https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/images/${key}`;
-          imageUrls.push(imageUrl);
+          imageFilenames.push(filename); // Only push file name
         }
       }
 
-      productData.images = imageUrls;
+      productData.images = imageFilenames;
       productData.mainImage =
         req.body.mainImage ||
-        imageUrls.find((url) => url.includes("medium")) ||
-        imageUrls[0];
+        imageFilenames.find((name) => name.includes("medium")) ||
+        imageFilenames[0];
     } else {
       console.log("No images uploaded");
     }
-
     // Handle uploaded CAD file
     if (req.files?.cadFile) {
       productData.cadFile =
