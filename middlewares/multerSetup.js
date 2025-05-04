@@ -12,23 +12,25 @@ const s3 = new S3Client({
     secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
   },
 });
-
+// Store images in memory
+const storage = multer.memoryStorage();
 // Multer S3 Storage
 const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: "images",
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    acl: "public-read",
-    key: (req, file, cb) => {
-      const fileName = file.originalname.replace(/\s+/g, "-");
-      const uniqueFileName = `${Date.now()}-${fileName}`;
-      cb(null, uniqueFileName);
-    },
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-  }),
+  // storage: multerS3({
+  //   s3: s3,
+  //   bucket: "images",
+  //   contentType: multerS3.AUTO_CONTENT_TYPE,
+  //   acl: "public-read",
+  //   key: (req, file, cb) => {
+  //     const fileName = file.originalname.replace(/\s+/g, "-");
+  //     const uniqueFileName = `${Date.now()}-${fileName}`;
+  //     cb(null, uniqueFileName);
+  //   },
+  //   metadata: (req, file, cb) => {
+  //     cb(null, { fieldName: file.fieldname });
+  //   },
+  // }),
+  storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -66,3 +68,4 @@ const upload = multer({
 });
 
 module.exports = upload;
+module.exports.s3 = s3; // ✅ Export s3 instance for use in controller

@@ -2,7 +2,10 @@ const Product = require("../models/Products");
 const Category = require("../models/category");
 const mongoose = require("mongoose"); // Import mongoose
 const ProductVariant = require("../models/productVariant");
-
+const sharp = require("sharp");
+const path = require("path");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { s3 } = require("../middlewares/multerSetup"); // ✅ import your R2 client
 exports.createProduct = async (req, res) => {
   try {
     // Extract form data from req.body
@@ -39,13 +42,48 @@ exports.createProduct = async (req, res) => {
     }
 
     // Handle uploaded images
+    // Resize and upload images to R2
     if (req.files && req.files.images && req.files.images.length > 0) {
-      const imageUrls = req.files.images.map(
-        (file) => file.filename || file.key
-      );
-      console.log("Uploaded image URLs:", imageUrls);
+      const sizes = [
+        { name: "thumb", width: 150 },
+        { name: "medium", width: 500 },
+        { name: "large", width: 1000 },
+      ];
+      const imageUrls = [];
+
+      for (const file of req.files.images) {
+        const originalName = file.originalname.replace(/\s+/g, "-");
+        const baseName = `${Date.now()}-${path.parse(originalName).name}`;
+
+        for (const size of sizes) {
+          const resizedBuffer = await sharp(file.buffer)
+            .resize({ width: size.width })
+            .toFormat("webp")
+            .toBuffer();
+
+          const key = `${baseName}-${size.name}.webp`;
+
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: "images",
+              Key: key,
+              Body: resizedBuffer,
+              ContentType: "image/webp",
+              ACL: "public-read",
+            })
+          );
+
+          // You can customize this URL depending on your R2 setup
+          const imageUrl = `https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/images/${key}`;
+          imageUrls.push(imageUrl);
+        }
+      }
+
       productData.images = imageUrls;
-      productData.mainImage = req.body.mainImage || imageUrls[0];
+      productData.mainImage =
+        req.body.mainImage ||
+        imageUrls.find((url) => url.includes("medium")) ||
+        imageUrls[0];
     } else {
       console.log("No images uploaded");
     }
