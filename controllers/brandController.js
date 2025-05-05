@@ -297,7 +297,7 @@ exports.getBrandFinancialData = async (req, res) => {
 
     res.status(200).json(financialData);
   } catch (error) {
-    console.error("Error getting brand financial data:", error);
+    console.error("Errorr getting brand financial data:", error);
     res.status(500).json({ message: error.message });
   }
 };
