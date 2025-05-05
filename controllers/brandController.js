@@ -261,3 +261,26 @@ exports.updateBrandImages = async (req, res) => {
     res.status(500).json({ message: "Server error while updating images" });
   }
 };
+exports.getBrandFinancialData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const brand = await Brand.findById(id);
+
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    // Calculate financial metrics
+    const financialData = {
+      commissionRate: brand.commissionRate || 0.15, // Default 15% if not set
+      taxRate: brand.taxRate || 0.14, // Default 14% if not set
+      fees: brand.fees || 0,
+      // You can add more financial calculations here as needed
+    };
+
+    res.status(200).json(financialData);
+  } catch (error) {
+    console.error("Error getting brand financial data:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

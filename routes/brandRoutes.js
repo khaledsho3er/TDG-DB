@@ -55,4 +55,6 @@ router.put(
   ]),
   brandController.updateBrandImages
 );
+router.get("/:id/financial", brandController.getBrandFinancialData);
+
 module.exports = router;
