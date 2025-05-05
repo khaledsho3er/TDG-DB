@@ -273,8 +273,8 @@ exports.getBrandFinancialData = async (req, res) => {
 
     // Calculate total sales from cartItems in orders for this brand
     const totalSales = await Order.aggregate([
-      { $unwind: "$cartItems" }, // Unwind the cartItems array
-      { $match: { "cartItems.brandId": id } }, // Match items for this brand
+      { $unwind: "$cartItems" },
+      { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(id) } },
       {
         $group: {
           _id: null,
