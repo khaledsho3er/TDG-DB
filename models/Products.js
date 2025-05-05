@@ -25,8 +25,16 @@ const productSchema = new mongoose.Schema(
     ],
     colors: [{ type: String }],
     sizes: [{ type: String }],
-    images: [{ type: String }], // Array of image paths
-    mainImage: { type: String }, // Highlighted main image
+    images: [
+      {
+        webp: { type: String },
+        jpeg: { type: String },
+      },
+    ],
+    mainImage: {
+      webp: { type: String },
+      jpeg: { type: String },
+    },
     description: { type: String, maxlength: 2000 },
     cadFile: { type: String },
     technicalDimensions: {
