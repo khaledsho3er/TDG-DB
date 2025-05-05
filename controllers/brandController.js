@@ -1,5 +1,6 @@
 const Brand = require("../models/Brand");
 const Type = require("../models/types");
+const Order = require("../models/Order");
 const upload = require("../middlewares/brandMulterSetup");
 
 // Create a new brand
@@ -270,12 +271,28 @@ exports.getBrandFinancialData = async (req, res) => {
       return res.status(404).json({ message: "Brand not found" });
     }
 
+    // Calculate total sales from cartItems in orders for this brand
+    const totalSales = await Order.aggregate([
+      { $unwind: "$cartItems" }, // Unwind the cartItems array
+      { $match: { "cartItems.brandId": id } }, // Match items for this brand
+      {
+        $group: {
+          _id: null,
+          total: {
+            $sum: {
+              $multiply: ["$cartItems.price", "$cartItems.quantity"],
+            },
+          },
+        },
+      },
+    ]);
+
     // Calculate financial metrics
     const financialData = {
+      totalSales: totalSales.length > 0 ? totalSales[0].total : 0,
       commissionRate: brand.commissionRate || 0.15, // Default 15% if not set
       taxRate: brand.taxRate || 0.14, // Default 14% if not set
       fees: brand.fees || 0,
-      // You can add more financial calculations here as needed
     };
 
     res.status(200).json(financialData);
