@@ -266,7 +266,7 @@ exports.updateBrandImages = async (req, res) => {
 exports.getBrandFinancialData = async (req, res) => {
   try {
     const { brandId } = req.params;
-    const brand = await Brand.findById(id);
+    const brand = await Brand.findById(brandId);
 
     if (!brand) {
       return res.status(404).json({ message: "Brand not found" });
