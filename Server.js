@@ -182,13 +182,17 @@ app.use("/api/concepts", conceptRoutes); // Use the concept routes
 app.use("/api/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 
 // Start the server
-app.listen(port, "0.0.0.0", () => {
+const server = app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
 });
+
+// WebSocket upgrade handling
 server.on("upgrade", (request, socket, head) => {
   wss.handleUpgrade(request, socket, head, (ws) => {
     wss.emit("connection", ws, request);
   });
 });
+
+module.exports = app; // Export app for testing
 
 // Export the Express app for testing
