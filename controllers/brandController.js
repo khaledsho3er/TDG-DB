@@ -2,7 +2,6 @@ const Brand = require("../models/Brand");
 const Type = require("../models/types");
 const Order = require("../models/order");
 const upload = require("../middlewares/brandMulterSetup");
-const mongoose = require("mongoose");
 
 // Create a new brand
 exports.createBrand = async (req, res) => {
@@ -265,8 +264,8 @@ exports.updateBrandImages = async (req, res) => {
 };
 exports.getBrandFinancialData = async (req, res) => {
   try {
-    const { brandId } = req.params;
-    const brand = await Brand.findById(brandId);
+    const { id } = req.params;
+    const brand = await Brand.findById(id);
 
     if (!brand) {
       return res.status(404).json({ message: "Brand not found" });
@@ -275,7 +274,7 @@ exports.getBrandFinancialData = async (req, res) => {
     // Calculate total sales from cartItems in orders for this brand
     const totalSales = await Order.aggregate([
       { $unwind: "$cartItems" },
-      { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(brandId) } },
+      { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(id) } },
       {
         $group: {
           _id: null,
@@ -298,7 +297,7 @@ exports.getBrandFinancialData = async (req, res) => {
 
     res.status(200).json(financialData);
   } catch (error) {
-    console.error("Errorr getting brand financial data:", error);
+    console.error("Error getting brand financial data:", error);
     res.status(500).json({ message: error.message });
   }
 };
