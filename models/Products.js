@@ -25,12 +25,7 @@ const productSchema = new mongoose.Schema(
     ],
     colors: [{ type: String }],
     sizes: [{ type: String }],
-    images: [
-      {
-        webp: { type: String },
-        jpeg: { type: String },
-      },
-    ],
+    images: [{ type: String }],
     mainImage: {
       webp: { type: String },
       jpeg: { type: String },
