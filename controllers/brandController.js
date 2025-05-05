@@ -2,7 +2,7 @@ const Brand = require("../models/Brand");
 const Type = require("../models/types");
 const Order = require("../models/order");
 const upload = require("../middlewares/brandMulterSetup");
-
+const mongoose = require("mongoose");
 // Create a new brand
 exports.createBrand = async (req, res) => {
   try {
