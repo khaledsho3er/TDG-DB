@@ -2,6 +2,7 @@ const Brand = require("../models/Brand");
 const Type = require("../models/types");
 const Order = require("../models/order");
 const upload = require("../middlewares/brandMulterSetup");
+const mongoose = require("mongoose");
 
 // Create a new brand
 exports.createBrand = async (req, res) => {
@@ -264,7 +265,7 @@ exports.updateBrandImages = async (req, res) => {
 };
 exports.getBrandFinancialData = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { brandId } = req.params;
     const brand = await Brand.findById(id);
 
     if (!brand) {
@@ -274,7 +275,7 @@ exports.getBrandFinancialData = async (req, res) => {
     // Calculate total sales from cartItems in orders for this brand
     const totalSales = await Order.aggregate([
       { $unwind: "$cartItems" },
-      { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(_id) } },
+      { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(brandId) } },
       {
         $group: {
           _id: null,
