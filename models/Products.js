@@ -25,11 +25,18 @@ const productSchema = new mongoose.Schema(
     ],
     colors: [{ type: String }],
     sizes: [{ type: String }],
-    images: [{ type: String }],
+    images: [
+      {
+        size: { type: String, enum: ["thumb", "medium", "large"] },
+        webp: { type: String },
+        jpeg: { type: String },
+      },
+    ],
     mainImage: {
       webp: { type: String },
       jpeg: { type: String },
     },
+
     description: { type: String, maxlength: 2000 },
     cadFile: { type: String },
     technicalDimensions: {

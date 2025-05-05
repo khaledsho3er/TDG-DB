@@ -42,14 +42,14 @@ exports.createProduct = async (req, res) => {
     }
 
     // Handle image uploads
-    if (req.files && req.files.images && req.files.images.length > 0) {
-      const sizes = [
-        { name: "thumb", width: 150 },
-        { name: "medium", width: 500 },
-        { name: "large", width: 1000 },
-      ];
-      const imageFilenames = [];
+    const structuredImages = [];
+    const sizes = [
+      { name: "thumb", width: 150 },
+      { name: "medium", width: 500 },
+      { name: "large", width: 1000 },
+    ];
 
+    if (req.files && req.files.images && req.files.images.length > 0) {
       for (const file of req.files.images) {
         const originalName = file.originalname.replace(/\s+/g, "-");
         const baseName = `${Date.now()}-${path
@@ -57,56 +57,56 @@ exports.createProduct = async (req, res) => {
           .name.toLowerCase()}`;
 
         for (const size of sizes) {
-          // WEBP version
           const webpBuffer = await sharp(file.buffer)
             .resize({ width: size.width })
             .toFormat("webp")
             .toBuffer();
 
-          const webpFilename = `${baseName}-${size.name}.webp`;
-
-          await s3.send(
-            new PutObjectCommand({
-              Bucket: "images",
-              Key: webpFilename,
-              Body: webpBuffer,
-              ContentType: "image/webp",
-              ACL: "public-read",
-            })
-          );
-
-          // JPEG fallback version
           const jpegBuffer = await sharp(file.buffer)
             .resize({ width: size.width })
-            .jpeg({ quality: 80 }) // Adjust quality if needed
+            .jpeg({ quality: 85 })
             .toBuffer();
 
+          const webpFilename = `${baseName}-${size.name}.webp`;
           const jpegFilename = `${baseName}-${size.name}.jpg`;
 
-          await s3.send(
-            new PutObjectCommand({
-              Bucket: "images",
-              Key: jpegFilename,
-              Body: jpegBuffer,
-              ContentType: "image/jpeg",
-              ACL: "public-read",
-            })
-          );
+          await Promise.all([
+            s3.send(
+              new PutObjectCommand({
+                Bucket: "images",
+                Key: webpFilename,
+                Body: webpBuffer,
+                ContentType: "image/webp",
+                ACL: "public-read",
+              })
+            ),
+            s3.send(
+              new PutObjectCommand({
+                Bucket: "images",
+                Key: jpegFilename,
+                Body: jpegBuffer,
+                ContentType: "image/jpeg",
+                ACL: "public-read",
+              })
+            ),
+          ]);
 
-          // Save both versions
-          imageFilenames.push({
+          structuredImages.push({
+            size: size.name,
             webp: webpFilename,
             jpeg: jpegFilename,
           });
         }
       }
 
-      productData.images = imageFilenames;
+      productData.images = structuredImages;
 
-      productData.mainImage =
-        req.body.mainImage ||
-        imageFilenames.find((name) => name.webp.includes("medium")) ||
-        imageFilenames[0];
+      // Main image will be medium or fallback to first
+      const medium = structuredImages.find((img) => img.size === "medium");
+      productData.mainImage = {
+        webp: medium?.webp || structuredImages[0]?.webp,
+        jpeg: medium?.jpeg || structuredImages[0]?.jpeg,
+      };
     } else {
       console.log("No images uploaded");
     }
