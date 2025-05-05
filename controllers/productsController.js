@@ -57,31 +57,55 @@ exports.createProduct = async (req, res) => {
           .name.toLowerCase()}`;
 
         for (const size of sizes) {
-          const resizedBuffer = await sharp(file.buffer)
+          // WEBP version
+          const webpBuffer = await sharp(file.buffer)
             .resize({ width: size.width })
             .toFormat("webp")
             .toBuffer();
 
-          const filename = `${baseName}-${size.name}.webp`;
+          const webpFilename = `${baseName}-${size.name}.webp`;
 
           await s3.send(
             new PutObjectCommand({
               Bucket: "images",
-              Key: filename,
-              Body: resizedBuffer,
+              Key: webpFilename,
+              Body: webpBuffer,
               ContentType: "image/webp",
               ACL: "public-read",
             })
           );
 
-          imageFilenames.push(filename); // Only push file name
+          // JPEG fallback version
+          const jpegBuffer = await sharp(file.buffer)
+            .resize({ width: size.width })
+            .jpeg({ quality: 80 }) // Adjust quality if needed
+            .toBuffer();
+
+          const jpegFilename = `${baseName}-${size.name}.jpg`;
+
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: "images",
+              Key: jpegFilename,
+              Body: jpegBuffer,
+              ContentType: "image/jpeg",
+              ACL: "public-read",
+            })
+          );
+
+          // Save both versions
+          imageFilenames.push({
+            webp: webpFilename,
+            jpeg: jpegFilename,
+          });
         }
       }
 
       productData.images = imageFilenames;
+
       productData.mainImage =
         req.body.mainImage ||
-        imageFilenames.find((name) => name.includes("medium")) ||
+        imageFilenames.find((name) => name.webp.includes("medium")) ||
         imageFilenames[0];
     } else {
       console.log("No images uploaded");
