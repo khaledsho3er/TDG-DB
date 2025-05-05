@@ -1,8 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config();
-const { MongoClient } = require("mongodb"); // Import MongoClient
-const WebSocket = require("ws"); // Import WebSocket library
 const bodyParser = require("body-parser");
 const userRoutes = require("./routes/userRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
@@ -43,21 +41,6 @@ const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 const port = process.env.PORT || 5000;
-// Handle WebSocket connections
-const wss = new WebSocket.Server({ noServer: true });
-wss.on("connection", (ws) => {
-  console.log("A new WebSocket client connected");
-  ws.send(JSON.stringify({ message: "Connected to WebSocket server" }));
-});
-
-// Broadcast helper
-function broadcastChange(change) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(change));
-    }
-  });
-}
 
 // Enable CORS globally for all routes
 app.use(
@@ -74,60 +57,19 @@ app.use(bodyParser.json({ limit: "500mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "500mb" })); // Support URL-encoded data
 // MongoDB connection URI
 const mongoURI = process.env.Mongo_server;
-const client = new MongoClient(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-const collectionsToWatch = [
-  "quotations",
-  "orders",
-  "products",
-  "notifications",
-  "reviews",
-  "jobforms",
-  "favorites",
-  "vendors",
-  "conceptimages",
-  "newsletters",
-  "viewinstore",
-  "tags",
-  "producttags",
-  "sales",
-  "contactus",
-  "brands",
-  "users",
-  "cards",
-];
+
 // Connect to MongoDB
 mongoose
   .connect(mongoURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(async () => {
+  .then(() => {
     console.log("Now Connected to MongoDB - TDG-DB");
-
-    await client.connect();
-    const db = client.db("TDG-DB"); // 👈 Make sure this is your actual DB name
-
-    collectionsToWatch.forEach((collectionName) => {
-      const collection = db.collection(collectionName);
-      const changeStream = collection.watch();
-
-      changeStream.on("change", (change) => {
-        console.log(`Change in ${collectionName}:`, change);
-        broadcastChange({ collection: collectionName, ...change });
-      });
-    });
-
-    console.log(
-      "Change streams initialized for:",
-      collectionsToWatch.join(", ")
-    );
   })
   .catch((error) => {
     console.error("Error connecting to MongoDB:", error);
-    process.exit(1);
+    process.exit(1); // Exit the application if the database connection fails
   });
 
 // Set up session middleware
@@ -182,17 +124,6 @@ app.use("/api/concepts", conceptRoutes); // Use the concept routes
 app.use("/api/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 
 // Start the server
-const server = app.listen(port, "0.0.0.0", () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
 });
-
-// WebSocket upgrade handling
-server.on("upgrade", (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit("connection", ws, request);
-  });
-});
-
-module.exports = app; // Export app for testing
-
-// Export the Express app for testing
