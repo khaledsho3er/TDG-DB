@@ -267,6 +267,11 @@ exports.getBrandFinancialData = async (req, res) => {
     const { id } = req.params;
     const { range } = req.query;
 
+    const brand = await Brand.findById(id);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
     const matchConditions = {
       "cartItems.brandId": new mongoose.Types.ObjectId(id),
     };
@@ -283,17 +288,12 @@ exports.getBrandFinancialData = async (req, res) => {
     }
 
     if (fromDate) {
-      matchConditions.createdAt = { $gte: fromDate }; // Assuming orders have createdAt field
+      matchConditions.createdAt = { $gte: fromDate };
     }
 
     const salesByDate = await Order.aggregate([
       { $unwind: "$cartItems" },
       { $match: matchConditions },
-      {
-        $match: {
-          "cartItems.brandId": new mongoose.Types.ObjectId(id),
-        },
-      },
       {
         $group: {
           _id: {
@@ -309,11 +309,20 @@ exports.getBrandFinancialData = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // Calculate financial metrics
+    // Calculate the total sales from salesByDate
+    const totalSales = salesByDate.reduce(
+      (sum, item) => sum + item.totalSales,
+      0
+    );
+
     const financialData = {
-      totalSales: totalSales.length > 0 ? totalSales[0].total : 0,
-      commissionRate: brand.commissionRate || 0.15, // Default 15% if not set
-      taxRate: brand.taxRate || 0.14, // Default 14% if not set
+      totalSales,
+      salesByDate: salesByDate.map((entry) => ({
+        date: entry._id,
+        amount: entry.totalSales,
+      })),
+      commissionRate: brand.commissionRate || 0.15,
+      taxRate: brand.taxRate || 0.14,
       fees: brand.fees || 0,
     };
 
