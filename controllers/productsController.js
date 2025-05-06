@@ -1,5 +1,6 @@
 const Product = require("../models/Products");
 const Category = require("../models/category");
+const Notification = require("../models/notification");
 const mongoose = require("mongoose"); // Import mongoose
 const ProductVariant = require("../models/productVariant");
 exports.createProduct = async (req, res) => {
@@ -590,8 +591,10 @@ exports.updateProductStatus = async (req, res) => {
   const { productId } = req.params;
   const { status, rejectionNote } = req.body;
 
-  if (typeof status !== 'boolean') {
-    return res.status(400).json({ message: 'Status must be a boolean (true or false).' });
+  if (typeof status !== "boolean") {
+    return res
+      .status(400)
+      .json({ message: "Status must be a boolean (true or false)." });
   }
 
   const updateData = { status };
@@ -603,22 +606,33 @@ exports.updateProductStatus = async (req, res) => {
   }
 
   try {
-    const product = await Product.findByIdAndUpdate(
-      productId,
-      updateData,
-      { new: true }
-    );
+    const product = await Product.findByIdAndUpdate(productId, updateData, {
+      new: true,
+    });
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found.' });
+      return res.status(404).json({ message: "Product not found." });
     }
+    let description = `Your product "${product.name}" has been ${
+      status ? "accepted" : "rejected"
+    }.`;
+    if (!status && product.rejectionNote) {
+      description += ` Reason: ${product.rejectionNote}`;
+    }
+    // Create a notification for the brand
+    const notification = new Notification({
+      type: "Product Status",
+      description,
+      brandId: product.brandId,
+    });
 
+    await notification.save();
     res.status(200).json({
-      message: `Product ${status ? 'accepted' : 'rejected'} successfully.`,
+      message: `Product ${status ? "accepted" : "rejected"} successfully.`,
       product,
     });
   } catch (error) {
-    console.error('Error updating product status:', error);
-    res.status(500).json({ message: 'Server error.' });
+    console.error("Error updating product status:", error);
+    res.status(500).json({ message: "Server error." });
   }
 };
