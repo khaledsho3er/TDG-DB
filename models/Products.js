@@ -54,6 +54,7 @@ const productSchema = new mongoose.Schema(
     readyToShip: { type: Boolean, default: false },
     sales: { type: Number, default: 0 },
     status: { type: Boolean, default: false }, // New attribute to indicate if the product is approved or not
+    rejectionNote: { type: String }, // Optional note when product is rejected
     variants: [
       {
         type: mongoose.Schema.Types.ObjectId,

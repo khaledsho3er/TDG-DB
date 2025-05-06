@@ -586,3 +586,39 @@ exports.calculatePastPromotionMetrics = async (req, res) => {
       .json({ message: "Error calculating promotion metrics", error });
   }
 };
+exports.updateProductStatus = async (req, res) => {
+  const { productId } = req.params;
+  const { status, rejectionNote } = req.body;
+
+  if (typeof status !== 'boolean') {
+    return res.status(400).json({ message: 'Status must be a boolean (true or false).' });
+  }
+
+  const updateData = { status };
+
+  if (status === false && rejectionNote) {
+    updateData.rejectionNote = rejectionNote;
+  } else if (status === true) {
+    updateData.rejectionNote = undefined; // Clear note if product is accepted
+  }
+
+  try {
+    const product = await Product.findByIdAndUpdate(
+      productId,
+      updateData,
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' });
+    }
+
+    res.status(200).json({
+      message: `Product ${status ? 'accepted' : 'rejected'} successfully.`,
+      product,
+    });
+  } catch (error) {
+    console.error('Error updating product status:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
