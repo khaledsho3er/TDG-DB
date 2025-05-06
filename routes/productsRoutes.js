@@ -84,6 +84,6 @@ router.get("/getproducts/readytoship", async (req, res) => {
 router.get("/past-promotions/brand/:brandId", getPastPromotionsByBrand);
 router.patch("/promotion/end/:id", endPromotionNow);
 router.get("/past-promotions/metrics", calculatePastPromotionMetrics);
-router.patch('/product/status/:productId', updateProductStatus);
+router.put("/product/status/:productId", updateProductStatus);
 
 module.exports = router;
