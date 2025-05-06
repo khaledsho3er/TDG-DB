@@ -99,7 +99,10 @@ exports.logout = (req, res) => {
 // Get all vendors
 exports.getAllVendors = async (req, res) => {
   try {
-    const vendors = await Vendor.find();
+    const vendors = await Vendor.find().populate(
+      "brandId",
+      "brandName brandlogo"
+    );
     res.status(200).json(vendors);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -134,7 +137,6 @@ exports.updateVendor = async (req, res) => {
   }
 };
 
-
 exports.updateByEmailAndPassword = async (req, res) => {
   try {
     const { email, password, brandId } = req.body;
@@ -152,7 +154,9 @@ exports.updateByEmailAndPassword = async (req, res) => {
     // Save the updated vendor
     await vendor.save();
 
-    return res.status(200).json({ message: "Vendor updated successfully", vendor });
+    return res
+      .status(200)
+      .json({ message: "Vendor updated successfully", vendor });
   } catch (error) {
     console.error("Error updating vendor:", error);
     return res.status(500).json({ message: "Server error" });
@@ -186,4 +190,3 @@ exports.getVendorsByBrand = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
