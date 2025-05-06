@@ -265,26 +265,48 @@ exports.updateBrandImages = async (req, res) => {
 exports.getBrandFinancialData = async (req, res) => {
   try {
     const { id } = req.params;
-    const brand = await Brand.findById(id);
+    const { range } = req.query;
 
-    if (!brand) {
-      return res.status(404).json({ message: "Brand not found" });
+    const matchConditions = {
+      "cartItems.brandId": new mongoose.Types.ObjectId(id),
+    };
+
+    const now = new Date();
+    let fromDate;
+
+    if (range === "7d") {
+      fromDate = new Date(now.setDate(now.getDate() - 7));
+    } else if (range === "1m") {
+      fromDate = new Date(now.setMonth(now.getMonth() - 1));
+    } else if (range === "1y") {
+      fromDate = new Date(now.setFullYear(now.getFullYear() - 1));
     }
 
-    // Calculate total sales from cartItems in orders for this brand
-    const totalSales = await Order.aggregate([
+    if (fromDate) {
+      matchConditions.createdAt = { $gte: fromDate }; // Assuming orders have createdAt field
+    }
+
+    const salesByDate = await Order.aggregate([
       { $unwind: "$cartItems" },
-      { $match: { "cartItems.brandId": new mongoose.Types.ObjectId(id) } },
+      { $match: matchConditions },
+      {
+        $match: {
+          "cartItems.brandId": new mongoose.Types.ObjectId(id),
+        },
+      },
       {
         $group: {
-          _id: null,
-          total: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          totalSales: {
             $sum: {
               $multiply: ["$cartItems.price", "$cartItems.quantity"],
             },
           },
         },
       },
+      { $sort: { _id: 1 } },
     ]);
 
     // Calculate financial metrics
