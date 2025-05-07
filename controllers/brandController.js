@@ -2,6 +2,7 @@ const Brand = require("../models/Brand");
 const Type = require("../models/types");
 const Order = require("../models/order");
 const upload = require("../middlewares/brandMulterSetup");
+const Notification = require("../models/notification");
 const mongoose = require("mongoose");
 // Create a new brand
 exports.createBrand = async (req, res) => {
@@ -349,12 +350,40 @@ exports.adminUpdateBrand = async (req, res) => {
     // Always preserve the old brandlogo and coverPhoto
     updatedData.brandlogo = existingBrand.brandlogo;
     updatedData.coverPhoto = existingBrand.coverPhoto;
-
+    // Detect what fields have changed
+    const changedFields = [];
+    for (let key in updatedData) {
+      if (
+        updatedData[key] != existingBrand[key] &&
+        key !== "brandlogo" &&
+        key !== "coverPhoto"
+      ) {
+        changedFields.push(key);
+      }
+    }
     const updatedBrand = await Brand.findByIdAndUpdate(brandId, updatedData, {
       new: true,
       runValidators: true, // optional: validates the schema while updating
     });
 
+    // Build notification message
+    let description = "";
+    if (changedFields.length > 0) {
+      description = `The Admin of TDG updated the following fields in your brand data: ${changedFields.join(
+        ", "
+      )}.`;
+    } else {
+      description = "The Admin of TDG made changes to your brand data.";
+    }
+
+    // Create a notification
+    const notification = new Notification({
+      type: "Brand Data Updated",
+      description,
+      brandId: brandId,
+    });
+
+    await notification.save();
     res.status(200).json(updatedBrand);
   } catch (error) {
     console.error("Error updating brand:", error);
