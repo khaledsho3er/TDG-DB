@@ -636,3 +636,24 @@ exports.updateProductStatus = async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 };
+
+exports.getPromotionalProducts = async (req, res) => {
+  try {
+    const productsOnPromotion = await Product.find({
+      salePrice: { $exists: true, $ne: null },
+      $expr: { $lt: ["$salePrice", "$price"] }, // salePrice < price
+    })
+      .populate({
+        path: "brandId",
+        select: "brandName brandLogo",
+      })
+      .select(
+        "name price salePrice discountPercentage promotionStartDate promotionEndDate mainImage stock brandId"
+      );
+
+    res.status(200).json(productsOnPromotion);
+  } catch (error) {
+    console.error("Error fetching promotional products:", error);
+    res.status(500).json({ error: "Server error fetching promotions" });
+  }
+};

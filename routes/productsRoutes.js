@@ -20,6 +20,7 @@ const {
   endPromotionNow,
   calculatePastPromotionMetrics,
   updateProductStatus,
+  getPromotionalProducts,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -85,5 +86,6 @@ router.get("/past-promotions/brand/:brandId", getPastPromotionsByBrand);
 router.patch("/promotion/end/:id", endPromotionNow);
 router.get("/past-promotions/metrics", calculatePastPromotionMetrics);
 router.put("/product/status/:productId", updateProductStatus);
+router.get("/admin/product-promotions", getPromotionalProducts);
 
 module.exports = router;
