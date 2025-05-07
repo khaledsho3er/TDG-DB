@@ -170,6 +170,7 @@ exports.updatePromotionApproval = async (req, res) => {
       product,
     });
   } catch (error) {
+    console.error("Error updating promotion approval:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
