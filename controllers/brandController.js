@@ -355,6 +355,7 @@ exports.adminUpdateBrand = async (req, res) => {
     updatedData.documents = existingBrand.documents;
     updatedData.createdAt = existingBrand.createdAt;
     updatedData.updatedAt = existingBrand.updatedAt;
+    updatedData.types = existingBrand.types;
     // Detect what fields have changed
     const changedFields = [];
     for (let key in updatedData) {
