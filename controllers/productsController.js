@@ -3,6 +3,8 @@ const Category = require("../models/category");
 const Notification = require("../models/notification");
 const mongoose = require("mongoose"); // Import mongoose
 const ProductVariant = require("../models/productVariant");
+const Order = require("../models/order");
+
 exports.createProduct = async (req, res) => {
   try {
     // Extract form data from req.body
@@ -655,5 +657,114 @@ exports.getPromotionalProducts = async (req, res) => {
   } catch (error) {
     console.error("Error fetching promotional products:", error);
     res.status(500).json({ error: "Server error fetching promotions" });
+  }
+};
+exports.getPromotionMetrics = async (req, res) => {
+  try {
+    const discountedProducts = await Product.find({
+      salePrice: { $exists: true, $ne: null },
+      $expr: { $lt: ["$salePrice", "$price"] },
+      promotionStartDate: { $ne: null },
+      promotionEndDate: { $ne: null },
+    })
+      .populate("brandId", "brandName brandLogo")
+      .lean();
+
+    const metrics = [];
+
+    for (const product of discountedProducts) {
+      const {
+        _id,
+        name,
+        price,
+        salePrice,
+        promotionStartDate,
+        promotionEndDate,
+        brandId,
+      } = product;
+
+      // Define periods
+      const promoStart = new Date(promotionStartDate);
+      const promoEnd = new Date(promotionEndDate);
+      const promoDurationMs = promoEnd - promoStart;
+
+      const beforePromoStart = new Date(promoStart - promoDurationMs);
+
+      // 🟢 During Promotion
+      const during = await Order.aggregate([
+        { $unwind: "$cartItems" },
+        {
+          $match: {
+            "cartItems.productId": _id,
+            createdAt: { $gte: promoStart, $lte: promoEnd },
+          },
+        },
+        {
+          $group: {
+            _id: "$cartItems.productId",
+            unitsSold: { $sum: "$cartItems.quantity" },
+            turnover: { $sum: "$cartItems.totalPrice" },
+          },
+        },
+      ]);
+
+      // 🔵 Before Promotion (same duration window)
+      const before = await Order.aggregate([
+        { $unwind: "$cartItems" },
+        {
+          $match: {
+            "cartItems.productId": _id,
+            createdAt: { $gte: beforePromoStart, $lt: promoStart },
+          },
+        },
+        {
+          $group: {
+            _id: "$cartItems.productId",
+            unitsSold: { $sum: "$cartItems.quantity" },
+            turnover: { $sum: "$cartItems.totalPrice" },
+          },
+        },
+      ]);
+
+      const duringData = during[0] || { unitsSold: 0, turnover: 0 };
+      const beforeData = before[0] || { unitsSold: 0, turnover: 0 };
+
+      const uplift =
+        beforeData.unitsSold > 0
+          ? ((duringData.unitsSold - beforeData.unitsSold) /
+              beforeData.unitsSold) *
+            100
+          : duringData.unitsSold > 0
+          ? 100
+          : 0;
+
+      metrics.push({
+        productId: _id,
+        name,
+        price,
+        salePrice,
+        discountPercentage: Math.round(((price - salePrice) / price) * 100),
+        brandName: brandId?.brandName || null,
+        brandLogo: brandId?.brandLogo || null,
+        promotionStartDate: promoStart,
+        promotionEndDate: promoEnd,
+
+        // During promotion
+        unitsSoldDuring: duringData.unitsSold,
+        turnoverDuring: duringData.turnover,
+
+        // Before promotion
+        unitsSoldBefore: beforeData.unitsSold,
+        turnoverBefore: beforeData.turnover,
+
+        // Comparison
+        salesUpliftPercent: uplift.toFixed(2),
+      });
+    }
+
+    res.status(200).json(metrics);
+  } catch (error) {
+    console.error("Error calculating promotion metrics:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
