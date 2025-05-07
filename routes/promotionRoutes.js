@@ -6,6 +6,7 @@ const {
   updateProductPromotion,
   createProductPromotion,
   endPromotion,
+  updatePromotionApproval,
 } = require("../controllers/promotionController");
 
 // Route to create a promotion for a specific product
@@ -21,5 +22,6 @@ router.put("/update/:id", updateProductPromotion);
 
 // Route to end a promotion early for a specific product
 router.put("/end/:id", endPromotion);
+router.put("/approval/:id", updatePromotionApproval);
 
 module.exports = router;

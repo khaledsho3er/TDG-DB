@@ -1,4 +1,5 @@
 const Product = require("../models/Products");
+const Notification = require("../models/notification");
 // Fetch past promotions (promotions that have ended)
 // Fetch past promotions for a specific brand
 exports.getPastPromotions = async (req, res) => {
@@ -117,6 +118,57 @@ exports.endPromotion = async (req, res) => {
     await product.save();
 
     res.json({ message: "Promotion ended successfully", product });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Update promotion approval status
+exports.updatePromotionApproval = async (req, res) => {
+  try {
+    const { id } = req.params; // Get product ID from URL
+    const { promtoionApproved, promotionRejectionNote } = req.body;
+
+    // Find the product
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Update promotion approval status
+    product.promtoionApproved = promtoionApproved;
+
+    // If rejecting the promotion, add rejection note
+    if (promtoionApproved === false && promotionRejectionNote) {
+      product.promotionRejectionNote = promotionRejectionNote;
+    } else if (promtoionApproved === true) {
+      // Clear rejection note if approving
+      product.promotionRejectionNote = undefined;
+    }
+
+    await product.save();
+
+    // Create notification for the brand
+    const notification = new Notification({
+      type: "Promotion Status",
+      description: `Your promotion for product "${product.name}" has been ${
+        promtoionApproved ? "approved" : "rejected"
+      }${
+        !promtoionApproved && promotionRejectionNote
+          ? `. Reason: ${promotionRejectionNote}`
+          : ""
+      }`,
+      brandId: product.brandId,
+    });
+
+    await notification.save();
+
+    res.json({
+      message: `Promotion ${
+        promtoionApproved ? "approved" : "rejected"
+      } successfully`,
+      product,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
