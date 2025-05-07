@@ -350,6 +350,11 @@ exports.adminUpdateBrand = async (req, res) => {
     // Always preserve the old brandlogo and coverPhoto
     updatedData.brandlogo = existingBrand.brandlogo;
     updatedData.coverPhoto = existingBrand.coverPhoto;
+    updatedData.digitalCopiesLogo = existingBrand.digitalCopiesLogo;
+    updatedData.catalogues = existingBrand.catalogues;
+    updatedData.documents = existingBrand.documents;
+    updatedData.createdAt = existingBrand.createdAt;
+    updatedData.updatedAt = existingBrand.updatedAt;
     // Detect what fields have changed
     const changedFields = [];
     for (let key in updatedData) {
@@ -369,7 +374,10 @@ exports.adminUpdateBrand = async (req, res) => {
     // Build notification message
     let description = "";
     if (changedFields.length > 0) {
-      description = `The Admin of TDG updated the following fields in your brand data: ${changedFields.join(
+      const changedFieldsWithValues = changedFields.map((key) => {
+        return `${key}: ${updatedData[key]}`;
+      });
+      description = `The Admin of TDG updated the following fields in your brand data: ${changedFieldsWithValues.join(
         ", "
       )}.`;
     } else {
