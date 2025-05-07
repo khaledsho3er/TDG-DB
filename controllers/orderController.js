@@ -247,6 +247,8 @@ exports.getBestSellers = async (req, res) => {
           mainImage: "$productDetails.mainImage",
           salePrice: "$productDetails.salePrice",
           stock: "$productDetails.stock",
+          brand: "$productDetails.brandId",
+          brandName: "$productDetails.brandId.brandName",
           totalSold: 1,
         },
       }, // Format the final output
@@ -306,6 +308,7 @@ exports.getVendorBestSellers = async (req, res) => {
           image: "$productDetails.mainImage",
           price: "$productDetails.price",
           stock: "$productDetails.stock",
+
           totalSold: 1,
         },
       }, // Format the final output
