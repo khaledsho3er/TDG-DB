@@ -72,9 +72,9 @@ exports.createOrder = async (req, res) => {
       type: "order",
       description: `You have received a new order from customer ${
         customer.email
-      } product: ${savedOrder.cartItems
+      }\nProduct: ${savedOrder.cartItems
         .map((item) => item.name)
-        .join(", ")}. Total Price: ${savedOrder.total}.`,
+        .join(", ")}\nTotal Price: ${savedOrder.total}.`,
       brandId,
       orderId: savedOrder._id,
       read: false,
