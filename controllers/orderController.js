@@ -239,6 +239,15 @@ exports.getBestSellers = async (req, res) => {
       }, // Fetch product details
       { $unwind: "$productDetails" }, // Convert product array into object
       {
+        $lookup: {
+          from: "brands", // Make sure this matches your actual brands collection name
+          localField: "productDetails.brandId",
+          foreignField: "_id",
+          as: "brandDetails",
+        },
+      },
+      { $unwind: "$brandDetails" },
+      {
         $project: {
           _id: "$productDetails._id",
           name: "$productDetails.name",
@@ -247,8 +256,8 @@ exports.getBestSellers = async (req, res) => {
           mainImage: "$productDetails.mainImage",
           salePrice: "$productDetails.salePrice",
           stock: "$productDetails.stock",
-          brand: "$productDetails.brandId",
-          brandName: "$productDetails.brandId.brandName",
+          brandName: "$brandDetails.brandName",
+          brandLogo: "$brandDetails.brandLogo",
           totalSold: 1,
         },
       }, // Format the final output
