@@ -70,7 +70,9 @@ exports.createOrder = async (req, res) => {
     const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item
     const newNotification = new Notification({
       type: "order",
-      description: `You have received a new order from customer ${customer}.`,
+      description: `You have received a new order from customer ${customer} product: ${savedOrder.cartItems
+        .map((item) => item.name)
+        .join(", ")}. Total Price: ${savedOrder.total}.`,
       brandId,
       orderId: savedOrder._id,
       read: false,
