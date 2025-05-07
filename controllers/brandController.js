@@ -336,15 +336,24 @@ exports.getBrandFinancialData = async (req, res) => {
 exports.adminUpdateBrand = async (req, res) => {
   try {
     const brandId = req.params.id;
-    const updatedData = req.body;
+
+    // Get the existing brand from the database
+    const existingBrand = await Brand.findById(brandId);
+
+    if (!existingBrand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    const updatedData = { ...req.body };
+
+    // Always preserve the old brandlogo and coverPhoto
+    updatedData.brandlogo = existingBrand.brandlogo;
+    updatedData.coverPhoto = existingBrand.coverPhoto;
 
     const updatedBrand = await Brand.findByIdAndUpdate(brandId, updatedData, {
       new: true,
+      runValidators: true, // optional: validates the schema while updating
     });
-
-    if (!updatedBrand) {
-      return res.status(404).json({ message: "Brand not found" });
-    }
 
     res.status(200).json(updatedBrand);
   } catch (error) {

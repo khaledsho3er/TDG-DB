@@ -57,7 +57,7 @@ router.put(
 );
 router.get("/:id/financial", brandController.getBrandFinancialData);
 // Update brand
-router.put("/admin/brands/:id", brandController.updateBrand);
+router.put("/admin/brands/:id", brandController.adminUpdateBrand);
 
 // Delete brand
 router.delete("/admin/brands/:id", brandController.deleteBrand);
