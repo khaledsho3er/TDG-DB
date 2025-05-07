@@ -12,6 +12,7 @@ const conceptImageSchema = new mongoose.Schema({
     },
   ],
   createdByAdmin: { type: Boolean, default: true }, // mark that admin created it
+  isActive: { type: Boolean, default: true }, // mark that admin created it
   createdAt: { type: Date, default: Date.now },
 });
 

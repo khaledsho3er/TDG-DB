@@ -332,3 +332,41 @@ exports.getBrandFinancialData = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Edit (Update) a Brand
+exports.adminUpdateBrand = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+    const updatedData = req.body;
+
+    const updatedBrand = await Brand.findByIdAndUpdate(brandId, updatedData, {
+      new: true,
+    });
+
+    if (!updatedBrand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    res.status(200).json(updatedBrand);
+  } catch (error) {
+    console.error("Error updating brand:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Delete a Brand
+exports.adminDeleteBrand = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+
+    const deletedBrand = await Brand.findByIdAndDelete(brandId);
+
+    if (!deletedBrand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    res.status(200).json({ message: "Brand deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting brand:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

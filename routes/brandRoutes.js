@@ -56,5 +56,10 @@ router.put(
   brandController.updateBrandImages
 );
 router.get("/:id/financial", brandController.getBrandFinancialData);
+// Update brand
+router.put("/admin/brands/:id", brandController.updateBrand);
+
+// Delete brand
+router.delete("/admin/brands/:id", brandController.deleteBrand);
 
 module.exports = router;
