@@ -348,22 +348,23 @@ exports.adminUpdateBrand = async (req, res) => {
     const updatedData = { ...req.body };
 
     // Always preserve the old brandlogo and coverPhoto
-    updatedData.brandlogo = existingBrand.brandlogo;
-    updatedData.coverPhoto = existingBrand.coverPhoto;
     updatedData.digitalCopiesLogo = existingBrand.digitalCopiesLogo;
     updatedData.catalogues = existingBrand.catalogues;
     updatedData.documents = existingBrand.documents;
     updatedData.createdAt = existingBrand.createdAt;
     updatedData.updatedAt = existingBrand.updatedAt;
     updatedData.types = existingBrand.types;
+    if (req.files?.brandlogo) {
+      updatedData.brandLogo = req.files.brandlogo[0].filename;
+    }
+
+    if (req.files?.coverPhoto) {
+      updatedData.coverPhoto = req.files.coverPhoto[0].filename;
+    }
     // Detect what fields have changed
     const changedFields = [];
     for (let key in updatedData) {
-      if (
-        updatedData[key] != existingBrand[key] &&
-        key !== "brandlogo" &&
-        key !== "coverPhoto"
-      ) {
+      if (updatedData[key] != existingBrand[key]) {
         changedFields.push(key);
       }
     }
