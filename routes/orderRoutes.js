@@ -51,5 +51,6 @@ router.put(
   orderController.updateCartItemDeliveryDate
 );
 router.put("/orders/:orderId/note", orderController.addOrderNote);
+router.post("/ping-brand", orderController.pingBrandOnOrder);
 
 module.exports = router;

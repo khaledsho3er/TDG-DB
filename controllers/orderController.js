@@ -1063,3 +1063,29 @@ exports.getAllOrdersAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error.", error });
   }
 };
+// Ping the brand for a specific order
+exports.pingBrandOnOrder = async (req, res) => {
+  try {
+    const { brandId, orderId } = req.body;
+
+    if (!brandId || !orderId) {
+      return res
+        .status(400)
+        .json({ message: "brandId and orderId are required." });
+    }
+
+    // Create a notification
+    const notification = new Notification({
+      type: "Order Ping",
+      description: `You have a pending order (#${orderId}) that needs attention.`,
+      brandId,
+      orderId,
+    });
+    await notification.save();
+
+    res.status(200).json({ message: "Ping sent successfully!" });
+  } catch (error) {
+    console.error("Error sending ping:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
