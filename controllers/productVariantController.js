@@ -27,6 +27,9 @@ exports.createVariants = async (req, res) => {
     let variantsToCreate = [];
     let savedVariants = [];
 
+    // Extract variants from request body
+    const { variants } = req.body;
+
     if (variants && (Array.isArray(variants) || typeof variants === "string")) {
       // Multiple variants case
       // Parse variants if it's a string (from form data)
