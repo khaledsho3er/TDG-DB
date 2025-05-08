@@ -69,6 +69,8 @@ exports.createOrder = async (req, res) => {
 
     const savedOrder = await newOrder.save();
     const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item
+    const brand = await Brand.findById(brandId);
+    const brandName = brand ? brand.brandName : "Unknown Brand";
     const newNotification = new Notification({
       type: "order",
       description: `You have received a new order from customer ${
@@ -88,7 +90,7 @@ exports.createOrder = async (req, res) => {
         customer.email
       } for $${savedOrder.total}. Products: ${savedOrder.cartItems
         .map((item) => item.name)
-        .join(", ")}`,
+        .join(", ")} from brand: ${brandName}`,
       read: false,
     });
     await adminNotification.save();
