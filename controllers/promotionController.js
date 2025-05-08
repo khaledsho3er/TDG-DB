@@ -127,7 +127,7 @@ exports.endPromotion = async (req, res) => {
 exports.updatePromotionApproval = async (req, res) => {
   try {
     const { id } = req.params; // Get product ID from URL
-    const { promtoionApproved, promotionRejectionNote } = req.body;
+    const { promotionApproved, promotionRejectionNote } = req.body;
 
     // Find the product
     const product = await Product.findById(id);
@@ -136,12 +136,12 @@ exports.updatePromotionApproval = async (req, res) => {
     }
 
     // Update promotion approval status
-    product.promtoionApproved = promtoionApproved;
+    product.promotionApproved = promotionApproved;
 
     // If rejecting the promotion, add rejection note
-    if (promtoionApproved === false && promotionRejectionNote) {
+    if (promotionApproved === false && promotionRejectionNote) {
       product.promotionRejectionNote = promotionRejectionNote;
-    } else if (promtoionApproved === true) {
+    } else if (promotionApproved === true) {
       // Clear rejection note if approving
       product.promotionRejectionNote = undefined;
     }
@@ -152,9 +152,9 @@ exports.updatePromotionApproval = async (req, res) => {
     const notification = new Notification({
       type: "Promotion Status",
       description: `Your promotion for product "${product.name}" has been ${
-        promtoionApproved ? "approved" : "rejected"
+        promotionApproved ? "approved" : "rejected"
       }${
-        !promtoionApproved && promotionRejectionNote
+        !promotionApproved && promotionRejectionNote
           ? `. Reason: ${promotionRejectionNote}`
           : ""
       }`,
@@ -165,7 +165,7 @@ exports.updatePromotionApproval = async (req, res) => {
 
     res.json({
       message: `Promotion ${
-        promtoionApproved ? "approved" : "rejected"
+        promotionApproved ? "approved" : "rejected"
       } successfully`,
       product,
     });
