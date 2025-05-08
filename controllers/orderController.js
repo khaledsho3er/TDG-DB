@@ -3,6 +3,7 @@ const Product = require("../models/Products");
 const Brand = require("../models/Brand"); // Import the Brand model
 const mongoose = require("mongoose");
 const Notification = require("../models/notification"); // Import the Notification model
+const AdminNotification = require("../models/adminNotifications"); // Import the AdminNotification model
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
@@ -80,7 +81,17 @@ exports.createOrder = async (req, res) => {
       read: false,
     });
     await newNotification.save();
-
+    // Create notification for the admin
+    const adminNotification = new AdminNotification({
+      type: "order",
+      description: `New order #${savedOrder._id} created by ${
+        customer.email
+      } for $${savedOrder.total}. Products: ${savedOrder.cartItems
+        .map((item) => item.name)
+        .join(", ")}`,
+      read: false,
+    });
+    await adminNotification.save();
     const mailOptions = {
       from: "karimwahba53@gmail.com",
       to: customer.email,

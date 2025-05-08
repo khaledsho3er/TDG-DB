@@ -1,4 +1,5 @@
 const ContactUs = require("../models/contactUs");
+const AdminNotification = require("../models/adminNotifications"); // Import AdminNotification model
 
 // Create a new contact us message
 const createMessage = async (req, res) => {
@@ -15,6 +16,13 @@ const createMessage = async (req, res) => {
     });
 
     await newMessage.save();
+    // Create admin notification for the new contact message
+    const adminNotification = new AdminNotification({
+      type: "contact",
+      description: `New contact message from ${name} (${email}): "${subject}"`,
+      read: false,
+    });
+    await adminNotification.save();
     res
       .status(201)
       .json({ message: "Message sent successfully!", data: newMessage });

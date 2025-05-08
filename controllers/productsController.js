@@ -3,6 +3,7 @@ const Category = require("../models/category");
 const Notification = require("../models/notification");
 const mongoose = require("mongoose"); // Import mongoose
 const ProductVariant = require("../models/productVariant");
+const AdminNotification = require("../models/adminNotifications"); // Import AdminNotification
 const Order = require("../models/order");
 
 exports.createProduct = async (req, res) => {
@@ -106,7 +107,15 @@ exports.createProduct = async (req, res) => {
 
     // Save the product
     await product.save();
-
+    // Create admin notification for product creation
+    const adminNotification = new AdminNotification({
+      type: "product",
+      description: `New product "${product.name} price: ${
+        product.price
+      }" created by brand ${product.brandId.brandName || product.brandId}`,
+      read: false,
+    });
+    await adminNotification.save();
     // Return the response
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
@@ -349,6 +358,17 @@ exports.updateProduct = async (req, res) => {
     if (!updatedProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
+    // Create admin notification for product update
+    const adminNotification = new AdminNotification({
+      type: "product_update",
+      description: `Product "${updatedProduct.name}" (ID: ${
+        updatedProduct._id
+      }) has been updated by brand "${
+        updatedProduct.brandId.brandName || updatedProduct.brandId
+      }"`,
+      read: false,
+    });
+    await adminNotification.save();
 
     res
       .status(200)
@@ -362,6 +382,19 @@ exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     await Product.findByIdAndDelete(id);
+    const productName = product.name;
+    const brandName = product.brandId.brandName || product.brandId;
+
+    // Delete the product
+    await Product.findByIdAndDelete(id);
+
+    // Create admin notification for product deletion
+    const adminNotification = new AdminNotification({
+      type: "product_delete",
+      description: `Product "${productName}" has been deleted from the system from brand "${brandName}"`,
+      read: false,
+    });
+    await adminNotification.save();
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("Error deleting product:", error);
@@ -454,6 +487,17 @@ exports.updateProductPromotion = async (req, res) => {
     product.promotionEndDate = endDate;
 
     await product.save();
+    // Create admin notification for promotion update
+    const adminNotification = new AdminNotification({
+      type: "promotion",
+      description: `Promotion added to product "${
+        product.name
+      }" with ${discountPercentage.toFixed(2)}% discount, valid from ${new Date(
+        startDate
+      ).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
+      read: false,
+    });
+    await adminNotification.save();
     res.json({ message: "Promotion updated successfully", product });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });

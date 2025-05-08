@@ -1,5 +1,6 @@
 const Newsletter = require("../models/Newsletter");
 const transporter = require("../utils/emailTransporter");
+const AdminNotification = require("../models/adminNotifications"); // Import AdminNotification model
 const fs = require("fs");
 const path = require("path");
 // Subscribe to Newsletter
@@ -35,13 +36,18 @@ exports.subscribe = async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error sending email:", error);
-        return res
-          .status(500)
-          .json({
-            message: "Subscription successful, but email failed to send",
-          });
+        return res.status(500).json({
+          message: "Subscription successful, but email failed to send",
+        });
       }
       console.log("Email sent: " + info.response);
+      // Create admin notification for new subscription
+      const adminNotification = new AdminNotification({
+        type: "newsletter",
+        description: `New subscription from ${email}`,
+        read: false,
+      });
+      adminNotification.save();
       return res
         .status(201)
         .json({ message: "Subscribed successfully", subscriber });
@@ -63,6 +69,13 @@ exports.unsubscribe = async (req, res) => {
 
     subscriber.subscribed = false;
     await subscriber.save();
+    // Create admin notification for unsubscription
+    const adminNotification = new AdminNotification({
+      type: "newsletter",
+      description: `Unsubscription from ${email}`,
+      read: false,
+    });
+    await adminNotification.save();
     res.status(200).json({ message: "Unsubscribed successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
@@ -84,6 +97,13 @@ exports.deleteSubscriber = async (req, res) => {
   try {
     const { id } = req.params;
     await Newsletter.findByIdAndDelete(id);
+    // Create admin notification for deletion
+    const adminNotification = new AdminNotification({
+      type: "newsletter",
+      description: `Subscriber with ID ${id} deleted`,
+      read: false,
+    });
+    await adminNotification.save();
     res.status(200).json({ message: "Subscriber deleted" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });

@@ -1,5 +1,5 @@
 const Catalog = require("../models/catalog");
-
+const AdminNotification = require("../models/adminNotifications"); // Import AdminNotification model
 exports.createCatalog = async (req, res) => {
   try {
     const { brandId, title, year, model, type } = req.body;
@@ -21,6 +21,13 @@ exports.createCatalog = async (req, res) => {
     });
 
     await catalog.save();
+    // Create admin notification for catalog creation
+    const adminNotification = new AdminNotification({
+      type: "catalog",
+      description: `New catalog "${title}" (${year}) has been created for brand ID: ${brandId}`,
+      read: false,
+    });
+    await adminNotification.save();
     res.status(201).json(catalog);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -61,7 +68,13 @@ exports.updateCatalog = async (req, res) => {
     }
 
     await existingCatalog.save();
-
+    // Create admin notification for catalog update
+    const adminNotification = new AdminNotification({
+      type: "catalog_update",
+      description: `Catalog "${existingCatalog.title}" (ID: ${existingCatalog._id}) has been updated`,
+      read: false,
+    });
+    await adminNotification.save();
     res.json({
       message: "Catalog updated successfully",
       catalog: existingCatalog,
@@ -75,7 +88,13 @@ exports.deleteCatalog = async (req, res) => {
   try {
     const catalog = await Catalog.findByIdAndDelete(req.params.id);
     if (!catalog) return res.status(404).json({ error: "Catalog not found" });
-
+    // Create admin notification for catalog deletion
+    const adminNotification = new AdminNotification({
+      type: "catalog_delete",
+      description: `Catalog "${title}" (${year}) has been deleted from brand ID: ${brandId}`,
+      read: false,
+    });
+    await adminNotification.save();
     res.json({ message: "Catalog deleted successfully" });
   } catch (error) {
     console.log("error deleting catalog", error);

@@ -4,6 +4,7 @@ const User = require("../models/user"); // Assuming you have a 'User' model
 const Product = require("../models/Products"); // Assuming you have a 'Product' model
 const Brand = require("../models/Brand"); // Assuming you have a 'Brand' model
 const Notification = require("../models/notification"); // Import the Notification model
+const AdminNotification = require("../models/adminNotifications"); // Import the AdminNotification model
 
 // Create a new quotation request
 exports.createQuotation = async (req, res) => {
@@ -41,6 +42,13 @@ exports.createQuotation = async (req, res) => {
       read: false,
     });
     await newNotification.save();
+    // Create admin notification for the new quotation
+    const adminNotification = new AdminNotification({
+      type: "quotation",
+      description: `New quotation request from ${user.firstName} ${user.lastName} (${userId}) for product ID: ${productId} from brand ID: ${brandId}`,
+      read: false,
+    });
+    await adminNotification.save();
 
     res.status(201).json({
       message: "Quotation created successfully",
