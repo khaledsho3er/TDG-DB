@@ -650,7 +650,7 @@ exports.getPromotionalProducts = async (req, res) => {
         select: "brandName brandLogo",
       })
       .select(
-        "name price salePrice discountPercentage promotionStartDate promotionEndDate mainImage stock brandId"
+        "name price salePrice discountPercentage promotionStartDate promotionEndDate mainImage stock brandId promotionApproved promotionRejectionNote"
       );
 
     res.status(200).json(productsOnPromotion);
