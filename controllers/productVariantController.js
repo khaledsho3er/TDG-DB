@@ -8,11 +8,20 @@ exports.createVariants = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { productId, variants } = req.body;
+    // Extract productId from request body or params
+    const productId = req.body.productId || req.params.productId;
 
     if (!productId) {
       return res.status(400).json({ error: "Product ID is required" });
     }
+
+    // Validate that the product exists
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    console.log(`Creating variants for product: ${productId}`);
 
     // Check if we're creating a single variant or multiple variants
     let variantsToCreate = [];
@@ -153,6 +162,32 @@ exports.getAllProductSkus = async (req, res) => {
     const products = await Product.find({}, "name sku");
     res.status(200).json(products);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get product ID by SKU
+exports.getProductIdBySku = async (req, res) => {
+  try {
+    const { sku } = req.params;
+
+    if (!sku) {
+      return res.status(400).json({ error: "SKU is required" });
+    }
+
+    // Find the product with the given SKU
+    const product = await Product.findOne({ sku: sku }, "_id name");
+
+    if (!product) {
+      return res.status(404).json({ error: "No product found with this SKU" });
+    }
+
+    res.status(200).json({
+      productId: product._id,
+      productName: product.name,
+    });
+  } catch (error) {
+    console.error("Error finding product by SKU:", error);
     res.status(500).json({ error: error.message });
   }
 };
