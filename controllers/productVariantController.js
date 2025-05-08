@@ -30,27 +30,39 @@ exports.createVariants = async (req, res) => {
         productId, // Add productId to each variant
       }));
 
-      // Handle image uploads for multiple variants
-      if (req.files && req.files.images && req.files.images.length > 0) {
+      // Handle image uploads for multiple variants - with safer checks
+      if (
+        req.files &&
+        req.files.images &&
+        Array.isArray(req.files.images) &&
+        req.files.images.length > 0
+      ) {
         // In this case, we assume each variant has an 'imageIndices' property
         // that specifies which images belong to it (e.g., [0, 1, 2])
         const imageUrls = req.files.images.map(
           (file) => file.filename || file.key
         );
+        console.log("Available image URLs:", imageUrls);
 
         variantsToCreate = variantsToCreate.map((variant) => {
           if (variant.imageIndices && Array.isArray(variant.imageIndices)) {
             const variantImages = variant.imageIndices
-              .map((index) => imageUrls[index])
-              .filter(Boolean);
+              .filter((index) => index >= 0 && index < imageUrls.length)
+              .map((index) => imageUrls[index]);
+
             return {
               ...variant,
-              images: variantImages,
+              images: variantImages.length > 0 ? variantImages : [],
               imageIndices: undefined, // Remove helper property
             };
           }
           return variant;
         });
+      } else {
+        console.log(
+          "No images uploaded for variants or req.files structure is different than expected"
+        );
+        console.log("req.files:", req.files);
       }
 
       // Create all variants
@@ -64,15 +76,23 @@ exports.createVariants = async (req, res) => {
         productId, // Ensure productId is included
       };
 
-      // Handle image uploads for single variant
-      if (req.files && req.files.images && req.files.images.length > 0) {
+      // Handle image uploads for single variant - with safer checks
+      if (
+        req.files &&
+        req.files.images &&
+        Array.isArray(req.files.images) &&
+        req.files.images.length > 0
+      ) {
         const imageUrls = req.files.images.map(
           (file) => file.filename || file.key
         );
         console.log("Uploaded variant image URLs:", imageUrls);
         variantData.images = imageUrls;
       } else {
-        console.log("No variant images uploaded");
+        console.log(
+          "No variant images uploaded or req.files structure is different than expected"
+        );
+        console.log("req.files:", req.files);
       }
 
       const variant = new ProductVariant(variantData);
