@@ -1,35 +1,39 @@
 const express = require("express");
 const router = express.Router();
-
+const upload = require("../middlewares/multerSetup");
 const {
-  createVariant,
-  createMultipleVariants,
+  createVariants,
   getVariantsBySku,
   getVariantsByProductId,
   getAllProductSkus,
   updateVariant,
   deleteVariant,
-} = require("../controllers/productVariantController.js");
+} = require("../controllers/productVariantController");
 
-// POST /api/product-variants
-router.post("/", createVariant);
-
-// POST /api/product-variants/multiple
-router.post("/multiple", createMultipleVariants);
-
-// GET /api/product-variants/skus
+// Get all product SKUs for dropdown
 router.get("/skus", getAllProductSkus);
 
-// GET /api/product-variants/product/:productId
+// Create variants (single or multiple)
+router.post(
+  "/",
+  upload.fields([{ name: "images", maxCount: 10 }]),
+  createVariants
+);
+
+// Get variants by SKU
+router.get("/sku/:sku", getVariantsBySku);
+
+// Get all variants for a product
 router.get("/product/:productId", getVariantsByProductId);
 
-// GET /api/product-variants/:sku
-router.get("/:sku", getVariantsBySku);
+// Update a variant
+router.put(
+  "/:id",
+  upload.fields([{ name: "images", maxCount: 10 }]),
+  updateVariant
+);
 
-// PUT /api/product-variants/:id
-router.put("/:id", updateVariant);
-
-// DELETE /api/product-variants/:id
+// Delete a variant
 router.delete("/:id", deleteVariant);
 
 module.exports = router;
