@@ -197,6 +197,32 @@ exports.updateVariant = async (req, res) => {
   try {
     const updates = { ...req.body };
 
+    // Reconstruct arrays for colors and sizes
+    if (req.body.colors) {
+      updates.colors = Array.isArray(req.body.colors)
+        ? req.body.colors
+        : Object.keys(req.body)
+            .filter((key) => key.startsWith("colors["))
+            .map((key) => req.body[key]);
+    }
+
+    if (req.body.sizes) {
+      updates.sizes = Array.isArray(req.body.sizes)
+        ? req.body.sizes
+        : Object.keys(req.body)
+            .filter((key) => key.startsWith("sizes["))
+            .map((key) => req.body[key]);
+    }
+
+    // Parse dimensions if sent as JSON string
+    if (updates.dimensions && typeof updates.dimensions === "string") {
+      try {
+        updates.dimensions = JSON.parse(updates.dimensions);
+      } catch (e) {
+        console.error("Error parsing dimensions:", e);
+      }
+    }
+
     // Handle image uploads
     if (req.files && req.files.images && req.files.images.length > 0) {
       const imageUrls = req.files.images.map(
