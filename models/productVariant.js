@@ -33,6 +33,9 @@ const productVariantSchema = new mongoose.Schema(
         type: String, // Array of image paths for this variant
       },
     ],
+    mainImage: {
+      type: String, // Add this field to store the main image
+    },
     sku: {
       type: String,
       required: true,
