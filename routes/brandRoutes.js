@@ -57,7 +57,14 @@ router.put(
 );
 router.get("/:id/financial", brandController.getBrandFinancialData);
 // Update brand
-router.put("/admin/brands/:id", brandController.adminUpdateBrand);
+router.put(
+  "/admin/brands/:id",
+  upload.fields([
+    { name: "brandlogo", maxCount: 1 },
+    { name: "coverPhoto", maxCount: 1 },
+  ]),
+  brandController.adminUpdateBrand
+);
 
 // Delete brand
 router.delete("/admin/brands/:id", brandController.deleteBrand);
