@@ -5,14 +5,24 @@ const Schema = mongoose.Schema;
 // Variant Schema
 const productVariantSchema = new mongoose.Schema(
   {
+    title: {
+      type: String,
+      required: true,
+    },
     size: {
       type: String,
     },
     color: {
       type: String,
     },
+    dimensions: {
+      length: { type: Number },
+      width: { type: Number },
+      height: { type: Number },
+    },
     price: {
       type: Number,
+      required: true,
     },
     quantity: {
       type: Number,
@@ -25,7 +35,12 @@ const productVariantSchema = new mongoose.Schema(
     ],
     sku: {
       type: String,
-      unique: true, // Each variant must have a unique SKU
+      required: true,
+    },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
     },
     available: {
       type: Boolean,
