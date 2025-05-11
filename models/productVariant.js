@@ -19,10 +19,14 @@ const productVariantSchema = new mongoose.Schema(
       length: { type: Number },
       width: { type: Number },
       height: { type: Number },
+      weight: { type: Number },
     },
     price: {
       type: Number,
       required: true,
+    },
+    saleprice: {
+      type: Number,
     },
     quantity: {
       type: Number,
@@ -44,6 +48,10 @@ const productVariantSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
       required: true,
+    },
+    stock: {
+      type: Number,
+      default: 0,
     },
     available: {
       type: Boolean,

@@ -40,6 +40,11 @@ exports.createVariants = async (req, res) => {
       variantsToCreate = parsedVariants.map((variant) => ({
         ...variant,
         productId, // Add productId to each variant
+        // Ensure stock is set (use quantity as fallback or default to 0)
+        stock:
+          variant.stock !== undefined ? variant.stock : variant.quantity || 0,
+        // Include saleprice if provided
+        ...(variant.saleprice && { saleprice: variant.saleprice }),
       }));
 
       // Handle image uploads for multiple variants - with safer checks
@@ -65,6 +70,9 @@ exports.createVariants = async (req, res) => {
             return {
               ...variant,
               images: variantImages.length > 0 ? variantImages : [],
+              mainImage:
+                variant.mainImage ||
+                (variantImages.length > 0 ? variantImages[0] : null),
               imageIndices: undefined, // Remove helper property
             };
           }
@@ -86,6 +94,11 @@ exports.createVariants = async (req, res) => {
       const variantData = {
         ...req.body,
         productId, // Ensure productId is included
+        // Ensure stock is set (use quantity as fallback or default to 0)
+        stock:
+          req.body.stock !== undefined
+            ? req.body.stock
+            : req.body.quantity || 0,
       };
 
       // Handle image uploads for single variant - with safer checks
@@ -100,6 +113,8 @@ exports.createVariants = async (req, res) => {
         );
         console.log("Uploaded variant image URLs:", imageUrls);
         variantData.images = imageUrls;
+        // Set mainImage to the first image if not explicitly provided
+        variantData.mainImage = variantData.mainImage || imageUrls[0];
       } else {
         console.log(
           "No variant images uploaded or req.files structure is different than expected"
@@ -231,6 +246,11 @@ exports.updateVariant = async (req, res) => {
       }
     }
 
+    // Ensure stock is properly set (use quantity as fallback)
+    if (updates.quantity !== undefined && updates.stock === undefined) {
+      updates.stock = updates.quantity;
+    }
+
     // Handle image uploads
     if (req.files && req.files.images && req.files.images.length > 0) {
       const imageUrls = req.files.images.map(
@@ -238,6 +258,10 @@ exports.updateVariant = async (req, res) => {
       );
       console.log("Updated variant image URLs:", imageUrls);
       updates.images = imageUrls;
+      // Set mainImage to the first image if not explicitly provided
+      if (!updates.mainImage && imageUrls.length > 0) {
+        updates.mainImage = imageUrls[0];
+      }
     }
 
     const updatedVariant = await ProductVariant.findByIdAndUpdate(
