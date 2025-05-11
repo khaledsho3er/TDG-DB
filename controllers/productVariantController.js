@@ -179,7 +179,10 @@ exports.getProductIdBySku = async (req, res) => {
     }
 
     // Find the product with the given SKU
-    const product = await Product.findOne({ sku: sku }, "_id name");
+    const product = await Product.findOne(
+      { sku: sku },
+      "_id name colors sizes"
+    );
 
     if (!product) {
       return res.status(404).json({ error: "No product found with this SKU" });
@@ -188,6 +191,8 @@ exports.getProductIdBySku = async (req, res) => {
     res.status(200).json({
       productId: product._id,
       productName: product.name,
+      colors: product.colors || [],
+      sizes: product.sizes || [],
     });
   } catch (error) {
     console.error("Error finding product by SKU:", error);
