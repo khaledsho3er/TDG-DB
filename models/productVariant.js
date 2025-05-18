@@ -61,4 +61,7 @@ const productVariantSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Create a compound index on sku, color, and size
+productVariantSchema.index({ sku: 1, color: 1, size: 1 }, { unique: true });
+
 module.exports = mongoose.model("ProductVariant", productVariantSchema);
