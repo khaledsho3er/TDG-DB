@@ -30,7 +30,7 @@ exports.createOrder = async (req, res) => {
           variant = null;
 
         // Check if this is a variant order or a regular product order
-        if (item.variantId) {
+        if (!item.variantId) {
           // Handle product variant
           variant = await ProductVariant.findById(item.variantId);
           if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
