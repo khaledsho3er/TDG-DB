@@ -26,8 +26,7 @@ exports.createOrder = async (req, res) => {
 
     const updatedCartItems = await Promise.all(
       cartItems.map(async (item) => {
-        let product,
-          variant = null;
+        let product, variant;
 
         // Check if this is a variant order or a regular product order
         if (!item.variantId) {
