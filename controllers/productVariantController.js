@@ -37,15 +37,28 @@ exports.createVariants = async (req, res) => {
         ? variants
         : JSON.parse(variants);
 
-      variantsToCreate = parsedVariants.map((variant) => ({
-        ...variant,
-        productId, // Add productId to each variant
-        // Ensure stock is set (use quantity as fallback or default to 0)
-        stock:
-          variant.stock !== undefined ? variant.stock : variant.quantity || 0,
-        // Include saleprice if provided
-        ...(variant.saleprice && { saleprice: variant.saleprice }),
-      }));
+      variantsToCreate = parsedVariants.map((variant) => {
+        // Parse dimensions if it's a string
+        let dimensions = variant.dimensions;
+        if (dimensions && typeof dimensions === "string") {
+          try {
+            dimensions = JSON.parse(dimensions);
+          } catch (e) {
+            console.error("Error parsing dimensions:", e);
+          }
+        }
+
+        return {
+          ...variant,
+          dimensions, // Add parsed dimensions
+          productId, // Add productId to each variant
+          // Ensure stock is set (use quantity as fallback or default to 0)
+          stock:
+            variant.stock !== undefined ? variant.stock : variant.quantity || 0,
+          // Include saleprice if provided
+          ...(variant.saleprice && { saleprice: variant.saleprice }),
+        };
+      });
 
       // Handle image uploads for multiple variants - with safer checks
       if (
@@ -100,6 +113,18 @@ exports.createVariants = async (req, res) => {
             ? req.body.stock
             : req.body.quantity || 0,
       };
+
+      // Parse dimensions if it's a string
+      if (
+        variantData.dimensions &&
+        typeof variantData.dimensions === "string"
+      ) {
+        try {
+          variantData.dimensions = JSON.parse(variantData.dimensions);
+        } catch (e) {
+          console.error("Error parsing dimensions:", e);
+        }
+      }
 
       // Handle image uploads for single variant - with safer checks
       if (
