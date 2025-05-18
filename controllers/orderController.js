@@ -1,5 +1,6 @@
 const Order = require("../models/order");
 const Product = require("../models/Products");
+const ProductVariant = require("../models/productVariant");
 const Brand = require("../models/Brand"); // Import the Brand model
 const mongoose = require("mongoose");
 const Notification = require("../models/notification"); // Import the Notification model
@@ -25,29 +26,69 @@ exports.createOrder = async (req, res) => {
 
     const updatedCartItems = await Promise.all(
       cartItems.map(async (item) => {
-        const product = await Product.findById(item.productId);
-        if (!product) throw new Error(`Product not found: ${item.productId}`);
-        if (product.stock < item.quantity) {
-          throw new Error(`Not enough stock for ${product.name}`);
+        let product,
+          variant = null;
+
+        // Check if this is a variant order or a regular product order
+        if (item.variantId) {
+          // Handle product variant
+          variant = await ProductVariant.findById(item.variantId);
+          if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
+
+          // Get the parent product to access brandId
+          product = await Product.findById(variant.productId);
+          if (!product)
+            throw new Error(`Product not found for variant: ${item.variantId}`);
+
+          // Check stock on the variant
+          if (variant.stock < item.quantity) {
+            throw new Error(`Not enough stock for variant of ${product.name}`);
+          }
+
+          // Update variant stock
+          variant.stock -= item.quantity;
+          await variant.save();
+
+          // Also update product sales for analytics
+          product.sales = (product.sales || 0) + item.quantity;
+          await product.save();
+        } else {
+          // Handle regular product
+          product = await Product.findById(item.productId);
+          if (!product) throw new Error(`Product not found: ${item.productId}`);
+          if (product.stock < item.quantity) {
+            throw new Error(`Not enough stock for ${product.name}`);
+          }
+
+          // Update product stock and sales
+          product.stock -= item.quantity;
+          product.sales = (product.sales || 0) + item.quantity;
+          await product.save();
         }
 
         const brand = await Brand.findById(product.brandId);
-        if (!brand) throw new Error(`Brand not found: ${item.brandId}`);
+        if (!brand)
+          throw new Error(`Brand not found for product: ${product._id}`);
 
         const commissionAmount =
           item.totalPrice * (brand.commissionRate || 0.15);
         const taxAmount = item.totalPrice * (brand.taxRate || 0.14);
 
-        product.stock -= item.quantity;
-        product.sales += item.quantity;
-        await product.save();
-
-        return {
+        // Create the updated cart item with conditional variantId
+        const updatedItem = {
           ...item,
-          brandId: product.brandId, // Auto-assign brandId from Product schema
-          commissionAmount, // Calculate and assign commission
-          taxAmount, // Calculate and assign tax
+          productId: item.variantId ? product._id : item.productId,
+          brandId: product.brandId,
+          commissionAmount,
+          taxAmount,
         };
+
+        // Only add variantId if it exists
+        if (item.variantId) {
+          updatedItem.variantId = item.variantId;
+        }
+
+        return updatedItem;
       })
     );
 

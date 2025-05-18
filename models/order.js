@@ -14,6 +14,11 @@ const orderSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        variantId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "ProductVariant",
+          // Not required, only present for variant orders
+        },
         brandId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Brand",
