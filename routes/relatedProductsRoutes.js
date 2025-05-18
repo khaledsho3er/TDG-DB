@@ -12,14 +12,17 @@ router.get("/related/:productId", async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Find related products by matching subcategory OR at least one tag
+    // Find related products by matching subcategory, tags, or brandId
     const relatedProducts = await Product.find({
       _id: { $ne: productId }, // Exclude the current product
       $or: [
-        { "subcategory._id": product.subcategory._id }, // Match by subcategory
+        { subcategory: product.subcategory }, // Match by subcategory ID
         { tags: { $in: product.tags } }, // Match by at least one tag
+        { brandId: product.brandId }, // Match by same brand
       ],
-    }).limit(10); // Limit results to 10
+    })
+      .limit(10) // Limit results to 10
+      .populate("category subcategory vendor type brandId"); // Populate related fields
 
     res.json(relatedProducts);
   } catch (error) {
