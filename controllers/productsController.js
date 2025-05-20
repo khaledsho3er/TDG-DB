@@ -447,6 +447,8 @@ exports.getSearchSuggestions = async (req, res) => {
       },
       {
         name: 1,
+        price: 1,
+        salePrice: 1,
         category: 1,
         subcategory: 1,
         type: 1,
@@ -457,7 +459,7 @@ exports.getSearchSuggestions = async (req, res) => {
       .populate("category", "name") // Populate category and only return name
       .populate("subcategory", "name") // Populate subcategory
       .populate("type", "name") // Populate type
-      .populate("brandId", "name") // Populate brand
+      .populate("brandId", "brandName brandlogo brandDescription") // Populate brand
       .limit(5); // Limit suggestions to 5 results
 
     res.json(suggestions);
