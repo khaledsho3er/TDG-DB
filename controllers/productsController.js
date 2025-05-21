@@ -5,6 +5,7 @@ const mongoose = require("mongoose"); // Import mongoose
 const ProductVariant = require("../models/productVariant");
 const AdminNotification = require("../models/adminNotifications"); // Import AdminNotification
 const Order = require("../models/order");
+const Brand = require("../models/Brand");
 
 exports.createProduct = async (req, res) => {
   try {
@@ -437,12 +438,16 @@ exports.getSearchSuggestions = async (req, res) => {
     const { query } = req.query;
     if (!query) return res.json([]); // Return empty array if no query
 
-    const suggestions = await Product.find(
+    // First, search for products
+    const productSuggestions = await Product.find(
       {
         $or: [
           { name: { $regex: query, $options: "i" } },
           { manufacturer: { $regex: query, $options: "i" } },
           { tags: { $regex: query, $options: "i" } },
+          { description: { $regex: query, $options: "i" } },
+          { collection: { $regex: query, $options: "i" } },
+          { colors: { $regex: query, $options: "i" } },
         ],
       },
       {
@@ -454,16 +459,49 @@ exports.getSearchSuggestions = async (req, res) => {
         type: 1,
         brandId: 1,
         mainImage: 1,
-      } // Selecting required fields
+        tags: 1,
+        description: 1,
+        manufacturer: 1,
+        collection: 1,
+        manufactureYear: 1,
+        colors: 1,
+      }
     )
-      .populate("category", "name") // Populate category and only return name
-      .populate("subcategory", "name") // Populate subcategory
-      .populate("type", "name") // Populate type
-      .populate("brandId", "brandName brandlogo brandDescription") // Populate brand
-      .limit(5); // Limit suggestions to 5 results
+      .populate("category", "name")
+      .populate("subcategory", "name")
+      .populate("type", "name")
+      .populate("brandId", "brandName brandlogo brandDescription")
+      .limit(5);
 
-    res.json(suggestions);
+    // Second, search for brands
+    const brandSuggestions = await Brand.find(
+      {
+        brandName: { $regex: query, $options: "i" },
+      },
+      {
+        brandName: 1,
+        brandlogo: 1,
+        brandDescription: 1,
+      }
+    ).limit(3);
+
+    // Combine results with a type indicator
+    const productResults = productSuggestions.map((product) => ({
+      ...product.toObject(),
+      resultType: "product",
+    }));
+
+    const brandResults = brandSuggestions.map((brand) => ({
+      ...brand.toObject(),
+      resultType: "brand",
+    }));
+
+    // Combine and limit total results
+    const combinedResults = [...productResults, ...brandResults].slice(0, 8);
+
+    res.json(combinedResults);
   } catch (error) {
+    console.error("Error fetching search suggestions:", error);
     res.status(500).json({ error: "Error fetching suggestions" });
   }
 };
