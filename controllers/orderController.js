@@ -29,15 +29,23 @@ exports.createOrder = async (req, res) => {
         let product, variant;
 
         // Check if this is a variant order or a regular product order
-        if (item.variantId) {
+        if (
+          item.variantId &&
+          item.variantId !== "undefined" &&
+          item.variantId !== "null" &&
+          item.variantId !== "" &&
+          item.variantId !== "0"
+        ) {
           // Handle product variant
-          variant = await ProductVariant.findById(item.variantId);
-          if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
+          variant = await ProductVariant.findById(item.variantId).populate(
+            "productId"
+          );
+          if (!variant) throw new Error(`Variant not found: ${variant._id}`);
 
           // Get the parent product to access brandId
-          product = await Product.findById(variant.productId);
+          product = variant.productId;
           if (!product)
-            throw new Error(`Product not found for variant: ${item.variantId}`);
+            throw new Error(`Product not found for variant: ${variant._id}`);
 
           // Check stock on the variant
           if (variant.stock < item.quantity) {
@@ -51,7 +59,13 @@ exports.createOrder = async (req, res) => {
           // Also update product sales for analytics
           product.sales = (product.sales || 0) + item.quantity;
           await product.save();
-        } else {
+        } else if (
+          item.productId &&
+          item.productId !== "undefined" &&
+          item.productId !== "null" &&
+          item.productId !== "" &&
+          item.productId !== "0"
+        ) {
           // Handle regular product
           product = await Product.findById(item.productId);
           if (!product) throw new Error(`Product not found: ${item.productId}`);
@@ -76,15 +90,15 @@ exports.createOrder = async (req, res) => {
         // Create the updated cart item with conditional variantId
         const updatedItem = {
           ...item,
-          productId: item.variantId ? product._id : item.productId,
+          productId: variant ? variant._id : item.productId,
           brandId: product.brandId,
           commissionAmount,
           taxAmount,
         };
 
         // Only add variantId if it exists
-        if (item.variantId) {
-          updatedItem.variantId = item.variantId;
+        if (variant) {
+          updatedItem.variantId = variant._id;
         }
 
         return updatedItem;
