@@ -432,7 +432,6 @@ exports.getProductsByBrandId = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching products" });
   }
 };
-
 exports.getSearchSuggestions = async (req, res) => {
   try {
     const { query } = req.query;
@@ -448,6 +447,7 @@ exports.getSearchSuggestions = async (req, res) => {
           { description: { $regex: query, $options: "i" } },
           { collection: { $regex: query, $options: "i" } },
           { colors: { $regex: query, $options: "i" } },
+          { sizes: { $regex: query, $options: "i" } }, // NEW
         ],
       },
       {
@@ -465,6 +465,7 @@ exports.getSearchSuggestions = async (req, res) => {
         collection: 1,
         manufactureYear: 1,
         colors: 1,
+        sizes: 1,
       }
     )
       .populate("category", "name")
@@ -505,6 +506,7 @@ exports.getSearchSuggestions = async (req, res) => {
     res.status(500).json({ error: "Error fetching suggestions" });
   }
 };
+
 exports.updateProductPromotion = async (req, res) => {
   try {
     const { salePrice, startDate, endDate } = req.body;
