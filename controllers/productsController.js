@@ -432,24 +432,43 @@ exports.getProductsByBrandId = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching products" });
   }
 };
+const Product = require("../models/Product");
+const Brand = require("../models/Brand");
+const Subcategory = require("../models/Subcategory");
+const Type = require("../models/Type");
+
 exports.getSearchSuggestions = async (req, res) => {
   try {
     const { query } = req.query;
-    if (!query) return res.json([]); // Return empty array if no query
+    if (!query) return res.json([]);
 
-    // First, search for products
+    // Find matching subcategory and type by name
+    const [subcategory, type] = await Promise.all([
+      Subcategory.findOne({ name: { $regex: query, $options: "i" } }),
+      Type.findOne({ name: { $regex: query, $options: "i" } }),
+    ]);
+
+    const searchConditions = [
+      { name: { $regex: query, $options: "i" } },
+      { manufacturer: { $regex: query, $options: "i" } },
+      { tags: { $regex: query, $options: "i" } },
+      { description: { $regex: query, $options: "i" } },
+      { collection: { $regex: query, $options: "i" } },
+      { colors: { $regex: query, $options: "i" } },
+      { sizes: { $regex: query, $options: "i" } },
+    ];
+
+    if (subcategory) {
+      searchConditions.push({ subcategory: subcategory._id });
+    }
+
+    if (type) {
+      searchConditions.push({ type: type._id });
+    }
+
+    // Search products
     const productSuggestions = await Product.find(
-      {
-        $or: [
-          { name: { $regex: query, $options: "i" } },
-          { manufacturer: { $regex: query, $options: "i" } },
-          { tags: { $regex: query, $options: "i" } },
-          { description: { $regex: query, $options: "i" } },
-          { collection: { $regex: query, $options: "i" } },
-          { colors: { $regex: query, $options: "i" } },
-          { sizes: { $regex: query, $options: "i" } }, // NEW
-        ],
-      },
+      { $or: searchConditions },
       {
         name: 1,
         price: 1,
@@ -474,7 +493,7 @@ exports.getSearchSuggestions = async (req, res) => {
       .populate("brandId", "brandName brandlogo brandDescription")
       .limit(5);
 
-    // Second, search for brands
+    // Search brands
     const brandSuggestions = await Brand.find(
       {
         brandName: { $regex: query, $options: "i" },
@@ -486,7 +505,7 @@ exports.getSearchSuggestions = async (req, res) => {
       }
     ).limit(3);
 
-    // Combine results with a type indicator
+    // Combine results
     const productResults = productSuggestions.map((product) => ({
       ...product.toObject(),
       resultType: "product",
@@ -497,7 +516,6 @@ exports.getSearchSuggestions = async (req, res) => {
       resultType: "brand",
     }));
 
-    // Combine and limit total results
     const combinedResults = [...productResults, ...brandResults].slice(0, 8);
 
     res.json(combinedResults);
