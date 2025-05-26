@@ -19,7 +19,13 @@ router.post(
 // Get all brands
 router.get("/", brandController.getAllBrands);
 
-// Get a single brand by ID
+// Get all active brands - Move this BEFORE the /:id route
+router.get("/active", brandController.getActiveBrands);
+
+// Get brands by status
+router.get("/status/:status", brandController.getBrandsByStatus);
+
+// Get a single brand by ID - This should come AFTER more specific routes
 router.get("/:id", brandController.getBrandById);
 
 // Update a brand by ID
@@ -45,7 +51,6 @@ router.put(
 
 // Delete a brand by ID
 router.delete("/:id", brandController.deleteBrand);
-router.get("/status/:status", brandController.getBrandsByStatus);
 router.put("/partners/:id/status", brandController.updateBrandStatus);
 router.put(
   "/brands/:id/update-images",
@@ -68,9 +73,6 @@ router.put(
 
 // Delete brand
 router.delete("/admin/brands/:id", brandController.deleteBrand);
-
-// Get all active brands
-router.get("/active", brandController.getActiveBrands);
 
 // Get types assigned to a brand
 router.get("/:brandId/types", brandController.getBrandTypes);
