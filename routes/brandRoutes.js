@@ -72,4 +72,7 @@ router.delete("/admin/brands/:id", brandController.deleteBrand);
 // Get all active brands
 router.get("/active", brandController.getActiveBrands);
 
+// Get types assigned to a brand
+router.get("/:brandId/types", brandController.getBrandTypes);
+
 module.exports = router;

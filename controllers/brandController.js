@@ -445,3 +445,39 @@ exports.getActiveBrands = async (req, res) => {
     });
   }
 };
+
+// Get types assigned to a brand
+exports.getBrandTypes = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+
+    // Find the brand
+    const brand = await Brand.findById(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    // Get the type IDs from the brand
+    const typeIds = brand.types;
+
+    if (!typeIds || typeIds.length === 0) {
+      return res.status(200).json({
+        message: "This brand has no types assigned",
+        types: [],
+      });
+    }
+
+    // Fetch the full type objects
+    const types = await Type.find({
+      _id: { $in: typeIds },
+    }).select("name description image");
+
+    res.status(200).json(types);
+  } catch (error) {
+    console.error("Error fetching brand types:", error);
+    res.status(500).json({
+      message: "Error fetching brand types",
+      error: error.message,
+    });
+  }
+};
