@@ -432,22 +432,30 @@ exports.getProductsByBrandId = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching products" });
   }
 };
+const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 exports.getSearchSuggestions = async (req, res) => {
   try {
     const { query } = req.query;
-    if (!query) return res.json([]); // Return empty array if no query
+    if (!query) return res.json([]);
 
-    // First, search for products
+    const keywords = query.trim().split(/\s+/).map(escapeRegExp);
+
+    const regexArray = keywords.map((kw) => ({
+      $regex: new RegExp(kw, "i"),
+    }));
+
+    // Search products
     const productSuggestions = await Product.find(
       {
         $or: [
-          { name: { $regex: query, $options: "i" } },
-          { manufacturer: { $regex: query, $options: "i" } },
-          { tags: { $regex: query, $options: "i" } },
-          { description: { $regex: query, $options: "i" } },
-          { collection: { $regex: query, $options: "i" } },
-          { colors: { $regex: query, $options: "i" } },
-          { sizes: { $regex: query, $options: "i" } }, // NEW
+          ...regexArray.map((r) => ({ name: r })),
+          ...regexArray.map((r) => ({ tags: r })),
+          ...regexArray.map((r) => ({ description: r })),
+          ...regexArray.map((r) => ({ manufacturer: r })),
+          ...regexArray.map((r) => ({ collection: r })),
+          ...regexArray.map((r) => ({ colors: r })),
+          ...regexArray.map((r) => ({ sizes: r })),
         ],
       },
       {
@@ -472,21 +480,21 @@ exports.getSearchSuggestions = async (req, res) => {
       .populate("subcategory", "name")
       .populate("type", "name")
       .populate("brandId", "brandName brandlogo brandDescription")
-      .limit(5);
+      .limit(10); // increased limit to rank later
 
-    // Second, search for brands
+    // Search brands
     const brandSuggestions = await Brand.find(
       {
-        brandName: { $regex: query, $options: "i" },
+        $or: regexArray.map((r) => ({ brandName: r })),
       },
       {
         brandName: 1,
         brandlogo: 1,
         brandDescription: 1,
       }
-    ).limit(3);
+    ).limit(5);
 
-    // Combine results with a type indicator
+    // Label results
     const productResults = productSuggestions.map((product) => ({
       ...product.toObject(),
       resultType: "product",
@@ -497,8 +505,23 @@ exports.getSearchSuggestions = async (req, res) => {
       resultType: "brand",
     }));
 
-    // Combine and limit total results
-    const combinedResults = [...productResults, ...brandResults].slice(0, 8);
+    // Optional: sort productResults by match score (naive approach)
+    const scoredProducts = productResults
+      .map((product) => {
+        let score = 0;
+        keywords.forEach((kw) => {
+          const r = new RegExp(kw, "i");
+          if (r.test(product.name)) score += 4;
+          if (r.test(product.tags?.join(" "))) score += 2;
+          if (r.test(product.colors?.join(" "))) score += 1;
+          if (r.test(product.description)) score += 0.5;
+        });
+        return { ...product, matchScore: score };
+      })
+      .sort((a, b) => b.matchScore - a.matchScore);
+
+    // Merge and limit total results
+    const combinedResults = [...scoredProducts, ...brandResults].slice(0, 8);
 
     res.json(combinedResults);
   } catch (error) {
