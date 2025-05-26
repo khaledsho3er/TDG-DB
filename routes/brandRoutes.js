@@ -69,4 +69,7 @@ router.put(
 // Delete brand
 router.delete("/admin/brands/:id", brandController.deleteBrand);
 
+// Get all active brands
+router.get("/active", brandController.getActiveBrands);
+
 module.exports = router;

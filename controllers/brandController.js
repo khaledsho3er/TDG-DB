@@ -424,3 +424,24 @@ exports.adminDeleteBrand = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// Get all active brands
+exports.getActiveBrands = async (req, res) => {
+  try {
+    const activeBrands = await Brand.find({ status: "active" })
+      .populate("types", "name description")
+      .sort({ brandName: 1 }); // Sort alphabetically by brand name
+
+    if (!activeBrands.length) {
+      return res.status(404).json({ message: "No active brands found" });
+    }
+
+    res.status(200).json(activeBrands);
+  } catch (error) {
+    console.error("Error fetching active brands:", error);
+    res.status(500).json({
+      message: "Error fetching active brands",
+      error: error.message,
+    });
+  }
+};
