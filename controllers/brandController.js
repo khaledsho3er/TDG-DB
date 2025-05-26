@@ -92,7 +92,7 @@ exports.createBrand = async (req, res) => {
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
-    const brands = await Brand.find();
+    const brands = await Brand.find().populate("types", "name description");
     res.status(200).json(brands);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -102,7 +102,10 @@ exports.getAllBrands = async (req, res) => {
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {
   try {
-    const brand = await Brand.findById(req.params.id);
+    const brand = await Brand.findById(req.params.id).populate(
+      "types",
+      "name description"
+    );
     if (!brand) {
       return res.status(404).json({ message: "Brand not found" });
     }
@@ -165,7 +168,10 @@ exports.deleteBrand = async (req, res) => {
 exports.getBrandsByStatus = async (req, res) => {
   try {
     const { status } = req.params;
-    const brands = await Brand.find({ status });
+    const brands = await Brand.find({ status }).populate(
+      "types",
+      "name description"
+    );
 
     if (!brands.length) {
       return res
