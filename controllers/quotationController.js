@@ -104,7 +104,7 @@ exports.updateQuotationByVendor = async (req, res) => {
     // Handle file upload
     let quotationInvoice;
     if (req.file) {
-      quotationInvoice = req.file.path; // or req.file.filename based on your multer config
+      quotationInvoice = req.file.location;
     }
 
     const updateFields = {
