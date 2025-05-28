@@ -24,4 +24,13 @@ router.put(
 );
 // Delete
 router.delete("/delete/:id", quotationController.deleteQuotation);
+router.patch(
+  "/quotation/:id/client-approval",
+  quotationController.toggleClientApproval
+);
+router.patch(
+  "/quotation/:id/vendor-approval",
+  quotationController.vendorApproveQuotation
+);
+
 module.exports = router;

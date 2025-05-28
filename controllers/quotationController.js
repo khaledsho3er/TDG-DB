@@ -194,3 +194,60 @@ exports.deleteQuotation = async (req, res) => {
     res.status(500).json({ message: "Error deleting quotation", error });
   }
 };
+exports.toggleClientApproval = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const quotation = await Quotation.findById(id);
+    if (!quotation) {
+      return res.status(404).json({ message: "Quotation not found" });
+    }
+
+    // Toggle the client approval
+    quotation.ClientApproval = !quotation.ClientApproval;
+
+    // Set status accordingly
+    if (!quotation.ClientApproval) {
+      quotation.status = "rejected";
+    } else {
+      quotation.status = "pending";
+    }
+
+    await quotation.save();
+
+    res.status(200).json({
+      message: `Client approval set to ${quotation.ClientApproval}`,
+      quotation,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error toggling client approval", error });
+  }
+};
+exports.vendorApproveQuotation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const quotation = await Quotation.findById(id);
+    if (!quotation) {
+      return res.status(404).json({ message: "Quotation not found" });
+    }
+
+    if (!quotation.ClientApproval) {
+      return res.status(400).json({
+        message: "Cannot approve. Client must approve the quotation first.",
+      });
+    }
+
+    quotation.vendorApproval = true;
+    quotation.status = "approved";
+
+    await quotation.save();
+
+    res.status(200).json({
+      message: "Quotation approved by vendor",
+      quotation,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating vendor approval", error });
+  }
+};

@@ -37,6 +37,19 @@ const QuotationSchema = new mongoose.Schema({
   note: { type: String },
   quotePrice: { type: Number },
   dateOfQuotePrice: { type: Date },
+  ClientApproval: {
+    type: Boolean,
+    default: false,
+  },
+  vendorApproval: {
+    type: Boolean,
+    default: false,
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
