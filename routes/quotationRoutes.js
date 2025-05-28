@@ -13,6 +13,8 @@ router.get(
   "/quotations/brand/:brandId",
   quotationController.getQuotationsByBrandId
 );
+router.get("/customer/:userId", quotationController.getQuotationsByUserId);
+
 router.get("/:id", quotationController.getQuotationById);
 // Update by vendor
 router.put(

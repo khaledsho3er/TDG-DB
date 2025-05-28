@@ -136,6 +136,27 @@ exports.updateQuotationByVendor = async (req, res) => {
     res.status(500).json({ message: "Error updating quotation", error });
   }
 };
+exports.getQuotationsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params; // Get the userId from the URL params
+
+    // Find quotations for the given userId
+    const quotations = await Quotation.find({ userId })
+      .populate("userId")
+      .populate("productId");
+
+    if (quotations.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No quotations found for this user" });
+    }
+
+    res.status(200).json(quotations);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching quotations", error });
+  }
+};
 
 // Get single quotation by ID, with populated brand info
 exports.getQuotationById = async (req, res) => {
