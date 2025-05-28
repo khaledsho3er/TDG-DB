@@ -104,7 +104,7 @@ exports.updateQuotationByVendor = async (req, res) => {
     // Handle file upload
     let quotationInvoice;
     if (req.file) {
-      quotationInvoice = req.file.location;
+      quotationInvoice = req.file.key;
     }
 
     const updateFields = {
