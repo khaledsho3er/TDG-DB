@@ -99,13 +99,9 @@ exports.getQuotationsByBrandId = async (req, res) => {
 exports.updateQuotationByVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { note, quotePrice, dateOfQuotePrice } = req.body;
+    const { note, quotePrice, dateOfQuotePrice, quotationInvoice } = req.body;
 
-    // Handle file upload
-    let quotationInvoice;
-    if (req.file) {
-      quotationInvoice = req.file.path; // or req.file.filename based on your multer config
-    }
+    quotationInvoice = req.file.path; // or req.file.filename based on your multer config
 
     const updateFields = {
       note,
