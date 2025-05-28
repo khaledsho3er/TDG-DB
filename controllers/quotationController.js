@@ -95,3 +95,81 @@ exports.getQuotationsByBrandId = async (req, res) => {
     res.status(500).json({ message: "Error fetching quotations", error });
   }
 };
+// Vendor updates quotation with invoice, note, quotePrice, dateOfQuotePrice
+exports.updateQuotationByVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note, quotePrice, dateOfQuotePrice } = req.body;
+
+    // Handle file upload
+    let quotationInvoice;
+    if (req.file) {
+      quotationInvoice = req.file.path; // or req.file.filename based on your multer config
+    }
+
+    const updateFields = {
+      note,
+      quotePrice,
+      dateOfQuotePrice,
+    };
+
+    if (quotationInvoice) {
+      updateFields.quotationInvoice = quotationInvoice;
+    }
+
+    const updated = await Quotation.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Quotation not found" });
+    }
+
+    res.status(200).json({
+      message: "Quotation updated successfully",
+      quotation: updated,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating quotation", error });
+  }
+};
+
+// Get single quotation by ID, with populated brand info
+exports.getQuotationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const quotation = await Quotation.findById(id)
+      .populate("brandId", "brandName brandLogo email brandPhone")
+      .populate("userId")
+      .populate("productId");
+
+    if (!quotation) {
+      return res.status(404).json({ message: "Quotation not found" });
+    }
+
+    res.status(200).json(quotation);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching quotation", error });
+  }
+};
+exports.deleteQuotation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Quotation.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Quotation not found" });
+    }
+
+    res.status(200).json({ message: "Quotation deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting quotation", error });
+  }
+};

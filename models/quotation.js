@@ -33,6 +33,10 @@ const QuotationSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  quotationInvoice: { type: String }, // URL or filename
+  note: { type: String },
+  quotePrice: { type: Number },
+  dateOfQuotePrice: { type: Date },
   createdAt: {
     type: Date,
     default: Date.now,
