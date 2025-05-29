@@ -80,7 +80,7 @@ const orderSchema = new mongoose.Schema(
       label: { type: String }, // e.g., Home, Office
       apartment: { type: String },
       floor: { type: String },
-      country: { type: String, required: true },
+      country: { type: String },
       city: { type: String, required: true },
       zipCode: { type: String, required: true },
     },
