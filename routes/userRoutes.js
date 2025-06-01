@@ -11,6 +11,8 @@ const mailchimp = require("@mailchimp/mailchimp_marketing");
 
 const router = express.Router();
 // Sign Up Route
+// Signup Route
+// Signup Route
 router.post("/signup", async (req, res) => {
   const {
     firstName,
@@ -30,18 +32,20 @@ router.post("/signup", async (req, res) => {
     postalCode,
   } = req.body;
 
+  console.log("📥 Incoming signup:", email);
+
   if (!firstName || !lastName || !email || !password) {
+    console.log("❌ Missing required fields");
     return res.status(400).json({ message: "Required fields are missing!" });
   }
 
   try {
-    // Check if the email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log("⚠️ Email already exists:", email);
       return res.status(400).json({ message: "Email is already in use." });
     }
 
-    // Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -66,32 +70,37 @@ router.post("/signup", async (req, res) => {
     });
 
     const savedUser = await newUser.save();
-    // Add user to Mailchimp list with "welcome-signup" tag
-    const listId = "73aa717d57";
+
+    const listId = process.env.MAILCHIMP_LIST_ID;
     if (!listId) {
       console.error("⚠️ MAILCHIMP_LIST_ID is missing from env!");
       return res
         .status(500)
         .json({ message: "Mailchimp not configured properly." });
     }
-    console.log("Using listId:", listId);
 
-    await mailchimp.lists.addListMember(listId, {
-      email_address: email,
-      status: "subscribed",
-      merge_fields: {
-        FNAME: firstName,
-        LNAME: lastName,
-      },
-      tags: ["welcome-signup"],
-    });
+    try {
+      const response = await mailchimp.lists.addListMember(listId, {
+        email_address: email,
+        status: "subscribed",
+        merge_fields: {
+          FNAME: firstName,
+          LNAME: lastName,
+        },
+        tags: ["welcome-signup"],
+      });
+      console.log("✅ Mailchimp member added:", response.id);
+    } catch (mcErr) {
+      console.error("❌ Mailchimp error:", mcErr.response?.body || mcErr);
+      // Don't fail signup if Mailchimp fails
+    }
 
     res.status(201).json({
       message: "User created successfully",
       user: { id: savedUser._id, email: savedUser.email },
     });
   } catch (error) {
-    console.error("Error signing up user:", error);
+    console.error("❌ Signup error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
