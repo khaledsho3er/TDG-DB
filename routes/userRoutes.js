@@ -67,7 +67,7 @@ router.post("/signup", async (req, res) => {
 
     const savedUser = await newUser.save();
     // Add user to Mailchimp list with "welcome-signup" tag
-    const listId = process.env.MAILCHIMP_LIST_ID;
+    const listId = "73aa717d57";
     if (!listId) {
       console.error("⚠️ MAILCHIMP_LIST_ID is missing from env!");
       return res
