@@ -7,6 +7,7 @@ const {
   isAuthorized,
 } = require("../middlewares/authMiddleware");
 const transporter = require("../utils/emailTransporter");
+const mailchimp = require("@mailchimp/mailchimp_marketing");
 
 const router = express.Router();
 // Sign Up Route
@@ -65,24 +66,15 @@ router.post("/signup", async (req, res) => {
     });
 
     const savedUser = await newUser.save();
-    const mailOptions = {
-      from: "karimwahba53@gmail.com",
-      to: email,
-      subject: `Congratulations on your registration, ${firstName}!`,
-      text: `Hello ${firstName} ${lastName},
-
-Thank you for signing up on our website! We're excited to have you on board.
-
-Here are your details:
-- Email: ${email}
-If you have any questions or need assistance, feel free to reach out to us.
-
-Best regards,
-The Design Grit Team`,
-    };
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) return console.log(error);
-      console.log("Email sent: " + info.response);
+    // Add user to Mailchimp list with "welcome-signup" tag
+    await mailchimp.lists.addListMember(process.env.MAILCHIMP_LIST_ID, {
+      email_address: email,
+      status: "subscribed",
+      merge_fields: {
+        FNAME: firstName,
+        LNAME: lastName,
+      },
+      tags: ["welcome-signup"],
     });
     res.status(201).json({
       message: "User created successfully",
