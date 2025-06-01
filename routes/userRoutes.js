@@ -68,6 +68,13 @@ router.post("/signup", async (req, res) => {
     const savedUser = await newUser.save();
     // Add user to Mailchimp list with "welcome-signup" tag
     const listId = process.env.MAILCHIMP_LIST_ID;
+    if (!listId) {
+      console.error("⚠️ MAILCHIMP_LIST_ID is missing from env!");
+      return res
+        .status(500)
+        .json({ message: "Mailchimp not configured properly." });
+    }
+    console.log("Using listId:", listId);
 
     await mailchimp.lists.addListMember(listId, {
       email_address: email,
@@ -78,12 +85,6 @@ router.post("/signup", async (req, res) => {
       },
       tags: ["welcome-signup"],
     });
-    if (!listId) {
-      console.error("⚠️ MAILCHIMP_LIST_ID is missing from env!");
-      return res
-        .status(500)
-        .json({ message: "Mailchimp not configured properly." });
-    }
 
     res.status(201).json({
       message: "User created successfully",
