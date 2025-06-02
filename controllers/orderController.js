@@ -162,7 +162,7 @@ exports.createOrder = async (req, res) => {
         ITEMS: itemSummary,
       });
 
-      await addTagToContact(customer.email, "Receipt"); // 🔥 Trigger Mailchimp automation
+      await addTagToContact(customer.email, "order-confirm-test"); // 🔥 Trigger Mailchimp automation
       console.log("✅ Mailchimp automation triggered.");
     } catch (mailchimpError) {
       console.error("❌ Mailchimp error:", mailchimpError.message);
