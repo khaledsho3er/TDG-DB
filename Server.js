@@ -98,7 +98,7 @@ cron.schedule("*/1 * * * *", () => {
   expirePromotions();
 });
 app.get("/test-expire", async (req, res) => {
-  const expirePromotions = require("./jobs/expirePromotions");
+  const expirePromotions = require("./cronJobs/promotionCleanup");
   await expirePromotions();
   res.send("Promotion expiration test completed.");
 });
