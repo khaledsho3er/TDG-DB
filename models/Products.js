@@ -63,20 +63,11 @@ const productSchema = new mongoose.Schema(
         ref: "ProductVariant", // Reference to the ProductVariant schema
       },
     ], // Array of product variants
-    // Inside productSchema definition
-    promotionHistory: [
-      {
-        salePrice: Number,
-        discountPercentage: Number,
-        startDate: Date,
-        endDate: Date,
-        approved: Boolean,
-        rejectionNote: String,
-      },
-    ],
   },
   { timestamps: true }
 );
+productSchema.index({ promotionEndDate: 1 });
+
 // Pre-save hook to calculate discount percentage
 productSchema.pre("save", function (next) {
   if (this.salePrice && this.salePrice < this.price) {

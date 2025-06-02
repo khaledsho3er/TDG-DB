@@ -57,8 +57,15 @@ app.use(bodyParser.json({ limit: "500mb" }));
 
 app.use(bodyParser.urlencoded({ extended: true, limit: "500mb" })); // Support URL-encoded data
 // Start the cron job
-const promotionCleanupJob = require("./cronJobs/promotionCleanup");
-promotionCleanupJob.start();
+const cron = require("node-cron");
+const expirePromotions = require("./cronJobs/promotionCleanup"); // Import the promotion cleanup function
+
+// Run every day at midnight
+cron.schedule("0 0 * * *", () => {
+  console.log("Running promotion expiry job...");
+  expirePromotions();
+});
+
 // MongoDB connection URI
 const mongoURI = process.env.Mongo_server;
 
