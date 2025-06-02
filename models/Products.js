@@ -63,6 +63,17 @@ const productSchema = new mongoose.Schema(
         ref: "ProductVariant", // Reference to the ProductVariant schema
       },
     ], // Array of product variants
+    // Inside productSchema definition
+    promotionHistory: [
+      {
+        salePrice: Number,
+        discountPercentage: Number,
+        startDate: Date,
+        endDate: Date,
+        approved: Boolean,
+        rejectionNote: String,
+      },
+    ],
   },
   { timestamps: true }
 );
