@@ -56,15 +56,6 @@ app.use(
 app.use(bodyParser.json({ limit: "500mb" }));
 
 app.use(bodyParser.urlencoded({ extended: true, limit: "500mb" })); // Support URL-encoded data
-// Start the cron job
-const cron = require("node-cron");
-const expirePromotions = require("./cronJobs/promotionCleanup"); // Import the promotion cleanup function
-
-// Run every day at midnight
-cron.schedule("0 0 * * *", () => {
-  console.log("Running promotion expiry job...");
-  expirePromotions();
-});
 
 // MongoDB connection URI
 const mongoURI = process.env.Mongo_server;
@@ -98,6 +89,19 @@ app.use(
 );
 // Serve static files for uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Start the cron job
+const cron = require("node-cron");
+const expirePromotions = require("./cronJobs/promotionCleanup");
+
+cron.schedule("*/1 * * * *", () => {
+  console.log("⏰ Running cron job every minute for testing");
+  expirePromotions();
+});
+app.get("/test-expire", async (req, res) => {
+  const expirePromotions = require("./jobs/expirePromotions");
+  await expirePromotions();
+  res.send("Promotion expiration test completed.");
+});
 
 // Use the user routes for API endpoints
 app.use("/api", userRoutes);
