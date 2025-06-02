@@ -8,6 +8,7 @@ const AdminNotification = require("../models/adminNotifications"); // Import the
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
+const { addTagToContact } = require("../utils/mailchimp");
 
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
@@ -125,6 +126,9 @@ exports.createOrder = async (req, res) => {
     const brandId = updatedCartItems[0].brandId; // Get the brandId from the first item
     const brand = await Brand.findById(brandId);
     const brandName = brand ? brand.brandName : "Unknown Brand";
+    const itemSummary = savedOrder.cartItems
+      .map((item) => `${item.name} x${item.quantity} – $${item.totalPrice}`)
+      .join(", ");
     const newNotification = new Notification({
       type: "order",
       description: `You have received a new order from customer ${
@@ -148,25 +152,22 @@ exports.createOrder = async (req, res) => {
       read: false,
     });
     await adminNotification.save();
-    const mailOptions = {
-      from: "karimwahba53@gmail.com",
-      to: customer.email,
-      subject: `Purchase Successfully Order: #${savedOrder._id}`,
-      text: `Your order with ID ${
-        savedOrder._id
-      } has been successfully purchased. ${savedOrder.cartItems
-        .map(
-          (item, index) =>
-            `Item ${index + 1}: ${item.name} with quantity ${
-              item.quantity
-            } and price ${item.price}`
-        )
-        .join(", ")}. Total price: ${savedOrder.total}.`,
-    };
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) return console.log(error);
-      console.log("Email sent: " + info.response);
-    });
+    // ✅ Sync with Mailchimp
+    try {
+      await addContactToAudience(customer.email, {
+        FNAME: customer.firstName || "",
+        LNAME: customer.lastName || "",
+        ORDERID: savedOrder._id.toString(),
+        TOTAL: total,
+        ITEMS: itemSummary,
+      });
+
+      await addTagToContact(customer.email, "Receipt"); // 🔥 Trigger Mailchimp automation
+      console.log("✅ Mailchimp automation triggered.");
+    } catch (mailchimpError) {
+      console.error("❌ Mailchimp error:", mailchimpError.message);
+    }
+
     res.status(201).json(savedOrder);
   } catch (error) {
     console.error("Error creating order:", error);

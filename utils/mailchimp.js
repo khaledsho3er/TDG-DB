@@ -27,7 +27,25 @@ async function addContactToAudience(email, firstName = "", lastName = "") {
     throw error;
   }
 }
+// Apply tag to contact (to trigger journey)
+async function addTagToContact(email, tagName) {
+  try {
+    const subscriberHash = getSubscriberHash(email);
+    await mailchimp.lists.updateListMemberTags(
+      process.env.MAILCHIMP_AUDIENCE_ID,
+      subscriberHash,
+      {
+        tags: [{ name: tagName, status: "active" }],
+      }
+    );
+    console.log(`🏷️ Applied tag '${tagName}' to ${email}`);
+  } catch (error) {
+    console.error("❌ Error applying tag:", error.response?.body || error);
+    throw error;
+  }
+}
 
 module.exports = {
   addContactToAudience,
+  addTagToContact,
 };
