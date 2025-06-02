@@ -8,7 +8,7 @@ const AdminNotification = require("../models/adminNotifications"); // Import the
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
-const { addTagToContact } = require("../utils/mailchimp");
+const { addContactToAudience, addTagToContact } = require("../utils/mailchimp");
 
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
