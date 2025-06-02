@@ -8,8 +8,16 @@ const AdminNotification = require("../models/adminNotifications"); // Import the
 const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
-const { addContactToAudience, addTagToContact } = require("../utils/mailchimp");
-
+const { addOrderToMailchimp } = require("../utils/mailchimp"); // Import it at the top
+const mailchimpHandler = {
+  syncOrder: async (email, order) => {
+    try {
+      await addOrderToMailchimp(email, order);
+    } catch (error) {
+      console.error("Mailchimp sync failed:", error);
+    }
+  },
+};
 // ✅ Create a new order with brandId auto-assigned
 exports.createOrder = async (req, res) => {
   try {
@@ -153,20 +161,7 @@ exports.createOrder = async (req, res) => {
     });
     await adminNotification.save();
     // ✅ Sync with Mailchimp
-    try {
-      await addContactToAudience(customer.email, {
-        FNAME: customer.firstName || "",
-        LNAME: customer.lastName || "",
-        ORDERID: savedOrder._id.toString(),
-        TOTAL: total,
-        ITEMS: itemSummary,
-      });
-
-      await addTagToContact(customer.email, "order-confirm-test"); // 🔥 Trigger Mailchimp automation
-      console.log("✅ Mailchimp automation triggered.");
-    } catch (mailchimpError) {
-      console.error("❌ Mailchimp error:", mailchimpError.message);
-    }
+    await mailchimpHandler.syncOrder(customer.email, savedOrder);
 
     res.status(201).json(savedOrder);
   } catch (error) {
