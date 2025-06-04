@@ -95,27 +95,23 @@ class PaymobController {
       // Handle successful payment
       if (obj.success) {
         // Extract order data from the payment object
-        const orderData = obj.order;
-        const customerData = obj.billing_data;
+        const paymentData = obj;
+        const customerData = paymentData.billing_data;
+
+        // Get the original order data from the extras field
+        const originalOrderData = paymentData.order.extras || {};
 
         // Prepare order data for our createOrder function
         const orderPayload = {
-          customerId: orderData.customer_id,
-          cartItems: orderData.items.map((item) => ({
-            productId: item.product_id,
-            variantId: item.variant_id,
-            name: item.name,
-            quantity: item.quantity,
-            totalPrice: item.amount_cents / 100,
-            brandId: item.brand_id,
-          })),
-          subtotal: orderData.amount_cents / 100,
-          shippingFee: orderData.shipping_fee || 0,
-          total: orderData.amount_cents / 100,
+          customerId: originalOrderData.customerId || customerData.customer_id,
+          cartItems: originalOrderData.cartItems || [], // Use original cart items from extras
+          subtotal: paymentData.amount_cents / 100,
+          shippingFee: originalOrderData.shippingFee || 0,
+          total: paymentData.amount_cents / 100,
           orderStatus: "Pending",
           paymentDetails: {
             paymentMethod: "Paymob",
-            transactionId: obj.id,
+            transactionId: paymentData.id,
             paymentStatus: "Paid",
           },
           billingDetails: {
