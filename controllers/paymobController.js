@@ -39,7 +39,7 @@ class PaymobController {
         order.id,
         {
           amount: orderData.total,
-          billiing_data: orderData.billingDetails,
+          ...orderData.billingDetails,
         },
         authToken
       );
