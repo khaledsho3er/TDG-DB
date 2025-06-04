@@ -1,4 +1,13 @@
 const PaymobService = require("../services/paymobService");
+const { createOrder } = require("./orderController");
+const Order = require("../models/order");
+const Product = require("../models/Products");
+const ProductVariant = require("../models/productVariant");
+const Brand = require("../models/Brand");
+const Notification = require("../models/notification");
+const AdminNotification = require("../models/adminNotifications");
+const user = require("../models/user");
+const { addOrderToMailchimp } = require("../utils/mailchimp");
 
 class PaymobController {
   static async getConfig(req, res) {
@@ -29,9 +38,10 @@ class PaymobController {
         });
       }
 
-      // Create order with fresh token
+      // Create order with fresh token and complete order data
       const { order, authToken } = await PaymobService.createOrder(
-        orderData.total
+        orderData.total,
+        orderData
       );
 
       // Get payment key using the same token
@@ -84,14 +94,64 @@ class PaymobController {
 
       // Handle successful payment
       if (obj.success) {
-        // TODO: Update your order status in the database
-        // You can add your order update logic here
+        // Extract order data from the payment object
+        const orderData = obj.order;
+        const customerData = obj.billing_data;
 
-        res.json({
-          success: true,
-          message: "Payment processed successfully",
-          orderId: obj.order.id,
-        });
+        // Prepare order data for our createOrder function
+        const orderPayload = {
+          customerId: orderData.customer_id,
+          cartItems: orderData.items.map((item) => ({
+            productId: item.product_id,
+            variantId: item.variant_id,
+            name: item.name,
+            quantity: item.quantity,
+            totalPrice: item.amount_cents / 100,
+            brandId: item.brand_id,
+          })),
+          subtotal: orderData.amount_cents / 100,
+          shippingFee: orderData.shipping_fee || 0,
+          total: orderData.amount_cents / 100,
+          orderStatus: "Pending",
+          paymentDetails: {
+            paymentMethod: "Paymob",
+            transactionId: obj.id,
+            paymentStatus: "Paid",
+          },
+          billingDetails: {
+            firstName: customerData.first_name,
+            lastName: customerData.last_name,
+            email: customerData.email,
+            phoneNumber: customerData.phone_number,
+            address: customerData.street,
+            country: customerData.country,
+          },
+        };
+
+        // Create a mock request object for the createOrder function
+        const mockReq = {
+          body: orderPayload,
+        };
+
+        // Create a mock response object to capture the result
+        const mockRes = {
+          status: (code) => ({
+            json: (data) => {
+              if (code === 201) {
+                res.json({
+                  success: true,
+                  message: "Payment processed and order created successfully",
+                  orderId: data._id,
+                });
+              } else {
+                res.status(code).json(data);
+              }
+            },
+          }),
+        };
+
+        // Call the createOrder function from orderController
+        await createOrder(mockReq, mockRes);
       } else {
         res.status(400).json({
           error: "Payment failed",

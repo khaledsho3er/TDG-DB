@@ -34,17 +34,35 @@ class PaymobService {
     }
   }
 
-  static async createOrder(amount) {
+  static async createOrder(amount, orderData) {
     try {
       // Get fresh token for this request
       const authToken = await this.getAuthToken();
+
+      // Prepare items for Paymob
+      const items = orderData.cartItems.map((item) => ({
+        name: item.name,
+        amount_cents: Math.round(item.totalPrice * 100),
+        description: item.name,
+        quantity: item.quantity,
+        product_id: item.productId,
+        brand_id: item.brandId,
+        variant_id: item.variantId || null,
+      }));
 
       const response = await paymobAxios.post("/ecommerce/orders", {
         auth_token: authToken,
         delivery_needed: false,
         amount_cents: Math.round(amount * 100),
         currency: "EGP",
-        items: [],
+        items: items,
+        customer_id: orderData.customerId,
+        shipping_fee: orderData.shippingFee || 0,
+        extras: {
+          order_id: orderData.parentOrderId, // If you have a parent order ID
+          customer_email: orderData.billingDetails.email,
+          customer_phone: orderData.billingDetails.phoneNumber,
+        },
       });
 
       if (!response.data || !response.data.id) {
@@ -79,15 +97,15 @@ class PaymobService {
           apartment: "NA",
           email: billingData.email,
           floor: "NA",
-          first_name: billingData.firstName || "khaled",
-          street: billingData.address || "123 main st",
+          first_name: billingData.firstName,
+          last_name: billingData.lastName,
+          street: billingData.address,
           building: "NA",
-          phone_number: billingData.phoneNumber || "1234567890",
+          phone_number: billingData.phoneNumber,
           shipping_method: "NA",
           postal_code: "NA",
           city: "NA",
-          country: billingData.country || "Egypt",
-          last_name: billingData.lastName || "khaled",
+          country: billingData.country,
           state: "NA",
         },
         currency: "EGP",
