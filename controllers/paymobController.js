@@ -38,18 +38,45 @@ class PaymobController {
         });
       }
 
-      // Create order with fresh token and complete order data
+      // Transform the frontend data structure to match our backend expectations
+      const transformedOrderData = {
+        total: orderData.total,
+        customerId: orderData.customerId || req.user?.id, // Use authenticated user's ID if available
+        shippingFee: orderData.shippingFee || 0,
+        billingDetails: {
+          firstName: orderData.billingDetails.first_name,
+          lastName: orderData.billingDetails.last_name,
+          email: orderData.billingDetails.email,
+          phoneNumber: orderData.billingDetails.phone_number,
+          address: orderData.billingDetails.street,
+          country: orderData.billingDetails.country,
+          city: orderData.billingDetails.city,
+          zipCode: orderData.billingDetails.postal_code || "NA",
+        },
+        cartItems: orderData.items
+          ? orderData.items.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              name: item.name,
+              quantity: item.quantity,
+              totalPrice: item.amount_cents / 100, // Convert from cents to dollars
+              brandId: item.brandId,
+            }))
+          : [],
+      };
+
+      // Create order with fresh token and transformed order data
       const { order, authToken } = await PaymobService.createOrder(
-        orderData.total,
-        orderData
+        transformedOrderData.total,
+        transformedOrderData
       );
 
       // Get payment key using the same token
       const paymentKey = await PaymobService.getPaymentKey(
         order.id,
         {
-          amount: orderData.total,
-          ...orderData.billingDetails,
+          amount: transformedOrderData.total,
+          ...transformedOrderData.billingDetails,
         },
         authToken
       );
@@ -58,9 +85,10 @@ class PaymobController {
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
       res.json({
-        paymentKey: paymentKey.token,
-        orderId: order.id,
+        success: true,
         iframeUrl,
+        orderId: order.id,
+        paymentKey: paymentKey.token,
       });
     } catch (error) {
       console.error("Error creating payment:", error.message);
