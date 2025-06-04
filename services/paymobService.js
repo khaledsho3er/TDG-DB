@@ -4,6 +4,7 @@ require("dotenv").config();
 const PAYMOB_API_KEY = process.env.PAYMOB_API_KEY;
 const PAYMOB_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID;
 const PAYMOB_IFRAME_ID = process.env.PAYMOB_IFRAME_ID;
+const PAYMOB_HMAC_SECRET = process.env.PAYMOB_HMAC_SECRET;
 
 const paymobAxios = axios.create({
   baseURL: "https://accept.paymob.com/api",
@@ -18,15 +19,26 @@ class PaymobService {
       const response = await paymobAxios.post("/auth/tokens", {
         api_key: PAYMOB_API_KEY,
       });
+
+      if (!response.data || !response.data.token) {
+        throw new Error("Invalid response from Paymob auth endpoint");
+      }
+
       return response.data.token;
     } catch (error) {
-      console.error("Error getting Paymob auth token:", error);
-      throw error;
+      console.error(
+        "Error getting Paymob auth token:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to authenticate with Paymob");
     }
   }
 
-  static async createOrder(authToken, amount) {
+  static async createOrder(amount) {
     try {
+      // Get fresh token for this request
+      const authToken = await this.getAuthToken();
+
       const response = await paymobAxios.post("/ecommerce/orders", {
         auth_token: authToken,
         delivery_needed: false,
@@ -34,15 +46,30 @@ class PaymobService {
         currency: "EGP",
         items: [],
       });
-      return response.data;
+
+      if (!response.data || !response.data.id) {
+        throw new Error("Invalid response from Paymob order creation");
+      }
+
+      return {
+        order: response.data,
+        authToken, // Return the token along with order data
+      };
     } catch (error) {
-      console.error("Error creating Paymob order:", error);
-      throw error;
+      console.error(
+        "Error creating Paymob order:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to create Paymob order");
     }
   }
 
-  static async getPaymentKey(authToken, orderId, billingData) {
+  static async getPaymentKey(orderId, billingData, authToken) {
     try {
+      if (!authToken || !orderId) {
+        throw new Error("Authentication token and order ID are required");
+      }
+
       const response = await paymobAxios.post("/acceptance/payment_keys", {
         auth_token: authToken,
         amount_cents: Math.round(billingData.amount * 100),
@@ -66,15 +93,29 @@ class PaymobService {
         currency: "EGP",
         integration_id: PAYMOB_INTEGRATION_ID,
       });
+
+      if (!response.data || !response.data.token) {
+        throw new Error("Invalid response from Paymob payment key generation");
+      }
+
       return response.data;
     } catch (error) {
-      console.error("Error getting payment key:", error);
-      throw error;
+      console.error(
+        "Error getting payment key:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to generate payment key");
     }
   }
 
   static async verifyPayment(hmac, obj) {
     try {
+      if (!hmac || !obj) {
+        throw new Error(
+          "HMAC and payment object are required for verification"
+        );
+      }
+
       const data =
         obj.id +
         obj.amount_cents +
@@ -92,6 +133,7 @@ class PaymobService {
         obj.source_data.pan +
         obj.source_data.type +
         obj.success;
+
       const hash = require("crypto")
         .createHmac("sha512", PAYMOB_HMAC_SECRET)
         .update(data)
@@ -99,7 +141,18 @@ class PaymobService {
 
       return hash === hmac;
     } catch (error) {
-      console.error("Error verifying payment:", error);
+      console.error("Error verifying payment:", error.message);
+      throw new Error("Failed to verify payment");
+    }
+  }
+
+  // Helper method to execute a Paymob operation with fresh token
+  static async executeWithFreshToken(operation) {
+    try {
+      const authToken = await this.getAuthToken();
+      return await operation(authToken);
+    } catch (error) {
+      console.error("Error executing Paymob operation:", error.message);
       throw error;
     }
   }
