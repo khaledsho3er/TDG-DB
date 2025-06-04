@@ -40,6 +40,7 @@ const promotionsRoutes = require("./routes/promotionRoutes"); // Import the prom
 const adminRoutes = require("./routes/adminRoutes");
 const adminNotificationRoutes = require("./routes/adminNotificationRoutes"); // Import the admin notifications routes
 const productVariantRoutes = require("./routes/productvariantRoutes"); // Import the product variant routes
+const paymobRoutes = require("./routes/paymobRoutes"); // Import Paymob routes
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -139,6 +140,7 @@ app.use("/api/concepts", conceptRoutes); // Use the concept routes
 app.use("/api/admin", adminRoutes); // All admin routes prefixed with /adminpanel
 app.use("/api/admin-notifications", adminNotificationRoutes); // Admin notifications routes
 app.use("/api/product-variants", productVariantRoutes); // Product variant routes
+app.use("/api/paymob", paymobRoutes); // Use Paymob routes
 // Start the server
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
