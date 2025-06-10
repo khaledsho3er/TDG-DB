@@ -110,6 +110,7 @@ class PaymobController {
         {
           amount: transformedOrderData.total,
           ...transformedOrderData.billingDetails,
+          extras: transformedOrderData, // Store the complete transformedOrderData in extras
         },
         authToken,
         `${
@@ -177,10 +178,13 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Get cart items from extras
-          let cartItems = orderExtras.cartItems || [];
+          // Use the transformedOrderData from extras if available
+          const transformedOrderData = orderExtras;
+
+          // Get cart items from transformedOrderData
+          let cartItems = transformedOrderData.cartItems || [];
           console.log(
-            "Cart items from extras:",
+            "Cart items from transformedOrderData:",
             JSON.stringify(cartItems, null, 2)
           );
 
@@ -191,7 +195,7 @@ class PaymobController {
             paymobOrder.items.length > 0
           ) {
             console.log(
-              "No cart items in extras, trying to extract from Paymob order items"
+              "No cart items in transformedOrderData, trying to extract from Paymob order items"
             );
             cartItems = paymobOrder.items.map((item) => ({
               productId:
@@ -258,26 +262,30 @@ class PaymobController {
 
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: customerId,
-            cartItems: cartItems.map((item) => ({
-              productId: item.productId || item.product_id,
-              variantId: item.variantId || item.variant_id,
-              name: item.name,
-              price: item.price || item.totalPrice / item.quantity,
-              quantity: item.quantity || 1,
-              totalPrice: item.totalPrice || item.amount_cents / 100,
-              brandId: item.brandId || item.brand_id,
-            })),
-            subtotal: paymobOrder.amount_cents / 100,
-            shippingFee: orderExtras.shippingFee || 0,
-            total: paymobOrder.amount_cents / 100,
+            customerId: transformedOrderData.customerId || customerId,
+            cartItems:
+              transformedOrderData.cartItems ||
+              cartItems.map((item) => ({
+                productId: item.productId || item.product_id,
+                variantId: item.variantId || item.variant_id,
+                name: item.name,
+                price: item.price || item.totalPrice / item.quantity,
+                quantity: item.quantity || 1,
+                totalPrice: item.totalPrice || item.amount_cents / 100,
+                brandId: item.brandId || item.brand_id,
+              })),
+            subtotal:
+              transformedOrderData.total || paymobOrder.amount_cents / 100,
+            shippingFee:
+              transformedOrderData.shippingFee || orderExtras.shippingFee || 0,
+            total: transformedOrderData.total || paymobOrder.amount_cents / 100,
             orderStatus: "Pending",
             paymentDetails: {
               paymentMethod: "paymob",
               transactionId: orderId,
               paymentStatus: "Paid",
             },
-            billingDetails: {
+            billingDetails: transformedOrderData.billingDetails || {
               firstName:
                 paymobOrder.shipping_data?.first_name ||
                 orderExtras.billingDetails?.firstName ||
@@ -311,7 +319,7 @@ class PaymobController {
                 orderExtras.billingDetails?.zipCode ||
                 "N/A",
             },
-            shippingDetails: {
+            shippingDetails: transformedOrderData.shippingDetails || {
               firstName:
                 paymobOrder.shipping_data?.first_name ||
                 orderExtras.shippingDetails?.firstName ||
