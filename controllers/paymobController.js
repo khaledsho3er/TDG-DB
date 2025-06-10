@@ -178,12 +178,51 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Get cart items from extras
-          const cartItems = orderExtras.cartItems || [];
+          // Get cart items from extras or try to extract from Paymob order data
+          let cartItems = orderExtras.cartItems || [];
           console.log(
             "Cart items from extras:",
             JSON.stringify(cartItems, null, 2)
           );
+
+he to extract from Paymob order items
+          if (
+            cartItems.length === 0 &&
+            paymobOrder.items &&
+            paymobOrder.items.length > 0
+          ) {
+            console.log(
+              "No cart items in extras, trying to extract from Paymob order items"
+            );
+            cartItems = paymobOrder.items.map((item) => ({
+              productId: item.product_id,
+              variantId: item.variant_id || null,
+              brandId: item.brand_id,
+              name: item.name,
+              price: item.amount_cents / 100 / (item.quantity || 1),
+              quantity: item.quantity || 1,
+              totalPrice: item.amount_cents / 100,
+            }));
+            console.log(
+              "Extracted cart items from Paymob:",
+              JSON.stringify(cartItems, null, 2)
+            );
+          }
+
+          // If still empty, create a placeholder item based on order total
+          if (cartItems.length === 0) {
+            console.log("Creating placeholder cart item from order total");
+            cartItems = [
+              {
+                productId: null,
+                name: "Order Item",
+                price: paymobOrder.amount_cents / 100,
+                quantity: 1,
+                totalPrice: paymobOrder.amount_cents / 100,
+                brandId: null,
+              },
+            ];
+          }
 
           // If we don't have a customerId in the extras, try to find a user by email
           let customerId = orderExtras.customerId;
@@ -219,18 +258,15 @@ class PaymobController {
           // Create a new order in your database
           const newOrder = new Order({
             customerId: customerId,
-            cartItems:
-              cartItems.length > 0
-                ? cartItems.map((item) => ({
-                    productId: item.productId,
-                    variantId: item.variantId,
-                    name: item.name,
-                    price: item.price || item.totalPrice / item.quantity,
-                    quantity: item.quantity,
-                    totalPrice: item.totalPrice,
-                    brandId: item.brandId,
-                  }))
-                : [],
+            cartItems: cartItems.map((item) => ({
+              productId: item.productId || item.product_id,
+              variantId: item.variantId || item.variant_id,
+              name: item.name,
+              price: item.price || item.totalPrice / item.quantity,
+              quantity: item.quantity || 1,
+              totalPrice: item.totalPrice || item.amount_cents / 100,
+              brandId: item.brandId || item.brand_id,
+            })),
             subtotal: paymobOrder.amount_cents / 100,
             shippingFee: orderExtras.shippingFee || 0,
             total: paymobOrder.amount_cents / 100,
