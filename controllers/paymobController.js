@@ -115,24 +115,26 @@ class PaymobController {
       console.log("=== PAYMENT GET CALLBACK RECEIVED ===");
       console.log("Request query:", JSON.stringify(req.query, null, 2));
 
-      const { success, order_id } = req.query;
+      // Extract parameters - try different possible names
+      const success = req.query.success;
+      const orderId = req.query.order || req.query.order_id || req.query.id;
 
       console.log(
         "GET callback received with success:",
         success,
-        "order_id:",
-        order_id
+        "orderId:",
+        orderId
       );
 
       // If success parameter is present and true, create the order
-      if (success === "true" && order_id) {
+      if (success === "true" && orderId) {
         console.log("Payment successful via GET, creating order...");
 
         try {
-          // Fetch the order data from Paymob using the order_id
+          // Fetch the order data from Paymob using the order ID
           const authToken = await PaymobService.getAuthToken();
           const response = await axios.get(
-            `https://accept.paymob.com/api/ecommerce/orders/${order_id}`,
+            `https://accept.paymob.com/api/ecommerce/orders/${orderId}`,
             {
               headers: {
                 Authorization: `Bearer ${authToken}`,
@@ -168,7 +170,7 @@ class PaymobController {
             orderStatus: "Pending",
             paymentDetails: {
               paymentMethod: "Paymob",
-              transactionId: order_id,
+              transactionId: orderId,
               paymentStatus: "Paid",
             },
             billingDetails: {
