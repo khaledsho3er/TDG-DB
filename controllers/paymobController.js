@@ -174,11 +174,12 @@ class PaymobController {
             JSON.stringify(paymobOrder, null, 2)
           );
 
-          // Extract order data
-          const orderData = paymobOrder.extras || {};
+          // Extract order data from extras
+          const orderExtras = paymobOrder.extras || {};
+          console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
           // If we don't have a customerId in the extras, try to find a user by email
-          let customerId = orderData.customerId;
+          let customerId = orderExtras.customerId;
           if (
             !customerId &&
             paymobOrder.shipping_data &&
@@ -210,46 +211,95 @@ class PaymobController {
 
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: customerId, // Now we have a customerId
+            customerId: customerId,
             cartItems:
-              orderData.cartItems?.map((item) => ({
-                productId: item.productId,
-                variantId: item.variantId,
-                name: item.name,
-                price: item.price || item.totalPrice / item.quantity,
-                quantity: item.quantity,
-                totalPrice: item.totalPrice,
-                brandId: item.brandId,
-              })) || [],
+              cartItems.length > 0
+                ? cartItems.map((item) => ({
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    name: item.name,
+                    price: item.price || item.totalPrice / item.quantity,
+                    quantity: item.quantity,
+                    totalPrice: item.totalPrice,
+                    brandId: item.brandId,
+                  }))
+                : [],
             subtotal: paymobOrder.amount_cents / 100,
-            shippingFee: orderData.shippingFee || 0,
+            shippingFee: orderExtras.shippingFee || 0,
             total: paymobOrder.amount_cents / 100,
             orderStatus: "Pending",
             paymentDetails: {
-              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
+              paymentMethod: "paymob",
               transactionId: orderId,
               paymentStatus: "Paid",
             },
             billingDetails: {
-              firstName: orderData.billingDetails?.firstName || "Customer",
-              lastName: orderData.billingDetails?.lastName || "Name",
-              email: orderData.billingDetails?.email || "customer@example.com",
-              phoneNumber: orderData.billingDetails?.phoneNumber || "N/A",
-              address: orderData.billingDetails?.address || "N/A",
-              country: orderData.billingDetails?.country || "N/A",
-              city: orderData.billingDetails?.city || "N/A",
-              zipCode: orderData.billingDetails?.zipCode || "N/A",
+              firstName:
+                paymobOrder.shipping_data?.first_name ||
+                orderExtras.billingDetails?.firstName ||
+                "Customer",
+              lastName:
+                paymobOrder.shipping_data?.last_name ||
+                orderExtras.billingDetails?.lastName ||
+                "Name",
+              email:
+                paymobOrder.shipping_data?.email ||
+                orderExtras.billingDetails?.email ||
+                "customer@example.com",
+              phoneNumber:
+                paymobOrder.shipping_data?.phone_number ||
+                orderExtras.billingDetails?.phoneNumber ||
+                "N/A",
+              address:
+                paymobOrder.shipping_data?.street ||
+                orderExtras.billingDetails?.address ||
+                "N/A",
+              country:
+                paymobOrder.shipping_data?.country ||
+                orderExtras.billingDetails?.country ||
+                "N/A",
+              city:
+                paymobOrder.shipping_data?.city ||
+                orderExtras.billingDetails?.city ||
+                "N/A",
+              zipCode:
+                paymobOrder.shipping_data?.postal_code ||
+                orderExtras.billingDetails?.zipCode ||
+                "N/A",
             },
             shippingDetails: {
-              firstName: orderData.billingDetails?.firstName || "Customer",
-              lastName: orderData.billingDetails?.lastName || "Name",
-              address: orderData.billingDetails?.address || "N/A",
-              phoneNumber: orderData.billingDetails?.phoneNumber || "N/A",
-              country: orderData.billingDetails?.country || "N/A",
-              city: orderData.billingDetails?.city || "N/A",
-              zipCode: orderData.billingDetails?.zipCode || "N/A",
+              firstName:
+                paymobOrder.shipping_data?.first_name ||
+                orderExtras.shippingDetails?.firstName ||
+                "Customer",
+              lastName:
+                paymobOrder.shipping_data?.last_name ||
+                orderExtras.shippingDetails?.lastName ||
+                "Name",
+              address:
+                paymobOrder.shipping_data?.street ||
+                orderExtras.shippingDetails?.address ||
+                "N/A",
+              phoneNumber:
+                paymobOrder.shipping_data?.phone_number ||
+                orderExtras.shippingDetails?.phoneNumber ||
+                "N/A",
+              country:
+                paymobOrder.shipping_data?.country ||
+                orderExtras.shippingDetails?.country ||
+                "N/A",
+              city:
+                paymobOrder.shipping_data?.city ||
+                orderExtras.shippingDetails?.city ||
+                "N/A",
+              zipCode:
+                paymobOrder.shipping_data?.postal_code ||
+                orderExtras.shippingDetails?.zipCode ||
+                "N/A",
             },
           });
+
+          console.log("New order object:", JSON.stringify(newOrder, null, 2));
 
           // Save the order
           const savedOrder = await newOrder.save();
