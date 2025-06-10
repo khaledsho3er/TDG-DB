@@ -178,6 +178,13 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
+          // Get cart items from extras
+          const cartItems = orderExtras.cartItems || [];
+          console.log(
+            "Cart items from extras:",
+            JSON.stringify(cartItems, null, 2)
+          );
+
           // If we don't have a customerId in the extras, try to find a user by email
           let customerId = orderExtras.customerId;
           if (
