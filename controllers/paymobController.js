@@ -115,6 +115,7 @@ class PaymobController {
           shippingFee: transformedOrderData.shippingFee,
           shippingDetails: transformedOrderData.shippingDetails,
         },
+        transformedOrderData.billingDetails,
         authToken,
         `${
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
