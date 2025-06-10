@@ -185,7 +185,7 @@ class PaymobController {
             JSON.stringify(cartItems, null, 2)
           );
 
-he to extract from Paymob order items
+          // If cartItems is still empty, try to extract from Paymob order items
           if (
             cartItems.length === 0 &&
             paymobOrder.items &&
