@@ -112,8 +112,36 @@ class PaymobController {
   static async handleCallback(req, res) {
     try {
       console.log("=== PAYMENT CALLBACK RECEIVED ===");
+      console.log("Request method:", req.method);
+      console.log("Request query:", JSON.stringify(req.query, null, 2));
       console.log("Request body:", JSON.stringify(req.body, null, 2));
 
+      // Handle GET requests (redirects from payment page)
+      if (req.method === "GET") {
+        const { success, order_id } = req.query;
+
+        console.log(
+          "GET callback received with success:",
+          success,
+          "order_id:",
+          order_id
+        );
+
+        // If success parameter is present and true, redirect to success page
+        if (success === "true") {
+          console.log(
+            "Payment successful via GET, redirecting to success page"
+          );
+          return res.redirect(
+            `https://thedesigngrit.com/home?order=${order_id}&status=success`
+          );
+        } else {
+          console.log("Payment failed via GET, redirecting to failure page");
+          return res.redirect("https://thedesigngrit.com/payment-failed");
+        }
+      }
+
+      // Handle POST requests (webhook notifications)
       const { hmac, obj } = req.body;
 
       if (!hmac || !obj) {
@@ -160,9 +188,7 @@ class PaymobController {
         // Check if we have a customerId
         if (!originalOrderData.customerId) {
           console.error("No customerId found in order data");
-          return res.redirect(
-            "https://thedesigngrit.com/payment-error?reason=missing_customer_id"
-          );
+          return res.status(400).json({ error: "Missing customer ID" });
         }
 
         // Check if we have cart items
@@ -172,9 +198,7 @@ class PaymobController {
           originalOrderData.cartItems.length === 0
         ) {
           console.error("No valid cart items found in order data");
-          return res.redirect(
-            "https://thedesigngrit.com/payment-error?reason=invalid_cart_items"
-          );
+          return res.status(400).json({ error: "Invalid cart items" });
         }
 
         try {
@@ -244,7 +268,7 @@ class PaymobController {
                     `Updated variant ${variant._id} stock to ${variant.stock}`
                   );
                 }
-              } else {
+              } else if (item.productId) {
                 const product = await Product.findById(item.productId);
                 if (product) {
                   product.stock = Math.max(0, product.stock - item.quantity);
@@ -256,87 +280,36 @@ class PaymobController {
                 }
               }
             } catch (stockError) {
-              console.error(
-                `Error updating stock for item ${item.productId}:`,
-                stockError
-              );
-              // Continue with other items even if one fails
+              console.error(`Error updating stock for item:`, stockError);
             }
           }
 
-          // Create notifications
-          try {
-            console.log("Creating notifications...");
-            const customer = await user.findById(originalOrderData.customerId);
-
-            if (customer) {
-              console.log("Customer found:", customer._id);
-
-              // Get the first item's brandId
-              const firstItem = savedOrder.cartItems[0];
-              if (firstItem && firstItem.brandId) {
-                // Create brand notification
-                const notification = new Notification({
-                  type: "order",
-                  description: `New order received from ${
-                    customer.email || "a customer"
-                  }`,
-                  brandId: firstItem.brandId,
-                  orderId: savedOrder._id,
-                  read: false,
-                });
-                await notification.save();
-                console.log("Brand notification created");
-
-                // Create admin notification
-                const adminNotification = new AdminNotification({
-                  type: "order",
-                  description: `New order #${savedOrder._id} created`,
-                  read: false,
-                });
-                await adminNotification.save();
-                console.log("Admin notification created");
-
-                // Sync with Mailchimp if customer has email
-                if (customer.email) {
-                  try {
-                    await addOrderToMailchimp(customer.email, savedOrder);
-                    console.log("Order synced with Mailchimp");
-                  } catch (mailchimpError) {
-                    console.error("Mailchimp sync error:", mailchimpError);
-                  }
-                }
-              }
-            }
-          } catch (notificationError) {
-            console.error("Error creating notifications:", notificationError);
-            // Continue even if notifications fail
-          }
-
-          // Redirect to success page
-          console.log("Redirecting to success page...");
-          return res.redirect(
-            `https://thedesigngrit.com/home?order=${savedOrder._id}&status=success`
-          );
+          // Return success response for POST request
+          return res.status(200).json({
+            success: true,
+            message: "Order processed successfully",
+            orderId: savedOrder._id,
+          });
         } catch (orderError) {
           console.error("Error creating order:", orderError);
-          return res.redirect(
-            `https://thedesigngrit.com/payment-error?reason=${encodeURIComponent(
-              orderError.message
-            )}`
-          );
+          return res.status(500).json({
+            error: "Failed to create order",
+            details: orderError.message,
+          });
         }
       } else {
         console.log("Payment failed:", obj.error_occured || "Unknown error");
-        return res.redirect("https://thedesigngrit.com/payment-failed");
+        return res.status(400).json({
+          error: "Payment failed",
+          details: obj.error_occured || "Unknown error",
+        });
       }
     } catch (error) {
       console.error("Unhandled error in payment callback:", error);
-      return res.redirect(
-        `https://thedesigngrit.com/payment-error?reason=${encodeURIComponent(
-          error.message
-        )}`
-      );
+      return res.status(500).json({
+        error: "Server error",
+        details: error.message,
+      });
     }
   }
 }

@@ -116,12 +116,10 @@ class PaymobService {
         },
         currency: "EGP",
         integration_id: PAYMOB_INTEGRATION_ID,
+        // Include both callback URLs
+        return_callback_url: callbackUrl,
+        transaction_processed_callback_url: callbackUrl,
       };
-
-      // Add callback URL if provided
-      if (callbackUrl) {
-        payload.return_callback_url = callbackUrl;
-      }
 
       console.log("Payment key payload:", JSON.stringify(payload, null, 2));
 
