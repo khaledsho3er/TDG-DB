@@ -66,6 +66,11 @@ class PaymobController {
           : [],
       };
 
+      console.log(
+        "Transformed order data:",
+        JSON.stringify(transformedOrderData, null, 2)
+      );
+
       // Create order with fresh token and transformed order data
       const { order, authToken } = await PaymobService.createOrder(
         transformedOrderData.total,
@@ -79,16 +84,20 @@ class PaymobController {
           amount: transformedOrderData.total,
           ...transformedOrderData.billingDetails,
         },
-        authToken
+        authToken,
+        // Make sure to pass the correct callback URL
+        `${
+          process.env.API_BASE_URL || "https://api.thedesigngrit.com"
+        }/api/paymob/callback`
       );
 
       // Create iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
-      // Fix: Return the iframe_url property that the frontend is expecting
+      // Return the iframe_url property that the frontend is expecting
       res.json({
         success: true,
-        iframe_url: iframeUrl, // This is the key change - use iframe_url instead of iframeUrl
+        iframe_url: iframeUrl,
         orderId: order.id,
         paymentKey: paymentKey.token,
       });

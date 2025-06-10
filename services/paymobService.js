@@ -88,13 +88,13 @@ class PaymobService {
       throw new Error("Failed to create Paymob order");
     }
   }
-  static async getPaymentKey(orderId, billingData, authToken) {
+  static async getPaymentKey(orderId, billingData, authToken, callbackUrl) {
     try {
       if (!authToken || !orderId) {
         throw new Error("Authentication token and order ID are required");
       }
 
-      const response = await paymobAxios.post("/acceptance/payment_keys", {
+      const payload = {
         auth_token: authToken,
         amount_cents: Math.round(billingData.amount * 100),
         expiration: 3600,
@@ -116,19 +116,33 @@ class PaymobService {
         },
         currency: "EGP",
         integration_id: PAYMOB_INTEGRATION_ID,
-      });
+      };
 
-      if (!response.data || !response.data.token) {
-        throw new Error("Invalid response from Paymob payment key generation");
+      // Add callback URL if provided
+      if (callbackUrl) {
+        payload.return_callback_url = callbackUrl;
       }
 
-      return response.data;
+      console.log("Payment key payload:", JSON.stringify(payload, null, 2));
+
+      const response = await paymobAxios.post(
+        "/acceptance/payment_keys",
+        payload
+      );
+
+      if (!response.data || !response.data.token) {
+        throw new Error("Invalid response from Paymob payment key endpoint");
+      }
+
+      return {
+        token: response.data.token,
+      };
     } catch (error) {
       console.error(
-        "Error getting payment key:",
+        "Error getting Paymob payment key:",
         error.response?.data || error.message
       );
-      throw new Error("Failed to generate payment key");
+      throw new Error("Failed to get Paymob payment key");
     }
   }
 
