@@ -109,6 +109,8 @@ class PaymobController {
         paymobOrder.id,
         {
           amount: transformedOrderData.total,
+          customer_id: transformedOrderData.customerId,
+          shipping_data: transformedOrderData.shippingDetails,
           ...transformedOrderData.billingDetails,
         },
         authToken,
