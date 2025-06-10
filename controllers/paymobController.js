@@ -122,7 +122,7 @@ class PaymobController {
       );
       // Save the transformed order data in an object
       // that can be accessed in other functions
-      this.transformedOrderData = transformedOrderData;
+      PaymobController.transformedOrderData = transformedOrderData;
       // Create iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
@@ -183,7 +183,7 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
           // Create a new order in your database
-          const orderData = this.transformedOrderData;
+          const orderData = PaymobController.transformedOrderData || {};
           console.log(
             "Transformed order data in handle callback:",
             JSON.stringify(orderData, null, 2)
