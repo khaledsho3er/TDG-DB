@@ -102,19 +102,29 @@ class PaymobController {
   }
   static async handleCallback(req, res) {
     try {
+      console.log("=== PAYMENT CALLBACK RECEIVED ===");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+
       const { hmac, obj } = req.body;
 
       if (!hmac || !obj) {
+        console.error("Missing hmac or obj in request body");
         return res.status(400).json({
           error: "Invalid callback data",
           details: "HMAC and payment object are required",
         });
       }
 
+      // Log the payment object
+      console.log("Payment object:", JSON.stringify(obj, null, 2));
+
       // Verify the payment
+      console.log("Verifying payment...");
       const isValid = await PaymobService.verifyPayment(hmac, obj);
+      console.log("Payment verification result:", isValid);
 
       if (!isValid) {
+        console.error("Payment verification failed");
         return res.status(400).json({
           error: "Invalid payment verification",
           details: "Payment verification failed",
@@ -123,173 +133,179 @@ class PaymobController {
 
       // Handle successful payment
       if (obj.success) {
+        console.log("Payment successful, processing order...");
+
         // Extract order data from the payment object
         const paymentData = obj;
         const customerData = paymentData.billing_data;
 
         // Get the original order data from the extras field
-        const originalOrderData = paymentData.order.extras || {};
+        const originalOrderData = paymentData.order?.extras || {};
 
         console.log(
-          "Payment successful, original order data:",
+          "Original order data:",
           JSON.stringify(originalOrderData, null, 2)
         );
         console.log("Customer data:", JSON.stringify(customerData, null, 2));
 
-        // Ensure we have cart items
-        if (
-          !originalOrderData.cartItems ||
-          originalOrderData.cartItems.length === 0
-        ) {
-          console.error("No cart items found in payment data");
+        // Check if we have a customerId
+        if (!originalOrderData.customerId) {
+          console.error("No customerId found in order data");
           return res.redirect(
-            "https://thedesigngrit.com/payment-error?reason=no_cart_items"
+            "https://thedesigngrit.com/payment-error?reason=missing_customer_id"
           );
         }
 
-        // Prepare order data
-        const orderData = {
-          customerId: originalOrderData.customerId,
-          cartItems: originalOrderData.cartItems,
-          subtotal: paymentData.amount_cents / 100,
-          shippingFee: originalOrderData.shippingFee || 0,
-          total: paymentData.amount_cents / 100,
-          orderStatus: "Pending",
-          paymentDetails: {
-            paymentMethod: "Paymob",
-            transactionId: paymentData.id,
-            paymentStatus: "Paid",
-          },
-          billingDetails: {
-            firstName: customerData.first_name,
-            lastName: customerData.last_name,
-            email: customerData.email,
-            phoneNumber: customerData.phone_number,
-            address: customerData.street,
-            country: customerData.country,
-            city: customerData.city || "NA",
-            zipCode: customerData.postal_code || "NA",
-          },
-          shippingDetails: {
-            firstName: customerData.first_name,
-            lastName: customerData.last_name,
-            address: customerData.street,
-            phoneNumber: customerData.phone_number,
-            country: customerData.country,
-            city: customerData.city || "NA",
-            zipCode: customerData.postal_code || "NA",
-          },
-        };
-
-        console.log(
-          "Creating order with data:",
-          JSON.stringify(orderData, null, 2)
-        );
-
-        // Create the order directly using the Order model
-        try {
-          // First, update product stock and other related data
-          const updatedCartItems = await Promise.all(
-            orderData.cartItems.map(async (item) => {
-              let product, variant;
-
-              // Handle variant or regular product
-              if (item.variantId) {
-                variant = await ProductVariant.findById(item.variantId);
-                if (!variant)
-                  throw new Error(`Variant not found: ${item.variantId}`);
-
-                product = await Product.findById(variant.productId);
-                if (!product)
-                  throw new Error(
-                    `Product not found for variant: ${item.variantId}`
-                  );
-
-                // Update variant stock
-                variant.stock -= item.quantity;
-                await variant.save();
-
-                // Update product sales
-                product.sales = (product.sales || 0) + item.quantity;
-                await product.save();
-              } else {
-                product = await Product.findById(item.productId);
-                if (!product)
-                  throw new Error(`Product not found: ${item.productId}`);
-
-                // Update product stock and sales
-                product.stock -= item.quantity;
-                product.sales = (product.sales || 0) + item.quantity;
-                await product.save();
-              }
-
-              // Get brand and calculate commission and tax
-              const brand = await Brand.findById(product.brandId);
-              if (!brand)
-                throw new Error(`Brand not found for product: ${product._id}`);
-
-              const commissionAmount =
-                item.totalPrice * (brand.commissionRate || 0.15);
-              const taxAmount = item.totalPrice * (brand.taxRate || 0.14);
-
-              // Create updated cart item
-              return {
-                ...item,
-                productId: item.productId,
-                brandId: product.brandId,
-                commissionAmount,
-                taxAmount,
-                variantId: item.variantId || undefined,
-              };
-            })
+        // Check if we have cart items
+        if (
+          !originalOrderData.cartItems ||
+          !Array.isArray(originalOrderData.cartItems) ||
+          originalOrderData.cartItems.length === 0
+        ) {
+          console.error("No valid cart items found in order data");
+          return res.redirect(
+            "https://thedesigngrit.com/payment-error?reason=invalid_cart_items"
           );
+        }
 
-          // Create and save the new order
+        try {
+          // Create a new order directly
+          console.log("Creating new order...");
           const newOrder = new Order({
-            ...orderData,
-            cartItems: updatedCartItems,
+            customerId: originalOrderData.customerId,
+            cartItems: originalOrderData.cartItems.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              name: item.name,
+              price: item.price || item.totalPrice / item.quantity,
+              quantity: item.quantity,
+              totalPrice: item.totalPrice,
+              brandId: item.brandId,
+            })),
+            subtotal: paymentData.amount_cents / 100,
+            shippingFee: originalOrderData.shippingFee || 0,
+            total: paymentData.amount_cents / 100,
+            orderStatus: "Pending",
+            paymentDetails: {
+              paymentMethod: "Paymob",
+              transactionId: paymentData.id,
+              paymentStatus: "Paid",
+            },
+            billingDetails: {
+              firstName: customerData.first_name || "Customer",
+              lastName: customerData.last_name || "Name",
+              email: customerData.email || "customer@example.com",
+              phoneNumber: customerData.phone_number || "N/A",
+              address: customerData.street || "N/A",
+              country: customerData.country || "N/A",
+              city: customerData.city || "N/A",
+              zipCode: customerData.postal_code || "N/A",
+            },
+            shippingDetails: {
+              firstName: customerData.first_name || "Customer",
+              lastName: customerData.last_name || "Name",
+              address: customerData.street || "N/A",
+              phoneNumber: customerData.phone_number || "N/A",
+              country: customerData.country || "N/A",
+              city: customerData.city || "N/A",
+              zipCode: customerData.postal_code || "N/A",
+            },
           });
 
+          console.log(
+            "Order object created:",
+            JSON.stringify(newOrder, null, 2)
+          );
+
+          // Save the order to the database
+          console.log("Saving order to database...");
           const savedOrder = await newOrder.save();
-          console.log("Order saved successfully:", savedOrder._id);
+          console.log("Order saved successfully with ID:", savedOrder._id);
 
-          // Create notifications
-          const customer = await user.findById(orderData.customerId);
-          if (customer && customer.email) {
-            // Create notification for the brand
-            const brandId = updatedCartItems[0].brandId;
-            const newNotification = new Notification({
-              type: "order",
-              description: `You have received a new order from customer ${
-                customer.email
-              }\nProduct: ${savedOrder.cartItems
-                .map((item) => item.name)
-                .join(", ")}\nTotal Price: ${savedOrder.total}.`,
-              brandId,
-              orderId: savedOrder._id,
-              read: false,
-            });
-            await newNotification.save();
-
-            // Create notification for admin
-            const brand = await Brand.findById(brandId);
-            const brandName = brand ? brand.brandName : "Unknown Brand";
-            const adminNotification = new AdminNotification({
-              type: "order",
-              description: `New order #${savedOrder._id} created by ${
-                customer.email
-              } for $${savedOrder.total}. Products: ${savedOrder.cartItems
-                .map((item) => item.name)
-                .join(", ")} from brand: ${brandName}`,
-              read: false,
-            });
-            await adminNotification.save();
-
-            // Sync with Mailchimp
-            await addOrderToMailchimp(customer.email, savedOrder);
+          // Update product stock after order is saved
+          console.log("Updating product stock...");
+          for (const item of savedOrder.cartItems) {
+            try {
+              if (item.variantId) {
+                const variant = await ProductVariant.findById(item.variantId);
+                if (variant) {
+                  variant.stock = Math.max(0, variant.stock - item.quantity);
+                  await variant.save();
+                  console.log(
+                    `Updated variant ${variant._id} stock to ${variant.stock}`
+                  );
+                }
+              } else {
+                const product = await Product.findById(item.productId);
+                if (product) {
+                  product.stock = Math.max(0, product.stock - item.quantity);
+                  product.sales = (product.sales || 0) + item.quantity;
+                  await product.save();
+                  console.log(
+                    `Updated product ${product._id} stock to ${product.stock}`
+                  );
+                }
+              }
+            } catch (stockError) {
+              console.error(
+                `Error updating stock for item ${item.productId}:`,
+                stockError
+              );
+              // Continue with other items even if one fails
+            }
           }
 
-          // Redirect to success page with order ID
+          // Create notifications
+          try {
+            console.log("Creating notifications...");
+            const customer = await user.findById(originalOrderData.customerId);
+
+            if (customer) {
+              console.log("Customer found:", customer._id);
+
+              // Get the first item's brandId
+              const firstItem = savedOrder.cartItems[0];
+              if (firstItem && firstItem.brandId) {
+                // Create brand notification
+                const notification = new Notification({
+                  type: "order",
+                  description: `New order received from ${
+                    customer.email || "a customer"
+                  }`,
+                  brandId: firstItem.brandId,
+                  orderId: savedOrder._id,
+                  read: false,
+                });
+                await notification.save();
+                console.log("Brand notification created");
+
+                // Create admin notification
+                const adminNotification = new AdminNotification({
+                  type: "order",
+                  description: `New order #${savedOrder._id} created`,
+                  read: false,
+                });
+                await adminNotification.save();
+                console.log("Admin notification created");
+
+                // Sync with Mailchimp if customer has email
+                if (customer.email) {
+                  try {
+                    await addOrderToMailchimp(customer.email, savedOrder);
+                    console.log("Order synced with Mailchimp");
+                  } catch (mailchimpError) {
+                    console.error("Mailchimp sync error:", mailchimpError);
+                  }
+                }
+              }
+            }
+          } catch (notificationError) {
+            console.error("Error creating notifications:", notificationError);
+            // Continue even if notifications fail
+          }
+
+          // Redirect to success page
+          console.log("Redirecting to success page...");
           return res.redirect(
             `https://thedesigngrit.com/home?order=${savedOrder._id}&status=success`
           );
@@ -302,13 +318,11 @@ class PaymobController {
           );
         }
       } else {
-        // For failed payments, redirect to an error page
         console.log("Payment failed:", obj.error_occured || "Unknown error");
         return res.redirect("https://thedesigngrit.com/payment-failed");
       }
     } catch (error) {
-      console.error("Error handling payment callback:", error.message);
-      // Redirect to error page in case of exceptions
+      console.error("Unhandled error in payment callback:", error);
       return res.redirect(
         `https://thedesigngrit.com/payment-error?reason=${encodeURIComponent(
           error.message
