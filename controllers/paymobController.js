@@ -110,7 +110,10 @@ class PaymobController {
         {
           amount: transformedOrderData.total,
           ...transformedOrderData.billingDetails,
-          extras: transformedOrderData, // Store the complete transformedOrderData in extras
+          cartItems: transformedOrderData.cartItems,
+          customerId: transformedOrderData.customerId,
+          shippingFee: transformedOrderData.shippingFee,
+          shippingDetails: transformedOrderData.shippingDetails,
         },
         authToken,
         `${

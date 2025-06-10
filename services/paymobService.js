@@ -127,6 +127,43 @@ class PaymobService {
         // Include both callback URLs
         return_callback_url: callbackUrl,
         transaction_processed_callback_url: callbackUrl,
+        // Add additional order data
+        extras: {
+          // Map cart items with all necessary fields
+          cartItems: billingData.cartItems
+            ? billingData.cartItems.map((item) => ({
+                productId: item.productId,
+                variantId: item.variantId,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price || item.totalPrice / item.quantity,
+                totalPrice: item.totalPrice || item.price * item.quantity,
+                brandId: item.brandId,
+              }))
+            : [],
+          customerId: billingData.customerId,
+          shippingFee: billingData.shippingFee,
+          total: billingData.amount,
+          billingDetails: {
+            firstName: billingData.firstName,
+            lastName: billingData.lastName,
+            email: billingData.email,
+            phoneNumber: billingData.phoneNumber,
+            address: billingData.address,
+            country: billingData.country,
+            city: billingData.city,
+            zipCode: billingData.postal_code || "NA",
+          },
+          shippingDetails: billingData.shippingDetails || {
+            firstName: billingData.firstName,
+            lastName: billingData.lastName,
+            address: billingData.address,
+            phoneNumber: billingData.phoneNumber,
+            country: billingData.country,
+            city: billingData.city,
+            zipCode: billingData.postal_code || "NA",
+          },
+        },
       };
 
       console.log("Payment key payload:", JSON.stringify(payload, null, 2));
