@@ -195,9 +195,9 @@ class PaymobController {
               "No cart items in extras, trying to extract from Paymob order items"
             );
             cartItems = paymobOrder.items.map((item) => ({
-              productId: item.product_id,
-              variantId: item.variant_id || null,
-              brandId: item.brand_id,
+              productId: item.productId,
+              variantId: item.variantId || null,
+              brandId: item.brandId || null,
               name: item.name,
               price: item.amount_cents / 100 / (item.quantity || 1),
               quantity: item.quantity || 1,
@@ -468,24 +468,11 @@ class PaymobController {
           } else {
             // Create a new user if one doesn't exist
             console.log("No user found with email, creating a new user");
-            const newUser = new user({
-              email: customerData.email,
-              firstName: customerData.first_name || "Customer",
-              lastName: customerData.last_name || "Name",
-              phoneNumber: customerData.phone_number || "",
-              password: Math.random().toString(36).slice(-8), // Generate a random password
-              role: "Customer",
-            });
-            const savedUser = await newUser.save();
-            customerId = savedUser._id;
-            console.log("Created new user with ID:", customerId);
           }
         }
 
         if (!customerId) {
           console.error("Could not determine customerId, using a default user");
-          // Use a default customer ID for guest checkouts
-          customerId = "64f8b8e7f3b468c3a2c1f2d3"; // Replace with your default guest user ID
         }
 
         // Check if we have cart items
