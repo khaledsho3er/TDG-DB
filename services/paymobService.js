@@ -42,13 +42,16 @@ class PaymobService {
       // Prepare items for Paymob
       const items = orderData.cartItems.map((item) => ({
         name: item.name,
-        amount_cents: Math.round(item.totalPrice * 100),
+        amount_cents: Math.round((item.totalPrice || 0) * 100), // Ensure we have a value even if totalPrice is undefined
         description: item.name,
         quantity: item.quantity,
         product_id: item.productId,
         brand_id: item.brandId,
         variant_id: item.variantId || null,
       }));
+
+      // Log the items for debugging
+      console.log("Prepared items for Paymob:", JSON.stringify(items, null, 2));
 
       const response = await paymobAxios.post("/ecommerce/orders", {
         auth_token: authToken,
@@ -62,6 +65,10 @@ class PaymobService {
           order_id: orderData.parentOrderId, // If you have a parent order ID
           customer_email: orderData.billingDetails.email,
           customer_phone: orderData.billingDetails.phoneNumber,
+          // Store the original cart items for later use
+          cartItems: orderData.cartItems,
+          customerId: orderData.customerId,
+          shippingFee: orderData.shippingFee,
         },
       });
 
@@ -81,7 +88,6 @@ class PaymobService {
       throw new Error("Failed to create Paymob order");
     }
   }
-
   static async getPaymentKey(orderId, billingData, authToken) {
     try {
       if (!authToken || !orderId) {

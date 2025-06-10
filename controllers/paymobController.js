@@ -59,7 +59,9 @@ class PaymobController {
               variantId: item.variantId,
               name: item.name,
               quantity: item.quantity,
-              totalPrice: item.amount_cents / 100, // Convert from cents to dollars
+              totalPrice: item.amount_cents
+                ? item.amount_cents / 100
+                : item.price || 0, // Convert from cents to dollars
               brandId: item.brandId,
             }))
           : [],
@@ -84,9 +86,10 @@ class PaymobController {
       // Create iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
+      // Fix: Return the iframe_url property that the frontend is expecting
       res.json({
         success: true,
-        iframeUrl,
+        iframe_url: iframeUrl, // This is the key change - use iframe_url instead of iframeUrl
         orderId: order.id,
         paymentKey: paymentKey.token,
       });
@@ -98,7 +101,6 @@ class PaymobController {
       });
     }
   }
-
   static async handleCallback(req, res) {
     try {
       const { hmac, obj } = req.body;
