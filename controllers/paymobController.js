@@ -183,7 +183,7 @@ class PaymobController {
 
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: paymobOrder.customerId,
+            customerId: paymobOrder.customerId || "N/A",
             cartItems: paymobOrder.cartItems
               ? paymobOrder.cartItems.map((item) => ({
                   productId: item.productId,
