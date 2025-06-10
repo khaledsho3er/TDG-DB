@@ -98,38 +98,11 @@ class PaymobController {
         JSON.stringify(transformedOrderData, null, 2)
       );
 
-      // First create the order in our database with Pending status
-      const newOrder = new Order({
-        customerId: transformedOrderData.customerId,
-        cartItems: transformedOrderData.cartItems,
-        subtotal: transformedOrderData.total,
-        shippingFee: transformedOrderData.shippingFee,
-        total: transformedOrderData.total,
-        orderStatus: "Pending",
-        paymentDetails: {
-          paymentMethod: "paymob",
-          paymentStatus: "Pending",
-        },
-        billingDetails: transformedOrderData.billingDetails,
-        shippingDetails: transformedOrderData.shippingDetails,
-      });
-
-      // Save the order to get its ID
-      const savedOrder = await newOrder.save();
-      console.log("Order created in database with ID:", savedOrder._id);
-
-      // Now create the Paymob order with our database order ID
+      // Create the Paymob order with the transformed data
       const { order: paymobOrder, authToken } = await PaymobService.createOrder(
         transformedOrderData.total,
-        {
-          ...transformedOrderData,
-          orderId: savedOrder._id.toString(), // Add our database order ID
-        }
+        transformedOrderData
       );
-
-      // Update our database order with Paymob details
-      savedOrder.paymentDetails.transactionId = paymobOrder.id;
-      await savedOrder.save();
 
       // Get payment key using the same token
       const paymentKey = await PaymobService.getPaymentKey(
@@ -153,7 +126,6 @@ class PaymobController {
         iframe_url: iframeUrl,
         orderId: paymobOrder.id,
         paymentKey: paymentKey.token,
-        databaseOrderId: savedOrder._id, // Return our database order ID
       });
     } catch (error) {
       console.error("Error creating payment:", error.message);
@@ -163,7 +135,6 @@ class PaymobController {
       });
     }
   }
-
   static async handleCallbackGet(req, res) {
     try {
       console.log("=== PAYMENT GET CALLBACK RECEIVED ===");
@@ -180,9 +151,9 @@ class PaymobController {
         orderId
       );
 
-      // If success parameter is present and true, update the order
+      // If success parameter is present and true, create the order
       if (success === "true" && orderId) {
-        console.log("Payment successful via GET, updating order...");
+        console.log("Payment successful via GET, creating order...");
 
         try {
           // Fetch the order data from Paymob using the order ID
@@ -206,28 +177,181 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Find our database order using the orderId from extras
-          const databaseOrder = await Order.findById(orderExtras.orderId);
-          if (!databaseOrder) {
-            console.error(
-              "Could not find database order with ID:",
-              orderExtras.orderId
+          // Get cart items from extras
+          let cartItems = orderExtras.cartItems || [];
+          console.log(
+            "Cart items from extras:",
+            JSON.stringify(cartItems, null, 2)
+          );
+
+          // If cartItems is empty, try to extract from Paymob order items
+          if (
+            cartItems.length === 0 &&
+            paymobOrder.items &&
+            paymobOrder.items.length > 0
+          ) {
+            console.log(
+              "No cart items in extras, trying to extract from Paymob order items"
             );
-            return res.redirect("https://thedesigngrit.com/payment-failed");
+            cartItems = paymobOrder.items.map((item) => ({
+              productId:
+                item.productId || item.product_id || "missing product id",
+              variantId:
+                item.variantId || item.variant_id || "missing variant id",
+              brandId: item.brandId || item.brand_id || "missing brand id",
+              name: item.name,
+              price: item.amount_cents / 100 / (item.quantity || 1),
+              quantity: item.quantity || 1,
+              totalPrice: item.amount_cents / 100,
+            }));
+            console.log(
+              "Extracted cart items from Paymob:",
+              JSON.stringify(cartItems, null, 2)
+            );
           }
 
-          // Update the order status and payment details
-          databaseOrder.orderStatus = "Paid";
-          databaseOrder.paymentDetails.paymentStatus = "Paid";
-          databaseOrder.paymentDetails.transactionId = orderId;
+          // If still empty, create a placeholder item based on order total
+          if (cartItems.length === 0) {
+            console.log("Creating placeholder cart item from order total");
+            cartItems = [
+              {
+                productId: null,
+                name: "Order Item",
+                price: paymobOrder.amount_cents / 100,
+                quantity: 1,
+                totalPrice: paymobOrder.amount_cents / 100,
+                brandId: null,
+              },
+            ];
+          }
 
-          // Save the updated order
-          await databaseOrder.save();
-          console.log("Order updated successfully with ID:", databaseOrder._id);
+          // If we don't have a customerId in the extras, try to find a user by email
+          let customerId = orderExtras.customerId;
+          if (
+            !customerId &&
+            paymobOrder.shipping_data &&
+            paymobOrder.shipping_data.email
+          ) {
+            console.log(
+              "No customerId found in extras, looking up user by email:",
+              paymobOrder.shipping_data.email
+            );
+            const foundUser = await user.findOne({
+              email: paymobOrder.shipping_data.email,
+            });
+            if (foundUser) {
+              customerId = foundUser._id;
+              console.log("Found user by email, using customerId:", customerId);
+            } else {
+              // Create a new user if one doesn't exist
+              console.log("No user found with email, creating a new user");
+            }
+          }
 
-          // Update product stock
+          if (!customerId) {
+            console.error(
+              "Could not determine customerId, using a default user"
+            );
+            // Use a default customer ID for guest checkouts (create a default user in your system)
+            // This is a fallback - you should replace this with a real user ID from your database
+          }
+
+          // Create a new order in your database
+          const newOrder = new Order({
+            customerId: customerId,
+            cartItems: cartItems.map((item) => ({
+              productId: item.productId || item.product_id,
+              variantId: item.variantId || item.variant_id,
+              name: item.name,
+              price: item.price || item.totalPrice / item.quantity,
+              quantity: item.quantity || 1,
+              totalPrice: item.totalPrice || item.amount_cents / 100,
+              brandId: item.brandId || item.brand_id,
+            })),
+            subtotal: paymobOrder.amount_cents / 100,
+            shippingFee: orderExtras.shippingFee || 0,
+            total: paymobOrder.amount_cents / 100,
+            orderStatus: "Pending",
+            paymentDetails: {
+              paymentMethod: "paymob",
+              transactionId: orderId,
+              paymentStatus: "Paid",
+            },
+            billingDetails: {
+              firstName:
+                paymobOrder.shipping_data?.first_name ||
+                orderExtras.billingDetails?.firstName ||
+                "Customer",
+              lastName:
+                paymobOrder.shipping_data?.last_name ||
+                orderExtras.billingDetails?.lastName ||
+                "Name",
+              email:
+                paymobOrder.shipping_data?.email ||
+                orderExtras.billingDetails?.email ||
+                "customer@example.com",
+              phoneNumber:
+                paymobOrder.shipping_data?.phone_number ||
+                orderExtras.billingDetails?.phoneNumber ||
+                "N/A",
+              address:
+                paymobOrder.shipping_data?.street ||
+                orderExtras.billingDetails?.address ||
+                "N/A",
+              country:
+                paymobOrder.shipping_data?.country ||
+                orderExtras.billingDetails?.country ||
+                "N/A",
+              city:
+                paymobOrder.shipping_data?.city ||
+                orderExtras.billingDetails?.city ||
+                "N/A",
+              zipCode:
+                paymobOrder.shipping_data?.postal_code ||
+                orderExtras.billingDetails?.zipCode ||
+                "N/A",
+            },
+            shippingDetails: {
+              firstName:
+                paymobOrder.shipping_data?.first_name ||
+                orderExtras.shippingDetails?.firstName ||
+                "Customer",
+              lastName:
+                paymobOrder.shipping_data?.last_name ||
+                orderExtras.shippingDetails?.lastName ||
+                "Name",
+              address:
+                paymobOrder.shipping_data?.street ||
+                orderExtras.shippingDetails?.address ||
+                "N/A",
+              phoneNumber:
+                paymobOrder.shipping_data?.phone_number ||
+                orderExtras.shippingDetails?.phoneNumber ||
+                "N/A",
+              country:
+                paymobOrder.shipping_data?.country ||
+                orderExtras.shippingDetails?.country ||
+                "N/A",
+              city:
+                paymobOrder.shipping_data?.city ||
+                orderExtras.shippingDetails?.city ||
+                "N/A",
+              zipCode:
+                paymobOrder.shipping_data?.postal_code ||
+                orderExtras.shippingDetails?.zipCode ||
+                "N/A",
+            },
+          });
+
+          console.log("New order object:", JSON.stringify(newOrder, null, 2));
+
+          // Save the order
+          const savedOrder = await newOrder.save();
+          console.log("Order saved successfully with ID:", savedOrder._id);
+
+          // Update product stock after order is saved
           console.log("Updating product stock...");
-          for (const item of databaseOrder.cartItems) {
+          for (const item of savedOrder.cartItems) {
             try {
               if (item.variantId) {
                 const variant = await ProductVariant.findById(item.variantId);
@@ -256,13 +380,10 @@ class PaymobController {
 
           // Try to add the order to Mailchimp
           try {
-            if (
-              databaseOrder.billingDetails &&
-              databaseOrder.billingDetails.email
-            ) {
+            if (savedOrder.billingDetails && savedOrder.billingDetails.email) {
               await addOrderToMailchimp(
-                databaseOrder.billingDetails.email,
-                databaseOrder
+                savedOrder.billingDetails.email,
+                savedOrder
               );
               console.log("Order added to Mailchimp successfully");
             }
