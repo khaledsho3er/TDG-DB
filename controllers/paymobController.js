@@ -109,13 +109,20 @@ class PaymobController {
         paymobOrder.id,
         {
           amount: transformedOrderData.total,
-          ...transformedOrderData.billingDetails,
+          email: transformedOrderData.billingDetails.email,
+          firstName: transformedOrderData.billingDetails.firstName,
+          lastName: transformedOrderData.billingDetails.lastName,
+          address: transformedOrderData.billingDetails.address,
+          phoneNumber: transformedOrderData.billingDetails.phoneNumber,
+          country: transformedOrderData.billingDetails.country,
+          city: transformedOrderData.billingDetails.city,
+          postal_code: transformedOrderData.billingDetails.zipCode,
           cartItems: transformedOrderData.cartItems,
           customerId: transformedOrderData.customerId,
           shippingFee: transformedOrderData.shippingFee,
+          billingDetails: transformedOrderData.billingDetails,
           shippingDetails: transformedOrderData.shippingDetails,
         },
-        transformedOrderData.billingDetails,
         authToken,
         `${
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
@@ -191,7 +198,7 @@ class PaymobController {
           );
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: orderData.customerId || "N/A",
+            customerId: orderData.customerId || orderExtras.customerId,
             cartItems: orderData.cartItems
               ? orderData.cartItems.map((item) => ({
                   productId: item.productId,
@@ -203,34 +210,37 @@ class PaymobController {
                   brandId: item.brandId,
                 }))
               : [],
-            subtotal: paymobOrder.amount_cents / 100,
-            shippingFee: orderExtras.shippingFee || 0,
-            total: paymobOrder.amount_cents / 100,
+            subtotal: orderData.total || paymobOrder.amount_cents / 100,
+            shippingFee: orderData.shippingFee || orderExtras.shippingFee || 0,
+            total: orderData.total || paymobOrder.amount_cents / 100,
             orderStatus: "Pending",
             paymentDetails: {
               paymentMethod: "paymob",
               transactionId: orderId,
               paymentStatus: "Paid",
             },
-            billingDetails: orderExtras.billingDetails || {
-              firstName: paymobOrder.shipping_data?.first_name || "Customer",
-              lastName: paymobOrder.shipping_data?.last_name || "Name",
-              email: paymobOrder.shipping_data?.email || "customer@example.com",
-              phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
-              address: paymobOrder.shipping_data?.street || "N/A",
-              country: paymobOrder.shipping_data?.country || "N/A",
-              city: paymobOrder.shipping_data?.city || "N/A",
-              zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
-            },
-            shippingDetails: orderExtras.shippingDetails || {
-              firstName: paymobOrder.shipping_data?.first_name || "Customer",
-              lastName: paymobOrder.shipping_data?.last_name || "Name",
-              address: paymobOrder.shipping_data?.street || "N/A",
-              phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
-              country: paymobOrder.shipping_data?.country || "N/A",
-              city: paymobOrder.shipping_data?.city || "N/A",
-              zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
-            },
+            billingDetails: orderData.billingDetails ||
+              orderExtras.billingDetails || {
+                firstName: paymobOrder.shipping_data?.first_name || "Customer",
+                lastName: paymobOrder.shipping_data?.last_name || "Name",
+                email:
+                  paymobOrder.shipping_data?.email || "customer@example.com",
+                phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
+                address: paymobOrder.shipping_data?.street || "N/A",
+                country: paymobOrder.shipping_data?.country || "N/A",
+                city: paymobOrder.shipping_data?.city || "N/A",
+                zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
+              },
+            shippingDetails: orderData.shippingDetails ||
+              orderExtras.shippingDetails || {
+                firstName: paymobOrder.shipping_data?.first_name || "Customer",
+                lastName: paymobOrder.shipping_data?.last_name || "Name",
+                address: paymobOrder.shipping_data?.street || "N/A",
+                phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
+                country: paymobOrder.shipping_data?.country || "N/A",
+                city: paymobOrder.shipping_data?.city || "N/A",
+                zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
+              },
           });
 
           console.log("New order object:", JSON.stringify(newOrder, null, 2));
