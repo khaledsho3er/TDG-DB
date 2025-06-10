@@ -7,6 +7,7 @@ const Notification = require("../models/notification");
 const AdminNotification = require("../models/adminNotifications");
 const user = require("../models/user");
 const { addOrderToMailchimp } = require("../utils/mailchimp");
+const axios = require("axios");
 
 class PaymobController {
   static async getConfig(req, res) {
@@ -109,39 +110,116 @@ class PaymobController {
       });
     }
   }
-  static async handleCallback(req, res) {
+  static async handleCallbackGet(req, res) {
     try {
-      console.log("=== PAYMENT CALLBACK RECEIVED ===");
-      console.log("Request method:", req.method);
+      console.log("=== PAYMENT GET CALLBACK RECEIVED ===");
       console.log("Request query:", JSON.stringify(req.query, null, 2));
+
+      const { success, order_id } = req.query;
+
+      console.log(
+        "GET callback received with success:",
+        success,
+        "order_id:",
+        order_id
+      );
+
+      // If success parameter is present and true, create the order
+      if (success === "true" && order_id) {
+        console.log("Payment successful via GET, creating order...");
+
+        try {
+          // Fetch the order data from Paymob using the order_id
+          const authToken = await PaymobService.getAuthToken();
+          const response = await axios.get(
+            `https://accept.paymob.com/api/ecommerce/orders/${order_id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+
+          const paymobOrder = response.data;
+          console.log(
+            "Paymob order data:",
+            JSON.stringify(paymobOrder, null, 2)
+          );
+
+          // Extract order data
+          const orderData = paymobOrder.extras || {};
+
+          // Create a new order in your database
+          const newOrder = new Order({
+            customerId: orderData.customerId,
+            cartItems:
+              orderData.cartItems?.map((item) => ({
+                productId: item.productId,
+                variantId: item.variantId,
+                name: item.name,
+                price: item.price || item.totalPrice / item.quantity,
+                quantity: item.quantity,
+                totalPrice: item.totalPrice,
+                brandId: item.brandId,
+              })) || [],
+            subtotal: paymobOrder.amount_cents / 100,
+            shippingFee: orderData.shippingFee || 0,
+            total: paymobOrder.amount_cents / 100,
+            orderStatus: "Pending",
+            paymentDetails: {
+              paymentMethod: "Paymob",
+              transactionId: order_id,
+              paymentStatus: "Paid",
+            },
+            billingDetails: {
+              firstName: orderData.billingDetails?.firstName || "Customer",
+              lastName: orderData.billingDetails?.lastName || "Name",
+              email: orderData.billingDetails?.email || "customer@example.com",
+              phoneNumber: orderData.billingDetails?.phoneNumber || "N/A",
+              address: orderData.billingDetails?.address || "N/A",
+              country: orderData.billingDetails?.country || "N/A",
+              city: orderData.billingDetails?.city || "N/A",
+              zipCode: orderData.billingDetails?.zipCode || "N/A",
+            },
+            shippingDetails: {
+              firstName: orderData.billingDetails?.firstName || "Customer",
+              lastName: orderData.billingDetails?.lastName || "Name",
+              address: orderData.billingDetails?.address || "N/A",
+              phoneNumber: orderData.billingDetails?.phoneNumber || "N/A",
+              country: orderData.billingDetails?.country || "N/A",
+              city: orderData.billingDetails?.city || "N/A",
+              zipCode: orderData.billingDetails?.zipCode || "N/A",
+            },
+          });
+
+          // Save the order
+          const savedOrder = await newOrder.save();
+          console.log("Order saved successfully with ID:", savedOrder._id);
+
+          // Redirect to success page with the order ID
+          return res.redirect(
+            `https://thedesigngrit.com/home?order=${savedOrder._id}&status=success`
+          );
+        } catch (error) {
+          console.error("Error creating order:", error);
+          // Redirect to success page anyway, but without order ID
+          return res.redirect(`https://thedesigngrit.com/home?status=success`);
+        }
+      } else {
+        console.log("Payment failed via GET, redirecting to failure page");
+        return res.redirect("https://thedesigngrit.com/payment-failed");
+      }
+    } catch (error) {
+      console.error("Error handling GET callback:", error);
+      return res.redirect("https://thedesigngrit.com/payment-failed");
+    }
+  }
+
+  static async handleCallbackPost(req, res) {
+    try {
+      console.log("=== PAYMENT POST CALLBACK RECEIVED ===");
       console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-      // Handle GET requests (redirects from payment page)
-      if (req.method === "GET") {
-        const { success, order_id } = req.query;
-
-        console.log(
-          "GET callback received with success:",
-          success,
-          "order_id:",
-          order_id
-        );
-
-        // If success parameter is present and true, redirect to success page
-        if (success === "true") {
-          console.log(
-            "Payment successful via GET, redirecting to success page"
-          );
-          return res.redirect(
-            `https://thedesigngrit.com/home?order=${order_id}&status=success`
-          );
-        } else {
-          console.log("Payment failed via GET, redirecting to failure page");
-          return res.redirect("https://thedesigngrit.com/payment-failed");
-        }
-      }
-
-      // Handle POST requests (webhook notifications)
       const { hmac, obj } = req.body;
 
       if (!hmac || !obj) {
@@ -151,9 +229,6 @@ class PaymobController {
           details: "HMAC and payment object are required",
         });
       }
-
-      // Log the payment object
-      console.log("Payment object:", JSON.stringify(obj, null, 2));
 
       // Verify the payment
       console.log("Verifying payment...");

@@ -15,8 +15,11 @@ router.post("/test-callback", (req, res) => {
   res.status(200).json({ success: true, message: "Test callback received" });
 });
 
-// Handle Paymob callback - make sure this URL matches what's configured in Paymob
-router.post("/callback", PaymobController.handleCallback);
+// Handle GET requests for the callback URL
+router.get("/callback", PaymobController.handleCallbackGet);
+
+// Handle POST requests for the callback URL
+router.post("/callback", PaymobController.handleCallbackPost);
 
 // Simple test route to verify server is accessible
 router.get("/test", (req, res) => {

@@ -69,6 +69,7 @@ class PaymobService {
           cartItems: orderData.cartItems,
           customerId: orderData.customerId,
           shippingFee: orderData.shippingFee,
+          billingDetails: orderData.billingDetails,
         },
       });
 
