@@ -53,12 +53,38 @@ class PaymobController {
           city: orderData.billingDetails.city,
           zipCode: orderData.billingDetails.postal_code || "NA",
         },
+        shippingDetails: {
+          firstName:
+            orderData.shippingDetails?.first_name ||
+            orderData.billingDetails.first_name,
+          lastName:
+            orderData.shippingDetails?.last_name ||
+            orderData.billingDetails.last_name,
+          address:
+            orderData.shippingDetails?.street ||
+            orderData.billingDetails.street,
+          phoneNumber:
+            orderData.shippingDetails?.phone_number ||
+            orderData.billingDetails.phone_number,
+          country:
+            orderData.shippingDetails?.country ||
+            orderData.billingDetails.country,
+          city:
+            orderData.shippingDetails?.city || orderData.billingDetails.city,
+          zipCode:
+            orderData.shippingDetails?.postal_code ||
+            orderData.billingDetails.postal_code ||
+            "NA",
+        },
         cartItems: orderData.items
           ? orderData.items.map((item) => ({
               productId: item.productId,
               variantId: item.variantId,
               name: item.name,
               quantity: item.quantity,
+              price:
+                (item.amount_cents ? item.amount_cents / 100 : item.price) /
+                item.quantity,
               totalPrice: item.amount_cents
                 ? item.amount_cents / 100
                 : item.price || 0, // Convert from cents to dollars
@@ -200,7 +226,7 @@ class PaymobController {
             total: paymobOrder.amount_cents / 100,
             orderStatus: "Pending",
             paymentDetails: {
-              paymentMethod: "Paymob",
+              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
               transactionId: orderId,
               paymentStatus: "Paid",
             },
@@ -398,7 +424,7 @@ class PaymobController {
             total: paymentData.amount_cents / 100,
             orderStatus: "Pending",
             paymentDetails: {
-              paymentMethod: "Paymob",
+              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
               transactionId: paymentData.id,
               paymentStatus: "Paid",
             },

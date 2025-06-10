@@ -57,7 +57,7 @@ const orderSchema = new mongoose.Schema(
       paymentMethod: {
         type: String,
         required: true,
-        enum: ["Paymob", "cash", "paypal"],
+        enum: ["paymob", "Paymob", "cash", "paypal"],
       },
       cardNumber: { type: String }, // Store last 4 digits for security
       expiry: { type: String },

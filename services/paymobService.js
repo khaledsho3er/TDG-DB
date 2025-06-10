@@ -52,6 +52,7 @@ class PaymobService {
 
       // Log the items for debugging
       console.log("Prepared items for Paymob:", JSON.stringify(items, null, 2));
+      console.log("Order data:", JSON.stringify(orderData, null, 2));
 
       const response = await paymobAxios.post("/ecommerce/orders", {
         auth_token: authToken,
@@ -70,23 +71,21 @@ class PaymobService {
           customerId: orderData.customerId,
           shippingFee: orderData.shippingFee,
           billingDetails: orderData.billingDetails,
+          shippingDetails: orderData.shippingDetails,
         },
       });
 
-      if (!response.data || !response.data.id) {
-        throw new Error("Invalid response from Paymob order creation");
-      }
-
-      return {
-        order: response.data,
-        authToken, // Return the token along with order data
-      };
+      console.log(
+        "Paymob order created:",
+        JSON.stringify(response.data, null, 2)
+      );
+      return { order: response.data, authToken };
     } catch (error) {
       console.error(
         "Error creating Paymob order:",
         error.response?.data || error.message
       );
-      throw new Error("Failed to create Paymob order");
+      throw error;
     }
   }
   static async getPaymentKey(orderId, billingData, authToken, callbackUrl) {
