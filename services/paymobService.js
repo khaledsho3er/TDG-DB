@@ -66,8 +66,16 @@ class PaymobService {
           order_id: orderData.parentOrderId, // If you have a parent order ID
           customer_email: orderData.billingDetails.email,
           customer_phone: orderData.billingDetails.phoneNumber,
-          // Store the original cart items for later use
-          cartItems: orderData.cartItems,
+          // Store the original cart items with all necessary fields
+          cartItems: orderData.cartItems.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            totalPrice: item.totalPrice,
+            brandId: item.brandId,
+          })),
           customerId: orderData.customerId,
           shippingFee: orderData.shippingFee,
           billingDetails: orderData.billingDetails,

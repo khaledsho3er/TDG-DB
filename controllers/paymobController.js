@@ -178,14 +178,14 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Get cart items from extras or try to extract from Paymob order data
+          // Get cart items from extras
           let cartItems = orderExtras.cartItems || [];
           console.log(
             "Cart items from extras:",
             JSON.stringify(cartItems, null, 2)
           );
 
-          // If cartItems is still empty, try to extract from Paymob order items
+          // If cartItems is empty, try to extract from Paymob order items
           if (
             cartItems.length === 0 &&
             paymobOrder.items &&
@@ -195,9 +195,11 @@ class PaymobController {
               "No cart items in extras, trying to extract from Paymob order items"
             );
             cartItems = paymobOrder.items.map((item) => ({
-              productId: item.productId,
-              variantId: item.variantId || null,
-              brandId: item.brandId || null,
+              productId:
+                item.productId || item.product_id || "missing product id",
+              variantId:
+                item.variantId || item.variant_id || "missing variant id",
+              brandId: item.brandId || item.brand_id || "missing brand id",
               name: item.name,
               price: item.amount_cents / 100 / (item.quantity || 1),
               quantity: item.quantity || 1,
