@@ -41,7 +41,7 @@ class PaymobController {
       // Transform the frontend data structure to match our backend expectations
       const transformedOrderData = {
         total: orderData.total,
-        customerId: orderData.customerId || req.user?.id, // Use authenticated user's ID if available
+        customerId: orderData.customerId || req.user?.id,
         shippingFee: orderData.shippingFee || 0,
         billingDetails: {
           firstName: orderData.billingDetails.first_name,
@@ -87,7 +87,7 @@ class PaymobController {
                 item.quantity,
               totalPrice: item.amount_cents
                 ? item.amount_cents / 100
-                : item.price || 0, // Convert from cents to dollars
+                : item.price || 0,
               brandId: item.brandId,
             }))
           : [],
@@ -98,21 +98,20 @@ class PaymobController {
         JSON.stringify(transformedOrderData, null, 2)
       );
 
-      // Create order with fresh token and transformed order data
-      const { order, authToken } = await PaymobService.createOrder(
+      // Create the Paymob order with the transformed data
+      const { order: paymobOrder, authToken } = await PaymobService.createOrder(
         transformedOrderData.total,
         transformedOrderData
       );
 
       // Get payment key using the same token
       const paymentKey = await PaymobService.getPaymentKey(
-        order.id,
+        paymobOrder.id,
         {
           amount: transformedOrderData.total,
           ...transformedOrderData.billingDetails,
         },
         authToken,
-        // Make sure to pass the correct callback URL
         `${
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
         }/api/paymob/callback`
@@ -125,8 +124,9 @@ class PaymobController {
       res.json({
         success: true,
         iframe_url: iframeUrl,
-        orderId: order.id,
+        orderId: paymobOrder.id,
         paymentKey: paymentKey.token,
+        orderData: transformedOrderData, // Pass the transformed data to be used in callback
       });
     } catch (error) {
       console.error("Error creating payment:", error.message);
@@ -152,9 +152,9 @@ class PaymobController {
         orderId
       );
 
-      // If success parameter is present and true, create the order
+      // If success parameter is present and true, update the order
       if (success === "true" && orderId) {
-        console.log("Payment successful via GET, creating order...");
+        console.log("Payment successful via GET, updating order...");
 
         try {
           // Fetch the order data from Paymob using the order ID
@@ -178,181 +178,28 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Get cart items from extras
-          let cartItems = orderExtras.cartItems || [];
-          console.log(
-            "Cart items from extras:",
-            JSON.stringify(cartItems, null, 2)
-          );
-
-          // If cartItems is empty, try to extract from Paymob order items
-          if (
-            cartItems.length === 0 &&
-            paymobOrder.items &&
-            paymobOrder.items.length > 0
-          ) {
-            console.log(
-              "No cart items in extras, trying to extract from Paymob order items"
-            );
-            cartItems = paymobOrder.items.map((item) => ({
-              productId:
-                item.productId || item.product_id || "missing product id",
-              variantId:
-                item.variantId || item.variant_id || "missing variant id",
-              brandId: item.brandId || item.brand_id || "missing brand id",
-              name: item.name,
-              price: item.amount_cents / 100 / (item.quantity || 1),
-              quantity: item.quantity || 1,
-              totalPrice: item.amount_cents / 100,
-            }));
-            console.log(
-              "Extracted cart items from Paymob:",
-              JSON.stringify(cartItems, null, 2)
-            );
-          }
-
-          // If still empty, create a placeholder item based on order total
-          if (cartItems.length === 0) {
-            console.log("Creating placeholder cart item from order total");
-            cartItems = [
-              {
-                productId: null,
-                name: "Order Item",
-                price: paymobOrder.amount_cents / 100,
-                quantity: 1,
-                totalPrice: paymobOrder.amount_cents / 100,
-                brandId: null,
-              },
-            ];
-          }
-
-          // If we don't have a customerId in the extras, try to find a user by email
-          let customerId = orderExtras.customerId;
-          if (
-            !customerId &&
-            paymobOrder.shipping_data &&
-            paymobOrder.shipping_data.email
-          ) {
-            console.log(
-              "No customerId found in extras, looking up user by email:",
-              paymobOrder.shipping_data.email
-            );
-            const foundUser = await user.findOne({
-              email: paymobOrder.shipping_data.email,
-            });
-            if (foundUser) {
-              customerId = foundUser._id;
-              console.log("Found user by email, using customerId:", customerId);
-            } else {
-              // Create a new user if one doesn't exist
-              console.log("No user found with email, creating a new user");
-            }
-          }
-
-          if (!customerId) {
+          // Find our database order using the parentOrderId from extras
+          const databaseOrder = await Order.findById(orderExtras.order_id);
+          if (!databaseOrder) {
             console.error(
-              "Could not determine customerId, using a default user"
+              "Could not find database order with ID:",
+              orderExtras.order_id
             );
-            // Use a default customer ID for guest checkouts (create a default user in your system)
-            // This is a fallback - you should replace this with a real user ID from your database
+            return res.redirect("https://thedesigngrit.com/payment-failed");
           }
 
-          // Create a new order in your database
-          const newOrder = new Order({
-            customerId: customerId,
-            cartItems: cartItems.map((item) => ({
-              productId: item.productId || item.product_id,
-              variantId: item.variantId || item.variant_id,
-              name: item.name,
-              price: item.price || item.totalPrice / item.quantity,
-              quantity: item.quantity || 1,
-              totalPrice: item.totalPrice || item.amount_cents / 100,
-              brandId: item.brandId || item.brand_id,
-            })),
-            subtotal: paymobOrder.amount_cents / 100,
-            shippingFee: orderExtras.shippingFee || 0,
-            total: paymobOrder.amount_cents / 100,
-            orderStatus: "Pending",
-            paymentDetails: {
-              paymentMethod: "paymob",
-              transactionId: orderId,
-              paymentStatus: "Paid",
-            },
-            billingDetails: {
-              firstName:
-                paymobOrder.shipping_data?.first_name ||
-                orderExtras.billingDetails?.firstName ||
-                "Customer",
-              lastName:
-                paymobOrder.shipping_data?.last_name ||
-                orderExtras.billingDetails?.lastName ||
-                "Name",
-              email:
-                paymobOrder.shipping_data?.email ||
-                orderExtras.billingDetails?.email ||
-                "customer@example.com",
-              phoneNumber:
-                paymobOrder.shipping_data?.phone_number ||
-                orderExtras.billingDetails?.phoneNumber ||
-                "N/A",
-              address:
-                paymobOrder.shipping_data?.street ||
-                orderExtras.billingDetails?.address ||
-                "N/A",
-              country:
-                paymobOrder.shipping_data?.country ||
-                orderExtras.billingDetails?.country ||
-                "N/A",
-              city:
-                paymobOrder.shipping_data?.city ||
-                orderExtras.billingDetails?.city ||
-                "N/A",
-              zipCode:
-                paymobOrder.shipping_data?.postal_code ||
-                orderExtras.billingDetails?.zipCode ||
-                "N/A",
-            },
-            shippingDetails: {
-              firstName:
-                paymobOrder.shipping_data?.first_name ||
-                orderExtras.shippingDetails?.firstName ||
-                "Customer",
-              lastName:
-                paymobOrder.shipping_data?.last_name ||
-                orderExtras.shippingDetails?.lastName ||
-                "Name",
-              address:
-                paymobOrder.shipping_data?.street ||
-                orderExtras.shippingDetails?.address ||
-                "N/A",
-              phoneNumber:
-                paymobOrder.shipping_data?.phone_number ||
-                orderExtras.shippingDetails?.phoneNumber ||
-                "N/A",
-              country:
-                paymobOrder.shipping_data?.country ||
-                orderExtras.shippingDetails?.country ||
-                "N/A",
-              city:
-                paymobOrder.shipping_data?.city ||
-                orderExtras.shippingDetails?.city ||
-                "N/A",
-              zipCode:
-                paymobOrder.shipping_data?.postal_code ||
-                orderExtras.shippingDetails?.zipCode ||
-                "N/A",
-            },
-          });
+          // Update the order status and payment details
+          databaseOrder.orderStatus = "Paid";
+          databaseOrder.paymentDetails.paymentStatus = "Paid";
+          databaseOrder.paymentDetails.transactionId = orderId;
 
-          console.log("New order object:", JSON.stringify(newOrder, null, 2));
+          // Save the updated order
+          await databaseOrder.save();
+          console.log("Order updated successfully with ID:", databaseOrder._id);
 
-          // Save the order
-          const savedOrder = await newOrder.save();
-          console.log("Order saved successfully with ID:", savedOrder._id);
-
-          // Update product stock after order is saved
+          // Update product stock
           console.log("Updating product stock...");
-          for (const item of savedOrder.cartItems) {
+          for (const item of databaseOrder.cartItems) {
             try {
               if (item.variantId) {
                 const variant = await ProductVariant.findById(item.variantId);
@@ -381,10 +228,13 @@ class PaymobController {
 
           // Try to add the order to Mailchimp
           try {
-            if (savedOrder.billingDetails && savedOrder.billingDetails.email) {
+            if (
+              databaseOrder.billingDetails &&
+              databaseOrder.billingDetails.email
+            ) {
               await addOrderToMailchimp(
-                savedOrder.billingDetails.email,
-                savedOrder
+                databaseOrder.billingDetails.email,
+                databaseOrder
               );
               console.log("Order added to Mailchimp successfully");
             }
@@ -394,12 +244,11 @@ class PaymobController {
 
           // Redirect to success page with the order ID
           return res.redirect(
-            `https://thedesigngrit.com/home?order=${savedOrder._id}&status=success`
+            `https://thedesigngrit.com/home?order=${databaseOrder._id}&status=success`
           );
         } catch (error) {
-          console.error("Error creating order:", error);
-          // Redirect to success page anyway, but without order ID
-          return res.redirect(`https://thedesigngrit.com/home?status=success`);
+          console.error("Error updating order:", error);
+          return res.redirect("https://thedesigngrit.com/payment-failed");
         }
       } else {
         console.log("Payment failed via GET, redirecting to failure page");
@@ -488,7 +337,7 @@ class PaymobController {
         }
 
         try {
-          // Create a new order directly
+          // Create a new order only after successful payment
           console.log("Creating new order...");
           const newOrder = new Order({
             customerId: customerId,
@@ -504,9 +353,9 @@ class PaymobController {
             subtotal: paymentData.amount_cents / 100,
             shippingFee: originalOrderData.shippingFee || 0,
             total: paymentData.amount_cents / 100,
-            orderStatus: "Pending",
+            orderStatus: "Paid", // Set initial status as Paid since payment is successful
             paymentDetails: {
-              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
+              paymentMethod: "paymob",
               transactionId: paymentData.id,
               paymentStatus: "Paid",
             },
