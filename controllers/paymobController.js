@@ -181,176 +181,47 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Use the transformedOrderData from extras if available
-          const transformedOrderData = orderExtras;
-
-          // Get cart items from transformedOrderData
-          let cartItems = transformedOrderData.cartItems || [];
-          console.log(
-            "Cart items from transformedOrderData:",
-            JSON.stringify(cartItems, null, 2)
-          );
-
-          // If cartItems is empty, try to extract from Paymob order items
-          if (
-            cartItems.length === 0 &&
-            paymobOrder.items &&
-            paymobOrder.items.length > 0
-          ) {
-            console.log(
-              "No cart items in transformedOrderData, trying to extract from Paymob order items"
-            );
-            cartItems = paymobOrder.items.map((item) => ({
-              productId:
-                item.productId || item.product_id || "missing product id",
-              variantId:
-                item.variantId || item.variant_id || "missing variant id",
-              brandId: item.brandId || item.brand_id || "missing brand id",
-              name: item.name,
-              price: item.amount_cents / 100 / (item.quantity || 1),
-              quantity: item.quantity || 1,
-              totalPrice: item.amount_cents / 100,
-            }));
-            console.log(
-              "Extracted cart items from Paymob:",
-              JSON.stringify(cartItems, null, 2)
-            );
-          }
-
-          // If still empty, create a placeholder item based on order total
-          if (cartItems.length === 0) {
-            console.log("Creating placeholder cart item from order total");
-            cartItems = [
-              {
-                productId: null,
-                name: "Order Item",
-                price: paymobOrder.amount_cents / 100,
-                quantity: 1,
-                totalPrice: paymobOrder.amount_cents / 100,
-                brandId: null,
-              },
-            ];
-          }
-
-          // If we don't have a customerId in the extras, try to find a user by email
-          let customerId = orderExtras.customerId;
-          if (
-            !customerId &&
-            paymobOrder.shipping_data &&
-            paymobOrder.shipping_data.email
-          ) {
-            console.log(
-              "No customerId found in extras, looking up user by email:",
-              paymobOrder.shipping_data.email
-            );
-            const foundUser = await user.findOne({
-              email: paymobOrder.shipping_data.email,
-            });
-            if (foundUser) {
-              customerId = foundUser._id;
-              console.log("Found user by email, using customerId:", customerId);
-            } else {
-              // Create a new user if one doesn't exist
-              console.log("No user found with email, creating a new user");
-            }
-          }
-
-          if (!customerId) {
-            console.error(
-              "Could not determine customerId, using a default user"
-            );
-            // Use a default customer ID for guest checkouts (create a default user in your system)
-            // This is a fallback - you should replace this with a real user ID from your database
-          }
-
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: transformedOrderData.customerId || customerId,
-            cartItems:
-              transformedOrderData.cartItems ||
-              cartItems.map((item) => ({
-                productId: item.productId || item.product_id,
-                variantId: item.variantId || item.variant_id,
-                name: item.name,
-                price: item.price || item.totalPrice / item.quantity,
-                quantity: item.quantity || 1,
-                totalPrice: item.totalPrice || item.amount_cents / 100,
-                brandId: item.brandId || item.brand_id,
-              })),
-            subtotal:
-              transformedOrderData.total || paymobOrder.amount_cents / 100,
-            shippingFee:
-              transformedOrderData.shippingFee || orderExtras.shippingFee || 0,
-            total: transformedOrderData.total || paymobOrder.amount_cents / 100,
+            customerId: orderExtras.customerId,
+            cartItems: orderExtras.cartItems
+              ? orderExtras.cartItems.map((item) => ({
+                  productId: item.productId,
+                  variantId: item.variantId,
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price || item.totalPrice / item.quantity,
+                  totalPrice: item.totalPrice || item.price * item.quantity,
+                  brandId: item.brandId,
+                }))
+              : [],
+            subtotal: paymobOrder.amount_cents / 100,
+            shippingFee: orderExtras.shippingFee || 0,
+            total: paymobOrder.amount_cents / 100,
             orderStatus: "Pending",
             paymentDetails: {
               paymentMethod: "paymob",
               transactionId: orderId,
               paymentStatus: "Paid",
             },
-            billingDetails: transformedOrderData.billingDetails || {
-              firstName:
-                paymobOrder.shipping_data?.first_name ||
-                orderExtras.billingDetails?.firstName ||
-                "Customer",
-              lastName:
-                paymobOrder.shipping_data?.last_name ||
-                orderExtras.billingDetails?.lastName ||
-                "Name",
-              email:
-                paymobOrder.shipping_data?.email ||
-                orderExtras.billingDetails?.email ||
-                "customer@example.com",
-              phoneNumber:
-                paymobOrder.shipping_data?.phone_number ||
-                orderExtras.billingDetails?.phoneNumber ||
-                "N/A",
-              address:
-                paymobOrder.shipping_data?.street ||
-                orderExtras.billingDetails?.address ||
-                "N/A",
-              country:
-                paymobOrder.shipping_data?.country ||
-                orderExtras.billingDetails?.country ||
-                "N/A",
-              city:
-                paymobOrder.shipping_data?.city ||
-                orderExtras.billingDetails?.city ||
-                "N/A",
-              zipCode:
-                paymobOrder.shipping_data?.postal_code ||
-                orderExtras.billingDetails?.zipCode ||
-                "N/A",
+            billingDetails: orderExtras.billingDetails || {
+              firstName: paymobOrder.shipping_data?.first_name || "Customer",
+              lastName: paymobOrder.shipping_data?.last_name || "Name",
+              email: paymobOrder.shipping_data?.email || "customer@example.com",
+              phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
+              address: paymobOrder.shipping_data?.street || "N/A",
+              country: paymobOrder.shipping_data?.country || "N/A",
+              city: paymobOrder.shipping_data?.city || "N/A",
+              zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
             },
-            shippingDetails: transformedOrderData.shippingDetails || {
-              firstName:
-                paymobOrder.shipping_data?.first_name ||
-                orderExtras.shippingDetails?.firstName ||
-                "Customer",
-              lastName:
-                paymobOrder.shipping_data?.last_name ||
-                orderExtras.shippingDetails?.lastName ||
-                "Name",
-              address:
-                paymobOrder.shipping_data?.street ||
-                orderExtras.shippingDetails?.address ||
-                "N/A",
-              phoneNumber:
-                paymobOrder.shipping_data?.phone_number ||
-                orderExtras.shippingDetails?.phoneNumber ||
-                "N/A",
-              country:
-                paymobOrder.shipping_data?.country ||
-                orderExtras.shippingDetails?.country ||
-                "N/A",
-              city:
-                paymobOrder.shipping_data?.city ||
-                orderExtras.shippingDetails?.city ||
-                "N/A",
-              zipCode:
-                paymobOrder.shipping_data?.postal_code ||
-                orderExtras.shippingDetails?.zipCode ||
-                "N/A",
+            shippingDetails: orderExtras.shippingDetails || {
+              firstName: paymobOrder.shipping_data?.first_name || "Customer",
+              lastName: paymobOrder.shipping_data?.last_name || "Name",
+              address: paymobOrder.shipping_data?.street || "N/A",
+              phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
+              country: paymobOrder.shipping_data?.country || "N/A",
+              city: paymobOrder.shipping_data?.city || "N/A",
+              zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
             },
           });
 
@@ -404,10 +275,10 @@ class PaymobController {
 
           // Redirect to success page with the order ID
           return res.redirect(
-            `https://thedesigngrit.com/home?order=${databaseOrder._id}&status=success`
+            `https://thedesigngrit.com/home?order=${savedOrder._id}&status=success`
           );
         } catch (error) {
-          console.error("Error updating order:", error);
+          console.error("Error creating order:", error);
           return res.redirect("https://thedesigngrit.com/payment-failed");
         }
       } else {
