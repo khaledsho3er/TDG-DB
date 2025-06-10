@@ -120,7 +120,9 @@ class PaymobController {
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
         }/api/paymob/callback`
       );
-
+      // Save the transformed order data in an object
+      // that can be accessed in other functions
+      this.transformedOrderData = transformedOrderData;
       // Create iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
@@ -180,12 +182,17 @@ class PaymobController {
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
-
+          // Create a new order in your database
+          const orderData = this.transformedOrderData;
+          console.log(
+            "Transformed order data in handle callback:",
+            JSON.stringify(orderData, null, 2)
+          );
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: paymobOrder.customerId || "N/A",
-            cartItems: paymobOrder.cartItems
-              ? paymobOrder.cartItems.map((item) => ({
+            customerId: orderData.customerId || "N/A",
+            cartItems: orderData.cartItems
+              ? orderData.cartItems.map((item) => ({
                   productId: item.productId,
                   variantId: item.variantId,
                   name: item.name,
