@@ -98,11 +98,38 @@ class PaymobController {
         JSON.stringify(transformedOrderData, null, 2)
       );
 
-      // Create the Paymob order with the transformed data
+      // First create the order in our database with Pending status
+      const newOrder = new Order({
+        customerId: transformedOrderData.customerId,
+        cartItems: transformedOrderData.cartItems,
+        subtotal: transformedOrderData.total,
+        shippingFee: transformedOrderData.shippingFee,
+        total: transformedOrderData.total,
+        orderStatus: "Pending",
+        paymentDetails: {
+          paymentMethod: "paymob",
+          paymentStatus: "Pending",
+        },
+        billingDetails: transformedOrderData.billingDetails,
+        shippingDetails: transformedOrderData.shippingDetails,
+      });
+
+      // Save the order to get its ID
+      const savedOrder = await newOrder.save();
+      console.log("Order created in database with ID:", savedOrder._id);
+
+      // Now create the Paymob order with our database order ID
       const { order: paymobOrder, authToken } = await PaymobService.createOrder(
         transformedOrderData.total,
-        transformedOrderData
+        {
+          ...transformedOrderData,
+          orderId: savedOrder._id.toString(), // Add our database order ID
+        }
       );
+
+      // Update our database order with Paymob details
+      savedOrder.paymentDetails.transactionId = paymobOrder.id;
+      await savedOrder.save();
 
       // Get payment key using the same token
       const paymentKey = await PaymobService.getPaymentKey(
@@ -126,7 +153,7 @@ class PaymobController {
         iframe_url: iframeUrl,
         orderId: paymobOrder.id,
         paymentKey: paymentKey.token,
-        orderData: transformedOrderData, // Pass the transformed data to be used in callback
+        databaseOrderId: savedOrder._id, // Return our database order ID
       });
     } catch (error) {
       console.error("Error creating payment:", error.message);
@@ -136,6 +163,7 @@ class PaymobController {
       });
     }
   }
+
   static async handleCallbackGet(req, res) {
     try {
       console.log("=== PAYMENT GET CALLBACK RECEIVED ===");
@@ -178,12 +206,12 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
 
-          // Find our database order using the parentOrderId from extras
-          const databaseOrder = await Order.findById(orderExtras.order_id);
+          // Find our database order using the orderId from extras
+          const databaseOrder = await Order.findById(orderExtras.orderId);
           if (!databaseOrder) {
             console.error(
               "Could not find database order with ID:",
-              orderExtras.order_id
+              orderExtras.orderId
             );
             return res.redirect("https://thedesigngrit.com/payment-failed");
           }
@@ -337,7 +365,7 @@ class PaymobController {
         }
 
         try {
-          // Create a new order only after successful payment
+          // Create a new order directly
           console.log("Creating new order...");
           const newOrder = new Order({
             customerId: customerId,
@@ -353,9 +381,9 @@ class PaymobController {
             subtotal: paymentData.amount_cents / 100,
             shippingFee: originalOrderData.shippingFee || 0,
             total: paymentData.amount_cents / 100,
-            orderStatus: "Paid", // Set initial status as Paid since payment is successful
+            orderStatus: "Pending",
             paymentDetails: {
-              paymentMethod: "paymob",
+              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
               transactionId: paymentData.id,
               paymentStatus: "Paid",
             },
