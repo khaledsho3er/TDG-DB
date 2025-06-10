@@ -154,42 +154,51 @@ class PaymobController {
           },
         };
 
-        // Create a mock request object for the createOrder function
-        const mockReq = {
-          body: orderPayload,
-        };
+        // Create a promise to handle the order creation
+        const createOrderPromise = new Promise((resolve, reject) => {
+          // Create a mock request object for the createOrder function
+          const mockReq = {
+            body: orderPayload,
+          };
 
-        // Create a mock response object to capture the result
-        const mockRes = {
-          status: (code) => ({
-            json: (data) => {
-              if (code === 201) {
-                res.json({
-                  success: true,
-                  message: "Payment processed and order created successfully",
-                  orderId: data._id,
-                });
-              } else {
-                res.status(code).json(data);
-              }
-            },
-          }),
-        };
+          // Create a mock response object to capture the result
+          const mockRes = {
+            status: (code) => ({
+              json: (data) => {
+                if (code === 201) {
+                  console.log("Order created successfully:", data._id);
+                  resolve(data);
+                } else {
+                  console.error("Error creating order:", data);
+                  reject(new Error(data.error || "Failed to create order"));
+                }
+              },
+            }),
+          };
 
-        // Call the createOrder function from orderController
-        await createOrder(mockReq, mockRes);
-      } else {
-        res.status(400).json({
-          error: "Payment failed",
-          details: obj.error_occured || "Unknown error",
+          // Call the createOrder function from orderController
+          createOrder(mockReq, mockRes);
         });
+
+        // Wait for order creation to complete
+        const createdOrder = await createOrderPromise;
+
+        // Log the created order
+        console.log("Payment successful, order created:", createdOrder._id);
+
+        // Redirect to success page with order ID
+        return res.redirect(
+          `https://thedesigngrit.com/home?order=${createdOrder._id}&status=success`
+        );
+      } else {
+        // For failed payments, redirect to an error page
+        console.log("Payment failed:", obj.error_occured || "Unknown error");
+        return res.redirect("https://thedesigngrit.com/payment-failed");
       }
     } catch (error) {
       console.error("Error handling payment callback:", error.message);
-      res.status(500).json({
-        error: "Failed to process payment callback",
-        details: error.message,
-      });
+      // Redirect to error page in case of exceptions
+      return res.redirect("https://thedesigngrit.com/payment-error");
     }
   }
 }
