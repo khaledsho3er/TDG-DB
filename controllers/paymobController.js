@@ -270,7 +270,7 @@ class PaymobController {
               if (!brandId) continue;
 
               const brand = await Brand.findById(brandId);
-              const brandName = brand?.name || "Unknown Brand";
+              const brandName = brand?.brandName || "Unknown Brand";
 
               const newNotification = new Notification({
                 type: "order",
@@ -290,7 +290,8 @@ class PaymobController {
             for (const item of savedOrder.cartItems) {
               if (!brandNamesMap[item.brandId]) {
                 const brand = await Brand.findById(item.brandId);
-                brandNamesMap[item.brandId] = brand?.name || "Unknown Brand";
+                brandNamesMap[item.brandId] =
+                  brand?.brandName || "Unknown Brand";
               }
             }
 
