@@ -248,8 +248,71 @@ class PaymobController {
           // Save the order
           const savedOrder = await newOrder.save();
           console.log("Order saved successfully with ID:", savedOrder._id);
+          console.log("Order saved successfully with ID:", savedOrder._id);
+          console.log(
+            "All data in savedOrder:",
+            savedOrder.email || "No email",
+            "cart Items",
+            savedOrder.cartItems || "No cart items",
+            "brand Ids",
+            savedOrder.cartItems.map((item) => item.brandId) || "No brand IDs"
+          );
+          // === Notification Logic Start ===
+          try {
+            const customerEmail = savedOrder.billingDetails?.email || "Unknown";
+            const uniqueBrandIds = [
+              ...new Set(
+                savedOrder.cartItems.map((item) => item.brandId?.toString())
+              ),
+            ];
 
-          // Update product stock after order is saved
+            for (const brandId of uniqueBrandIds) {
+              if (!brandId) continue;
+
+              const brand = await Brand.findById(brandId);
+              const brandName = brand?.name || "Unknown Brand";
+
+              const newNotification = new Notification({
+                type: "order",
+                description: `You have received a new order from customer ${customerEmail}\nProduct: ${savedOrder.cartItems
+                  .filter((item) => item.brandId?.toString() === brandId)
+                  .map((item) => item.name)
+                  .join(", ")}\nTotal Price: ${savedOrder.total}.`,
+                brandId,
+                orderId: savedOrder._id,
+                read: false,
+              });
+
+              await newNotification.save();
+            }
+
+            const brandNamesMap = {};
+            for (const item of savedOrder.cartItems) {
+              if (!brandNamesMap[item.brandId]) {
+                const brand = await Brand.findById(item.brandId);
+                brandNamesMap[item.brandId] = brand?.name || "Unknown Brand";
+              }
+            }
+
+            const adminNotification = new AdminNotification({
+              type: "order",
+              description: `New order #${
+                savedOrder._id
+              } created by ${customerEmail} for $${
+                savedOrder.total
+              }. Products: ${savedOrder.cartItems
+                .map((item) => item.name)
+                .join(", ")} from brands: ${[
+                ...new Set(Object.values(brandNamesMap)),
+              ].join(", ")}`,
+              read: false,
+            });
+
+            await adminNotification.save();
+          } catch (notificationError) {
+            console.error("Error creating notifications:", notificationError);
+          }
+          // === Notification Logic End ===d
           console.log("Updating product stock...");
           for (const item of savedOrder.cartItems) {
             try {
@@ -437,65 +500,7 @@ class PaymobController {
           // Save the order to the database
           console.log("Saving order to database...");
           const savedOrder = await newOrder.save();
-          console.log("Order saved successfully with ID:", savedOrder._id);
-          console.log(
-            "All data in savedOrder:",
-            savedOrder.email || "No email",
-            "cart Items",
-            savedOrder.cartItems || "No cart items",
-            "brand Ids",
-            savedOrder.cartItems.map((item) => item.brandId) || "No brand IDs"
-          );
-          // === Notification Logic Start ===
-          try {
-            const customerEmail = savedOrder.billingDetails?.email || "Unknown";
-            for (const brandId of uniqueBrandIds) {
-              if (!brandId) continue;
 
-              const brand = await Brand.findById(brandId);
-              const brandName = brand?.name || "Unknown Brand";
-
-              const newNotification = new Notification({
-                type: "order",
-                description: `You have received a new order from customer ${customerEmail}\nProduct: ${savedOrder.cartItems
-                  .filter((item) => item.brandId?.toString() === brandId)
-                  .map((item) => item.name)
-                  .join(", ")}\nTotal Price: ${savedOrder.total}.`,
-                brandId,
-                orderId: savedOrder._id,
-                read: false,
-              });
-
-              await newNotification.save();
-            }
-
-            const brandNamesMap = {};
-            for (const item of savedOrder.cartItems) {
-              if (!brandNamesMap[item.brandId]) {
-                const brand = await Brand.findById(item.brandId);
-                brandNamesMap[item.brandId] = brand?.name || "Unknown Brand";
-              }
-            }
-
-            const adminNotification = new AdminNotification({
-              type: "order",
-              description: `New order #${
-                savedOrder._id
-              } created by ${customerEmail} for $${
-                savedOrder.total
-              }. Products: ${savedOrder.cartItems
-                .map((item) => item.name)
-                .join(", ")} from brands: ${[
-                ...new Set(Object.values(brandNamesMap)),
-              ].join(", ")}`,
-              read: false,
-            });
-
-            await adminNotification.save();
-          } catch (notificationError) {
-            console.error("Error creating notifications:", notificationError);
-          }
-          // === Notification Logic End ===
           // Update product stock after order is saved
           console.log("Updating product stock...");
           for (const item of savedOrder.cartItems) {
