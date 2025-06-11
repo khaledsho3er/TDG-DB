@@ -438,15 +438,10 @@ class PaymobController {
           console.log("Saving order to database...");
           const savedOrder = await newOrder.save();
           console.log("Order saved successfully with ID:", savedOrder._id);
+          console.log("All data in savedOrder:", savedOrder);
           // === Notification Logic Start ===
           try {
             const customerEmail = savedOrder.billingDetails?.email || "Unknown";
-            const uniqueBrandIds = [
-              ...new Set(
-                savedOrder.cartItems.map((item) => item.brandId?.toString())
-              ),
-            ];
-
             for (const brandId of uniqueBrandIds) {
               if (!brandId) continue;
 
