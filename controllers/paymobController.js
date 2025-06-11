@@ -277,7 +277,7 @@ class PaymobController {
                 description: `You have received a new order from customer ${customerEmail}\nProduct: ${savedOrder.cartItems
                   .filter((item) => item.brandId?.toString() === brandId)
                   .map((item) => item.name)
-                  .join(", ")}\nTotal Price: ${savedOrder.total}.`,
+                  .join(", ")}\nTotal Price: ${savedOrder.total}E£.`,
                 brandId,
                 orderId: savedOrder._id,
                 read: false,
@@ -299,7 +299,7 @@ class PaymobController {
               type: "order",
               description: `New order #${
                 savedOrder._id
-              } created by ${customerEmail} for $${
+              } created by ${customerEmail} for E£${
                 savedOrder.total
               }. Products: ${savedOrder.cartItems
                 .map((item) => item.name)
