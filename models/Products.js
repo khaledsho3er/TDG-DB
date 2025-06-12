@@ -13,7 +13,6 @@ const productSchema = new mongoose.Schema(
     subcategory: { type: mongoose.Schema.Types.ObjectId, ref: "subcategories" }, // ObjectId
     vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
     type: { type: mongoose.Schema.Types.ObjectId, ref: "types" }, // ObjectId
-    manufacturer: { type: String },
     collection: { type: String },
     manufactureYear: { type: Number },
     tags: [{ type: String }], // Array of tags

@@ -136,7 +136,6 @@ exports.getProducts = async (req, res) => {
       stockMax,
       colors,
       sizes,
-      manufacturer,
       leadTime,
       sku,
       manufactureYear,
@@ -166,7 +165,6 @@ exports.getProducts = async (req, res) => {
     }
     if (colors) filter.colors = { $in: colors.split(",") };
     if (sizes) filter.sizes = { $in: sizes.split(",") };
-    if (manufacturer) filter.manufacturer = manufacturer;
     if (leadTime) filter.leadTime = leadTime;
     if (sku) filter.sku = sku;
     if (manufactureYear) filter.manufactureYear = manufactureYear;
@@ -452,7 +450,6 @@ exports.getSearchSuggestions = async (req, res) => {
           ...regexArray.map((r) => ({ name: r })),
           ...regexArray.map((r) => ({ tags: r })),
           ...regexArray.map((r) => ({ description: r })),
-          ...regexArray.map((r) => ({ manufacturer: r })),
           ...regexArray.map((r) => ({ collection: r })),
           ...regexArray.map((r) => ({ colors: r })),
           ...regexArray.map((r) => ({ sizes: r })),
@@ -469,7 +466,6 @@ exports.getSearchSuggestions = async (req, res) => {
         mainImage: 1,
         tags: 1,
         description: 1,
-        manufacturer: 1,
         collection: 1,
         manufactureYear: 1,
         colors: 1,
