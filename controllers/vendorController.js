@@ -61,6 +61,10 @@ exports.login = async (req, res) => {
     // Store vendor information in the session
     req.session.vendor = {
       id: vendor._id,
+      firstName: vendor.firstName,
+      lastName: vendor.lastName,
+      phoneNumber: vendor.phoneNumber,
+      employeeNumber: vendor.employeeNumber,
       email: vendor.email,
       tier: vendor.tier,
       role: vendor.role,
@@ -71,6 +75,10 @@ exports.login = async (req, res) => {
       message: "Login successful",
       vendor: {
         id: vendor._id,
+        firstName: vendor.firstName,
+        lastName: vendor.lastName,
+        phoneNumber: vendor.phoneNumber,
+        employeeNumber: vendor.employeeNumber,
         email: vendor.email,
         tier: vendor.tier,
         role: vendor.role,
