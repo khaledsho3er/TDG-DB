@@ -59,9 +59,12 @@ const orderSchema = new mongoose.Schema(
         required: true,
         enum: ["paymob", "Paymob", "cash", "paypal"],
       },
-      cardNumber: { type: String }, // Store last 4 digits for security
-      expiry: { type: String },
-      cvv: { type: String },
+      paymentStatus: {
+        type: String,
+        default: "Pending",
+        enum: ["Pending", "Paid", "Failed"],
+      },
+      transactionId: { type: String, default: null }, // Transaction ID from payment gateway
     },
     billingDetails: {
       firstName: { type: String, required: true },
