@@ -52,5 +52,6 @@ router.put(
 );
 router.put("/orders/:orderId/note", orderController.addOrderNote);
 router.post("/ping-brand", orderController.pingBrandOnOrder);
+router.put("/:orderId/payment-status", orderController.updatePaymentStatus);
 
 module.exports = router;

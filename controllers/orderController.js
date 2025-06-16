@@ -1139,3 +1139,35 @@ exports.pingBrandOnOrder = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { paymentStatus } = req.body;
+
+    // Validate payment status
+    if (!["Pending", "Paid", "Failed"].includes(paymentStatus)) {
+      return res.status(400).json({
+        message:
+          "Invalid payment status. Must be one of: Pending, Paid, Failed",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Update payment status
+    order.paymentDetails.paymentStatus = paymentStatus;
+    await order.save();
+
+    res.status(200).json({
+      message: "Payment status updated successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
