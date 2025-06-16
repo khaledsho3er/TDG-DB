@@ -46,10 +46,6 @@ const productSchema = new mongoose.Schema(
     materialCareInstructions: { type: String },
     productSpecificRecommendations: { type: String },
     Estimatedtimeleadforcustomization: { type: String },
-    Customizationoptions: [{ type: String }],
-    Additionaldetails: { type: String },
-    Additionalcosts: { type: String },
-    claimProcess: { type: String },
     readyToShip: { type: Boolean, default: false },
     sales: { type: Number, default: 0 },
     status: { type: Boolean, default: false }, // New attribute to indicate if the product is approved or not
