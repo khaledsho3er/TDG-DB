@@ -357,7 +357,7 @@ class PaymobController {
 
           // Redirect to success page with the order ID
           return res.redirect(
-            `https://thedesigngrit.com/home?order=${savedOrder._id}&status=success`
+            `https://thedesigngrit.com/checkout?order=${savedOrder._id}&status=success`
           );
         } catch (error) {
           console.error("Error creating order:", error);
