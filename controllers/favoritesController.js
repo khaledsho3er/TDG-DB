@@ -46,8 +46,14 @@ exports.removeFavorite = async (req, res) => {
 // Get all favorite products for a user
 exports.getFavorites = async (req, res) => {
   const { userId } = req.params;
+
   try {
-    const user = await User.findById(userId).populate("favorites");
+    const user = await User.findById(userId).populate({
+      path: "favorites",
+      populate: {
+        path: "brandId", // <-- This will replace the brandId _id with the full Brand document
+      },
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
