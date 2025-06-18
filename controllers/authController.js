@@ -5,7 +5,9 @@ const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
 
 // Initialize Google OAuth2 client
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = process.env.GOOGLE_CLIENT_ID
+  ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+  : null;
 
 exports.signin = async (req, res) => {
   const { email, password, role } = req.body;
@@ -59,6 +61,13 @@ exports.googleAuth = async (req, res) => {
 
     if (!credential) {
       return res.status(400).json({ message: "Google credential is required" });
+    }
+
+    if (!googleClient) {
+      return res.status(500).json({
+        message:
+          "Google authentication is not configured. Please set GOOGLE_CLIENT_ID in environment variables.",
+      });
     }
 
     // Verify the Google token
