@@ -55,6 +55,11 @@ exports.signin = async (req, res) => {
 
 // Google authentication
 exports.googleAuth = async (req, res) => {
+  console.log("=== GOOGLE AUTH FUNCTION CALLED ===");
+  console.log("Request body:", req.body);
+  console.log("Request method:", req.method);
+  console.log("Request URL:", req.url);
+
   try {
     const { credential } = req.body;
     console.log("Google auth request received");
@@ -193,6 +198,72 @@ exports.googleAuth = async (req, res) => {
       message: "Google authentication failed",
       error: error.message,
       errorType: error.name,
+    });
+  }
+};
+
+// Test function to verify User model
+exports.testUserCreation = async (req, res) => {
+  try {
+    console.log("Testing User model creation...");
+
+    const testUser = new User({
+      firstName: "Test",
+      lastName: "User",
+      email: "test@example.com",
+      role: "User",
+      gender: "Other",
+      authorityTier: 0,
+      permissions: [],
+    });
+
+    console.log("Test user object created:", testUser);
+
+    const savedTestUser = await testUser.save();
+    console.log("Test user saved successfully:", savedTestUser._id);
+
+    // Clean up - delete the test user
+    await User.findByIdAndDelete(savedTestUser._id);
+    console.log("Test user deleted");
+
+    res.json({ message: "User model is working correctly" });
+  } catch (error) {
+    console.error("Test user creation failed:", error);
+    res.status(500).json({
+      message: "User model test failed",
+      error: error.message,
+    });
+  }
+};
+
+// Function to check all users in database
+exports.checkAllUsers = async (req, res) => {
+  try {
+    console.log("Checking all users in database...");
+
+    const allUsers = await User.find({});
+    console.log("Total users found:", allUsers.length);
+
+    const userList = allUsers.map((user) => ({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isGoogleUser: user.isGoogleUser,
+      googleId: user.googleId,
+      createdAt: user.createdAt,
+    }));
+
+    res.json({
+      message: "Users retrieved successfully",
+      totalUsers: allUsers.length,
+      users: userList,
+    });
+  } catch (error) {
+    console.error("Error checking users:", error);
+    res.status(500).json({
+      message: "Failed to check users",
+      error: error.message,
     });
   }
 };
