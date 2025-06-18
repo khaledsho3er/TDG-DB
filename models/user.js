@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false }, // Make optional for Google users
   phoneNumber: { type: String, required: false },
   dateOfBirth: { type: Date, required: false },
   gender: {
@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["User"],
+    enum: ["User", "Vendor"],
     default: "User",
   },
   language: { type: String, required: false },
@@ -38,6 +38,12 @@ const userSchema = new mongoose.Schema({
   otpExpires: { type: Date },
   cards: [{ type: mongoose.Schema.Types.ObjectId, ref: "Card" }],
   resetToken: String, // 🔥 Add this field
+  // Google authentication fields
+  googleId: { type: String, unique: true, sparse: true },
+  googleName: { type: String },
+  googlePicture: { type: String },
+  isGoogleUser: { type: Boolean, default: false },
+  lastLogin: { type: Date, default: Date.now },
 });
 
 // Automatically generate an ObjectId for `id` field, MongoDB does this by default

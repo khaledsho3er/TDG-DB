@@ -1,5 +1,4 @@
-const User = require("../models/user"); // For regular users
-const GoogleUser = require("../models/googleUser"); // For Google users
+const User = require("../models/user"); // For all users (regular and Google)
 const Employee = require("../models/employees"); // For Employees (employee table)
 const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
@@ -79,52 +78,56 @@ exports.googleAuth = async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
-    // Check if Google user already exists
-    let googleUser = await GoogleUser.findOne({ googleId });
+    // Check if user already exists with this Google ID
+    let user = await User.findOne({ googleId });
 
-    if (!googleUser) {
-      // Check if a regular user exists with this email
-      const regularUser = await User.findOne({ email });
+    if (!user) {
+      // Check if user exists with this email (but not Google user)
+      user = await User.findOne({ email });
 
-      if (regularUser) {
-        return res.status(400).json({
-          message:
-            "An account with this email already exists. Please sign in with your password instead.",
+      if (user) {
+        // User exists but not with Google, update their account
+        user.googleId = googleId;
+        user.googleName = name;
+        user.googlePicture = picture;
+        user.isGoogleUser = true;
+        user.lastLogin = new Date();
+        await user.save();
+      } else {
+        // Create new user with Google data
+        const [firstName, ...lastNameParts] = name.split(" ");
+        const lastName = lastNameParts.join(" ") || "";
+
+        user = new User({
+          firstName,
+          lastName,
+          email,
+          googleId,
+          googleName: name,
+          googlePicture: picture,
+          isGoogleUser: true,
+          role: "User",
+          lastLogin: new Date(),
         });
+
+        await user.save();
       }
-
-      // Create new Google user
-      const [firstName, ...lastNameParts] = name.split(" ");
-      const lastName = lastNameParts.join(" ") || "";
-
-      googleUser = new GoogleUser({
-        googleId,
-        email,
-        firstName,
-        lastName,
-        googleName: name,
-        googlePicture: picture,
-        role: "GoogleUser",
-      });
-
-      await googleUser.save();
     } else {
       // Update last login time
-      googleUser.lastLogin = new Date();
-      await googleUser.save();
+      user.lastLogin = new Date();
+      await user.save();
     }
 
     // Set session data
-    req.session.userId = googleUser._id;
-    req.session.userType = "google"; // Distinguish from regular users
+    req.session.userId = user._id;
     req.session.user = {
-      id: googleUser._id,
-      email: googleUser.email,
-      firstName: googleUser.firstName,
-      lastName: googleUser.lastName,
-      phoneNumber: googleUser.phoneNumber,
-      shipmentAddress: googleUser.shipmentAddress
-        ? googleUser.shipmentAddress.map((address) => ({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneNumber: user.phoneNumber,
+      shipmentAddress: user.shipmentAddress
+        ? user.shipmentAddress.map((address) => ({
             id: address._id,
             address1: address.address1,
             address2: address.address2,
@@ -138,10 +141,10 @@ exports.googleAuth = async (req, res) => {
             isDefault: address.isDefault,
           }))
         : [],
-      dateOfBirth: googleUser.dateOfBirth,
-      role: googleUser.role,
-      googlePicture: googleUser.googlePicture,
-      isGoogleUser: true,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      googlePicture: user.googlePicture,
+      isGoogleUser: user.isGoogleUser,
     };
 
     res.status(200).json({

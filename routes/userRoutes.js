@@ -2,7 +2,6 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
-const GoogleUser = require("../models/googleUser");
 const {
   isAuthenticated,
   isAuthorized,
@@ -150,14 +149,7 @@ router.get("/getUser", async (req, res) => {
   }
 
   try {
-    let user;
-
-    // Check if it's a Google user
-    if (req.session.userType === "google") {
-      user = await GoogleUser.findById(req.session.userId);
-    } else {
-      user = await User.findById(req.session.userId);
-    }
+    const user = await User.findById(req.session.userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
