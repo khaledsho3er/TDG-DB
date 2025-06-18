@@ -44,6 +44,9 @@ const userSchema = new mongoose.Schema({
   googlePicture: { type: String },
   isGoogleUser: { type: Boolean, default: false },
   lastLogin: { type: Date, default: Date.now },
+  // Additional fields used in signup
+  authorityTier: { type: Number, default: 0 },
+  permissions: { type: [String], default: [] },
 });
 
 // Automatically generate an ObjectId for `id` field, MongoDB does this by default

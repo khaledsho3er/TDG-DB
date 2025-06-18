@@ -120,10 +120,6 @@ exports.googleAuth = async (req, res) => {
           authorityTier: 0,
           permissions: [],
           lastLogin: new Date(),
-          // Set empty arrays for optional fields
-          shipmentAddress: [],
-          favorites: [],
-          cards: [],
         });
 
         console.log("New user data prepared:", {
@@ -184,9 +180,19 @@ exports.googleAuth = async (req, res) => {
     });
   } catch (error) {
     console.error("Google authentication error:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
-    res
-      .status(500)
-      .json({ message: "Google authentication failed", error: error.message });
+
+    // If it's a validation error, log the specific validation issues
+    if (error.name === "ValidationError") {
+      console.error("Validation errors:", error.errors);
+    }
+
+    res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+      errorType: error.name,
+    });
   }
 };
