@@ -18,7 +18,7 @@ const sesClient = new SESClient({
  */
 const sendEmail = async ({ to, subject, body }) => {
   const params = {
-    Source: "admin@thedesigngrit.com", // ✅ must match a verified domain/email in SES
+    Source: "noreply@thedesigngrit.com", // ✅ must match a verified domain/email in SES
     Destination: {
       ToAddresses: [to],
     },
