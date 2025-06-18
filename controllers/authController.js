@@ -57,6 +57,7 @@ exports.signin = async (req, res) => {
 exports.googleAuth = async (req, res) => {
   try {
     const { credential } = req.body;
+    console.log("Google auth request received");
 
     if (!credential) {
       return res.status(400).json({ message: "Google credential is required" });
@@ -78,27 +79,34 @@ exports.googleAuth = async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
+    console.log("Google payload received:", { googleId, email, name, picture });
+
     // Check if user already exists with this Google ID
     let user = await User.findOne({ googleId });
+    console.log("User found by googleId:", user ? "Yes" : "No");
 
     if (!user) {
       // Check if user exists with this email (but not Google user)
       user = await User.findOne({ email });
+      console.log("User found by email:", user ? "Yes" : "No");
 
       if (user) {
         // User exists but not with Google, update their account
+        console.log("Updating existing user with Google data");
         user.googleId = googleId;
         user.googleName = name;
         user.googlePicture = picture;
         user.isGoogleUser = true;
         user.lastLogin = new Date();
         await user.save();
+        console.log("Existing user updated successfully");
       } else {
         // Create new user with Google data
+        console.log("Creating new user with Google data");
         const [firstName, ...lastNameParts] = name.split(" ");
         const lastName = lastNameParts.join(" ") || "";
 
-        user = new User({
+        const newUserData = {
           firstName,
           lastName,
           email,
@@ -108,14 +116,21 @@ exports.googleAuth = async (req, res) => {
           isGoogleUser: true,
           role: "User",
           lastLogin: new Date(),
-        });
+          shipmentAddress: [], // Explicitly set empty array
+        };
 
+        console.log("New user data:", newUserData);
+
+        user = new User(newUserData);
         await user.save();
+        console.log("New user created successfully with ID:", user._id);
       }
     } else {
       // Update last login time
+      console.log("Updating last login for existing Google user");
       user.lastLogin = new Date();
       await user.save();
+      console.log("Last login updated successfully");
     }
 
     // Set session data
@@ -147,12 +162,16 @@ exports.googleAuth = async (req, res) => {
       isGoogleUser: user.isGoogleUser,
     };
 
+    console.log("Session set successfully, sending response");
     res.status(200).json({
       message: "Google authentication successful",
       user: req.session.user,
     });
   } catch (error) {
     console.error("Google authentication error:", error);
-    res.status(500).json({ message: "Google authentication failed" });
+    console.error("Error stack:", error.stack);
+    res
+      .status(500)
+      .json({ message: "Google authentication failed", error: error.message });
   }
 };
