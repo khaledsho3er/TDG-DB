@@ -5,7 +5,7 @@ const otpGenerator = require("otp-generator");
 const crypto = require("crypto");
 const otpStore = {}; // Temporary storage for OTPs (use Redis in production)
 const jwt = require("jsonwebtoken");
-const transporter = require("../utils/emailTransporter");
+const { sendEmail } = require("../services/awsSes");
 
 exports.sendOTP = async (req, res) => {
   const { email } = req.body;
@@ -25,11 +25,10 @@ exports.sendOTP = async (req, res) => {
     otp,
     otpCreatedAt: Date.now(),
   });
-  await transporter.sendMail({
-    from: "karimwahba53@gmail.com",
+  await sendEmail({
     to: email,
     subject: "Password Reset OTP",
-    text: `Your OTP is: ${otp}`,
+    body: `<p>Your OTP is: <strong>${otp}</strong></p>`, // HTML format
   });
 
   res.json({ message: "OTP sent to email" });
@@ -91,20 +90,7 @@ exports.verifyOtp = async (req, res) => {
 
   res.json({ message: "OTP verified successfully", resetToken });
 };
-// 3. Reset Password
-// exports.resetPassword = async (req, res) => {
-//   const { email, newPassword } = req.body;
-//   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-//   await User.findOneAndUpdate({ email }, { password: hashedPassword });
-//   await transporter.sendMail({
-//     from: "karimwahba53@gmail.com",
-//     to: email,
-//     subject: "Password has been reset successfully.",
-//     text: `Your password has been reset successfully. Welcome Back to The Design Grit!`,
-//   });
-//   res.json({ message: "Password reset successful" });
-// };
 const generateResetToken = (email) => {
   return jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
 };
@@ -161,12 +147,12 @@ exports.resetPassword = async (req, res) => {
     user.password = hashedPassword;
     user.resetToken = null; // 🔥 Clear the reset token
     await user.save();
-    await transporter.sendMail({
-      from: "karimwahba53@gmail.com",
+    await sendEmail({
       to: email,
       subject: "Password has been reset successfully.",
-      text: `Your password has been reset successfully. Welcome Back to The Design Grit!`,
+      body: `<p>Your password has been reset successfully. Welcome back to <strong>The Design Grit</strong>!</p>`,
     });
+
     res.json({ message: "Password reset successful" });
   } catch (error) {
     console.error("JWT Verification Error:", error);
