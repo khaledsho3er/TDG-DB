@@ -90,7 +90,7 @@ exports.googleAuth = async (req, res) => {
       user = await User.findOne({ email });
       console.log("User found by email:", user ? "Yes" : "No");
 
-      if (user) {
+      if (!user) {
         // User exists but not with Google, update their account
         console.log("Updating existing user with Google data");
         user.googleId = googleId;
