@@ -101,12 +101,13 @@ exports.googleAuth = async (req, res) => {
         await user.save();
         console.log("Existing user updated successfully");
       } else {
-        // Create new user with Google data
+        // Create new user with Google data - following signup pattern
         console.log("Creating new user with Google data");
         const [firstName, ...lastNameParts] = name.split(" ");
         const lastName = lastNameParts.join(" ") || "";
 
-        const newUserData = {
+        // Create new user following the signup pattern
+        const newUser = new User({
           firstName,
           lastName,
           email,
@@ -115,15 +116,29 @@ exports.googleAuth = async (req, res) => {
           googlePicture: picture,
           isGoogleUser: true,
           role: "User",
+          gender: "Other",
+          authorityTier: 0,
+          permissions: [],
           lastLogin: new Date(),
-          shipmentAddress: [], // Explicitly set empty array
-        };
+          // Set empty arrays for optional fields
+          shipmentAddress: [],
+          favorites: [],
+          cards: [],
+        });
 
-        console.log("New user data:", newUserData);
+        console.log("New user data prepared:", {
+          firstName,
+          lastName,
+          email,
+          googleId,
+          role: "User",
+        });
 
-        user = new User(newUserData);
-        await user.save();
-        console.log("New user created successfully with ID:", user._id);
+        const savedUser = await newUser.save();
+        console.log("New user created successfully with ID:", savedUser._id);
+
+        // Set the user variable to the saved user
+        user = savedUser;
       }
     } else {
       // Update last login time
