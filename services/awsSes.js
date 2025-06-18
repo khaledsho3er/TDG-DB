@@ -8,6 +8,10 @@ const sesClient = new SESClient({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
+console.log("SES ENV:", {
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY?.slice(0, 5) + "****",
+});
 
 /**
  * Send an email using AWS SES
