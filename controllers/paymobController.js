@@ -9,6 +9,9 @@ const user = require("../models/user");
 const { addOrderToMailchimp } = require("../utils/mailchimp");
 const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
+const fs = require("fs");
+const path = require("path");
+
 function generateOrderReceiptEmail(order) {
   return `
     <h2>Thank you for your order!</h2>
@@ -361,22 +364,36 @@ class PaymobController {
           }
 
           try {
-            const htmlBody = `
-        
-    <h2>Thank you for your order!</h2>
-    <p>Order ID: <strong>${savedOrder._id}</strong></p>
-    <p>Total: <strong>${savedOrder.total} E£</strong></p>
-    <p>Products:</p>
-    <ul>
-      ${savedOrder.cartItems
-        .map(
-          (item) =>
-            `<li>${item.name} x${item.quantity} — ${item.totalPrice} E£</li>`
-        )
-        .join("")}
-    </ul>
-    <p>We will begin processing your order shortly. If you have any questions, reply to this email.</p>
-  `;
+            // Read the HTML template
+            const templatePath = path.join(
+              __dirname,
+              "../templates/orderReceiptTemplate.html"
+            );
+            let template = fs.readFileSync(templatePath, "utf8");
+
+            // Helper to fill template
+            function fillOrderTemplate(template, order) {
+              // Build products HTML
+              const productsHtml = order.cartItems
+                .map(
+                  (item) =>
+                    `<li>${item.name} x${item.quantity} — ${item.totalPrice} E£</li>`
+                )
+                .join("");
+
+              // Build shipping address
+              const shipping = order.shippingDetails;
+              const shippingAddress = `${shipping.firstName} ${shipping.lastName}, ${shipping.address}, ${shipping.city}, ${shipping.country}, ${shipping.zipCode}`;
+
+              // Replace placeholders
+              return template
+                .replace("{{orderId}}", order._id)
+                .replace("{{products}}", productsHtml)
+                .replace("{{total}}", order.total)
+                .replace("{{shippingAddress}}", shippingAddress);
+            }
+
+            const htmlBody = fillOrderTemplate(template, savedOrder);
 
             await sendEmail({
               to: savedOrder.billingDetails.email,

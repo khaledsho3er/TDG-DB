@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Order Confirmation</title>
+  </head>
+  <body
+    style="
+      font-family: 'Nunito Sans', Arial, sans-serif;
+      background: #f7f7f7;
+      color: #222;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: 40px auto;
+        background: #fff;
+        padding: 32px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px #0001;
+      "
+    >
+      <div style="text-align: center">
+        <img
+          src="https://cloudfilesdm.com/postcards/tdg-logo_2-ea8bf3ee.png"
+          width="125"
+          alt="The Design Grit"
+          style="margin-bottom: 24px"
+        />
+        <h2 style="color: #6c7c59">Hooray! Your order has been confirmed.</h2>
+        <p style="font-size: 18px">Order ID: <strong>{{orderId}}</strong></p>
+        <p style="font-size: 18px">Total: <strong>{{total}} E£</strong></p>
+      </div>
+      <hr style="margin: 32px 0" />
+      <h3>Products:</h3>
+      <ul style="padding-left: 20px">
+        {{products}}
+      </ul>
+      <hr style="margin: 32px 0" />
+      <h3>Shipping Address</h3>
+      <p>{{shippingAddress}}</p>
+      <p style="margin-top: 32px">
+        We will begin processing your order shortly. If you have any questions,
+        reply to this email.
+      </p>
+      <div
+        style="
+          margin-top: 40px;
+          text-align: center;
+          font-size: 14px;
+          color: #888;
+        "
+      >
+        <p>© The Design Grit. All Rights Reserved.</p>
+        <p>268 Summer St., 6th Floor, Boston, MA 02210.</p>
+      </div>
+    </div>
+  </body>
+</html>
