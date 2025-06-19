@@ -8,6 +8,24 @@ const AdminNotification = require("../models/adminNotifications");
 const user = require("../models/user");
 const { addOrderToMailchimp } = require("../utils/mailchimp");
 const axios = require("axios");
+const { sendEmail } = require("../services/awsSes");
+function generateOrderReceiptEmail(order) {
+  return `
+    <h2>Thank you for your order!</h2>
+    <p>Order ID: <strong>${order._id}</strong></p>
+    <p>Total: <strong>${order.total} E£</strong></p>
+    <p>Products:</p>
+    <ul>
+      ${order.cartItems
+        .map(
+          (item) =>
+            `<li>${item.name} x${item.quantity} — ${item.totalPrice} E£</li>`
+        )
+        .join("")}
+    </ul>
+    <p>We will begin processing your order shortly. If you have any questions, reply to this email.</p>
+  `;
+}
 
 class PaymobController {
   static async getConfig(req, res) {
@@ -354,7 +372,31 @@ class PaymobController {
           } catch (mailchimpError) {
             console.error("Failed to add order to Mailchimp:", mailchimpError);
           }
+          try {
+            const htmlBody = `
+              <h2>Thank you for your order!</h2>
+              <p>Order ID: <strong>${savedOrder._id}</strong></p>
+              <p>Total: <strong>${savedOrder.total} E£</strong></p>
+              <p>Products:</p>
+              <ul>
+                ${savedOrder.cartItems
+                  .map(
+                    (item) =>
+                      `<li>${item.name} x${item.quantity} — ${item.totalPrice} E£</li>`
+                  )
+                  .join("")}
+              </ul>
+              <p>We will begin processing your order shortly.</p>
+            `;
 
+            await sendEmail({
+              to: savedOrder.billingDetails.email,
+              subject: "Your Order Receipt - The Design Grit",
+              body: htmlBody,
+            });
+          } catch (emailErr) {
+            console.error("Failed to send receipt email:", emailErr);
+          }
           // Redirect to success page with the order ID
           return res.redirect(
             `https://thedesigngrit.com/checkout?order=${savedOrder._id}&status=success`

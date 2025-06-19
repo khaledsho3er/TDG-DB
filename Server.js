@@ -146,8 +146,4 @@ app.use("/api/google-auth", googleAuthRoutes);
 // Start the server
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
-  console.log("SES ENV:", {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY?.slice(0, 5) + "****",
-  });
 });
