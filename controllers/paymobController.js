@@ -367,13 +367,13 @@ class PaymobController {
             // Read the HTML template
             const templatePath = path.join(
               __dirname,
-              "../templates/orderReceiptTemplate.html"
+              "../templates/order-receipt-template.html"
             );
             let template = fs.readFileSync(templatePath, "utf8");
 
-            // Helper to fill template
+            // Helper to fill template for Mailchimp-style placeholders
             function fillOrderTemplate(template, order) {
-              // Build products HTML
+              // Build products HTML (table or list)
               const productsHtml = order.cartItems
                 .map(
                   (item) =>
@@ -383,14 +383,26 @@ class PaymobController {
 
               // Build shipping address
               const shipping = order.shippingDetails;
-              const shippingAddress = `${shipping.firstName} ${shipping.lastName}, ${shipping.address}, ${shipping.city}, ${shipping.country}, ${shipping.zipCode}`;
+              const shippingAddress = `${shipping.firstName} ${shipping.lastName}<br>${shipping.address}<br>${shipping.city}, ${shipping.country}`;
 
-              // Replace placeholders
+              // Format order date
+              const orderDate = order.createdAt
+                ? new Date(order.createdAt).toLocaleDateString()
+                : new Date().toLocaleDateString();
+
+              // Replace Mailchimp-style placeholders
               return template
-                .replace("{{orderId}}", order._id)
-                .replace("{{products}}", productsHtml)
-                .replace("{{total}}", order.total)
-                .replace("{{shippingAddress}}", shippingAddress);
+                .replace(/\*\|ORDER_NUMBER\|\*/g, order._id)
+                .replace(/\*\|ORDER_ITEMS\|\*/g, productsHtml)
+                .replace(/\*\|ORDER_TOTAL\|\*/g, order.total)
+                .replace(
+                  /\*\|ORDER_SUBTOTAL\|\*/g,
+                  order.subtotal || order.total
+                )
+                .replace(/\*\|ORDER_SHIP_TOTAL\|\*/g, order.shippingFee || 0)
+                .replace(/\*\|ORDER_TAX_TOTAL\|\*/g, order.tax || 0)
+                .replace(/\*\|ORDER_DATE\|\*/g, orderDate)
+                .replace(/\*\|SHIPPING_ADDRESS\|\*/g, shippingAddress);
             }
 
             const htmlBody = fillOrderTemplate(template, savedOrder);
