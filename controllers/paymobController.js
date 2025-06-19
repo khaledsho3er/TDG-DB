@@ -364,11 +364,11 @@ class PaymobController {
             const htmlBody = `
         
     <h2>Thank you for your order!</h2>
-    <p>Order ID: <strong>${order._id}</strong></p>
-    <p>Total: <strong>${order.total} E£</strong></p>
+    <p>Order ID: <strong>${savedOrder._id}</strong></p>
+    <p>Total: <strong>${savedOrder.total} E£</strong></p>
     <p>Products:</p>
     <ul>
-      ${order.cartItems
+      ${savedOrder.cartItems
         .map(
           (item) =>
             `<li>${item.name} x${item.quantity} — ${item.totalPrice} E£</li>`
