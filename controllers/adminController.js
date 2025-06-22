@@ -39,12 +39,10 @@ exports.loginAdmin = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res
-      .status(200)
-      .json({
-        token,
-        admin: { id: admin._id, username: admin.username, role: admin.role },
-      });
+    res.status(200).json({
+      token,
+      admin: { id: admin._id, username: admin.username, role: admin.role },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -55,6 +53,15 @@ exports.getAdminProfile = async (req, res) => {
   try {
     const admin = await Admin.findById(req.user.id).select("-password");
     res.status(200).json(admin);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+//get all admins
+exports.getAllAdmins = async (req, res) => {
+  try {
+    const admins = await Admin.find().select("-password");
+    res.status(200).json(admins);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -7,5 +7,7 @@ const authMiddleware = require("../middlewares/adminAuthMiddleware"); // Optiona
 router.post("/register", adminController.signupAdmin);
 router.post("/login", adminController.loginAdmin);
 router.get("/profile", authMiddleware, adminController.getAdminProfile);
+//get all admins
+router.get("/all-admins", authMiddleware, adminController.getAllAdmins);
 
 module.exports = router;
