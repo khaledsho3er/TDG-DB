@@ -8,6 +8,10 @@ const {
 } = require("../middlewares/authMiddleware");
 const transporter = require("../utils/emailTransporter");
 const mailchimpService = require("../utils/mailchimp");
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = process.env.GOOGLE_CLIENT_ID
+  ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+  : null;
 
 const router = express.Router();
 // Sign Up Route
@@ -28,22 +32,91 @@ router.post("/signup", async (req, res) => {
     city,
     country,
     postalCode,
+    googleCredential,
   } = req.body;
 
-  if (!firstName || !lastName || !email || !password) {
-    return res.status(400).json({ message: "Required fields are missing!" });
-  }
-
   try {
+    if (googleCredential) {
+      if (!googleClient) {
+        return res.status(500).json({
+          message:
+            "Google authentication is not configured. Please set GOOGLE_CLIENT_ID in environment variables.",
+        });
+      }
+      // Verify the Google token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: googleCredential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, name, picture } = payload;
+      // Check if user already exists with this Google ID
+      let user = await User.findOne({ googleId });
+      if (!user) {
+        // Check if user exists with this email (but not Google user)
+        user = await User.findOne({ email });
+        if (user) {
+          // Update existing user with Google data
+          user.googleId = googleId;
+          user.googleName = name;
+          user.googlePicture = picture;
+          user.isGoogleUser = true;
+          user.lastLogin = new Date();
+          await user.save();
+        } else {
+          // Create new user with Google data
+          const [firstName, ...lastNameParts] = name.split(" ");
+          const lastName = lastNameParts.join(" ") || "";
+          user = new User({
+            firstName,
+            lastName,
+            email,
+            googleId,
+            googleName: name,
+            googlePicture: picture,
+            isGoogleUser: true,
+            role: "User",
+            gender: "Other",
+            authorityTier: 0,
+            permissions: [],
+            lastLogin: new Date(),
+          });
+          await user.save();
+        }
+      } else {
+        // Update last login time
+        user.lastLogin = new Date();
+        await user.save();
+      }
+      req.session.userId = user._id;
+      req.session.user = {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+        shipmentAddress: user.shipmentAddress || [],
+        dateOfBirth: user.dateOfBirth,
+        role: user.role,
+        googlePicture: user.googlePicture,
+        isGoogleUser: user.isGoogleUser,
+      };
+      return res.status(201).json({
+        message: "Google signup successful",
+        user: req.session.user,
+      });
+    }
+    // Normal signup
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: "Required fields are missing!" });
+    }
     // Check if the email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email is already in use." });
     }
-
     // Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = new User({
       firstName,
       lastName,
@@ -53,7 +126,7 @@ router.post("/signup", async (req, res) => {
       address1,
       address2,
       dateOfBirth,
-      gender: "Other",
+      gender: gender || "Other",
       language,
       region,
       shipmentAddress,
@@ -64,7 +137,6 @@ router.post("/signup", async (req, res) => {
       permissions: [],
       postalCode,
     });
-
     const savedUser = await newUser.save();
     // --- Mailchimp Integration ---
     try {
@@ -72,12 +144,22 @@ router.post("/signup", async (req, res) => {
       console.log(`User ${email} added to Mailchimp.`);
     } catch (mailchimpError) {
       console.error("Error adding user to Mailchimp:", mailchimpError);
-      // Consider how you want to handle this error.
     }
     // --- End Mailchimp Integration ---
+    req.session.userId = savedUser._id;
+    req.session.user = {
+      id: savedUser._id,
+      email: savedUser.email,
+      firstName: savedUser.firstName,
+      lastName: savedUser.lastName,
+      phoneNumber: savedUser.phoneNumber,
+      shipmentAddress: savedUser.shipmentAddress || [],
+      dateOfBirth: savedUser.dateOfBirth,
+      role: savedUser.role,
+    };
     res.status(201).json({
       message: "User created successfully",
-      user: { id: savedUser._id, email: savedUser.email },
+      user: req.session.user,
     });
   } catch (error) {
     console.error("Error signing up user:", error);
@@ -85,40 +167,104 @@ router.post("/signup", async (req, res) => {
   }
 });
 
+// Sign In Route
 router.post("/signin", async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-
-  if (user && (await bcrypt.compare(password, user.password))) {
-    req.session.userId = user._id; // Save user ID in session
-    console.log("Session data after login:", req.session); // Debugging session data
-    req.session.user = {
-      id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phoneNumber: user.phoneNumber,
-      shipmentAddress: user.shipmentAddress.map((address) => ({
-        id: address._id,
-        address1: address.address1,
-        address2: address.address2,
-        label: address.label,
-        floor: address.floor,
-        apartment: address.apartment,
-        landmark: address.landmark,
-        city: address.city,
-        postalCode: address.postalCode,
-        country: address.country,
-        isDefault: address.isDefault,
-      })),
-      dateOfBirth: user.dateOfBirth,
-    };
-    res.json({
-      message: "User logged in successfully",
-      user: req.session.user,
-    });
-  } else {
-    res.status(401).json({ message: "Invalid email or password" });
+  const { email, password, googleCredential } = req.body;
+  try {
+    if (googleCredential) {
+      if (!googleClient) {
+        return res.status(500).json({
+          message:
+            "Google authentication is not configured. Please set GOOGLE_CLIENT_ID in environment variables.",
+        });
+      }
+      // Verify the Google token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: googleCredential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, name, picture } = payload;
+      // Check if user already exists with this Google ID
+      let user = await User.findOne({ googleId });
+      if (!user) {
+        // Check if user exists with this email (but not Google user)
+        user = await User.findOne({ email });
+        if (user) {
+          // Update existing user with Google data
+          user.googleId = googleId;
+          user.googleName = name;
+          user.googlePicture = picture;
+          user.isGoogleUser = true;
+          user.lastLogin = new Date();
+          await user.save();
+        } else {
+          // Create new user with Google data
+          const [firstName, ...lastNameParts] = name.split(" ");
+          const lastName = lastNameParts.join(" ") || "";
+          user = new User({
+            firstName,
+            lastName,
+            email,
+            googleId,
+            googleName: name,
+            googlePicture: picture,
+            isGoogleUser: true,
+            role: "User",
+            gender: "Other",
+            authorityTier: 0,
+            permissions: [],
+            lastLogin: new Date(),
+          });
+          await user.save();
+        }
+      } else {
+        // Update last login time
+        user.lastLogin = new Date();
+        await user.save();
+      }
+      req.session.userId = user._id;
+      req.session.user = {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+        shipmentAddress: user.shipmentAddress || [],
+        dateOfBirth: user.dateOfBirth,
+        role: user.role,
+        googlePicture: user.googlePicture,
+        isGoogleUser: user.isGoogleUser,
+      };
+      return res.status(200).json({
+        message: "Google authentication successful",
+        user: req.session.user,
+      });
+    }
+    // Normal signin
+    const user = await User.findOne({ email });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      req.session.userId = user._id; // Save user ID in session
+      req.session.user = {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+        shipmentAddress: user.shipmentAddress || [],
+        dateOfBirth: user.dateOfBirth,
+        role: user.role,
+      };
+      res.json({
+        message: "User logged in successfully",
+        user: req.session.user,
+      });
+    } else {
+      res.status(401).json({ message: "Invalid email or password" });
+    }
+  } catch (error) {
+    console.error("Error signing in user:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
