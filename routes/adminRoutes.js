@@ -10,8 +10,8 @@ router.get("/profile", authMiddleware, adminController.getAdminProfile);
 //get all admins
 router.get("/all-admins", authMiddleware, adminController.getAllAdmins);
 // Update admin profile
-router.put("/profile", authMiddleware, adminController.updateAdminProfile);
+router.put("/profile/:id", authMiddleware, adminController.updateAdmin);
 // Delete admin profile
-router.delete("/profile", authMiddleware, adminController.deleteAdminProfile);
+router.delete("/profile/:id", authMiddleware, adminController.deleteAdmin);
 
 module.exports = router;
