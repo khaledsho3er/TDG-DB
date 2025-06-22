@@ -446,13 +446,18 @@ exports.getSearchSuggestions = async (req, res) => {
     // Search products
     const productSuggestions = await Product.find(
       {
-        $or: [
-          ...regexArray.map((r) => ({ name: r })),
-          ...regexArray.map((r) => ({ tags: r })),
-          ...regexArray.map((r) => ({ description: r })),
-          ...regexArray.map((r) => ({ collection: r })),
-          ...regexArray.map((r) => ({ colors: r })),
-          ...regexArray.map((r) => ({ sizes: r })),
+        $and: [
+          { status: true },
+          {
+            $or: [
+              ...regexArray.map((r) => ({ name: r })),
+              ...regexArray.map((r) => ({ tags: r })),
+              ...regexArray.map((r) => ({ description: r })),
+              ...regexArray.map((r) => ({ collection: r })),
+              ...regexArray.map((r) => ({ colors: r })),
+              ...regexArray.map((r) => ({ sizes: r })),
+            ],
+          },
         ],
       },
       {
