@@ -50,39 +50,34 @@ router.post("/signup", async (req, res) => {
       });
       const payload = ticket.getPayload();
       const { sub: googleId, email, name, picture } = payload;
+      // Check if user already exists with this email
+      let userByEmail = await User.findOne({ email });
+      if (userByEmail) {
+        return res
+          .status(400)
+          .json({ message: "Account already exists with this email." });
+      }
       // Check if user already exists with this Google ID
       let user = await User.findOne({ googleId });
       if (!user) {
-        // Check if user exists with this email (but not Google user)
-        user = await User.findOne({ email });
-        if (user) {
-          // Update existing user with Google data
-          user.googleId = googleId;
-          user.googleName = name;
-          user.googlePicture = picture;
-          user.isGoogleUser = true;
-          user.lastLogin = new Date();
-          await user.save();
-        } else {
-          // Create new user with Google data
-          const [firstName, ...lastNameParts] = name.split(" ");
-          const lastName = lastNameParts.join(" ") || "";
-          user = new User({
-            firstName,
-            lastName,
-            email,
-            googleId,
-            googleName: name,
-            googlePicture: picture,
-            isGoogleUser: true,
-            role: "User",
-            gender: "Other",
-            authorityTier: 0,
-            permissions: [],
-            lastLogin: new Date(),
-          });
-          await user.save();
-        }
+        // Create new user with Google data
+        const [firstName, ...lastNameParts] = name.split(" ");
+        const lastName = lastNameParts.join(" ") || "";
+        user = new User({
+          firstName,
+          lastName,
+          email,
+          googleId,
+          googleName: name,
+          googlePicture: picture,
+          isGoogleUser: true,
+          role: "User",
+          gender: "Other",
+          authorityTier: 0,
+          permissions: [],
+          lastLogin: new Date(),
+        });
+        await user.save();
       } else {
         // Update last login time
         user.lastLogin = new Date();
@@ -113,7 +108,9 @@ router.post("/signup", async (req, res) => {
     // Check if the email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email is already in use." });
+      return res
+        .status(400)
+        .json({ message: "Account already exists with this email." });
     }
     // Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
