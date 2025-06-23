@@ -646,11 +646,9 @@ class PaymobController {
       }
 
       if (!quotation.ClientApproval || !quotation.vendorApproval) {
-        return res
-          .status(400)
-          .json({
-            message: "Quotation not approved by both client and vendor",
-          });
+        return res.status(400).json({
+          message: "Quotation not approved by both client and vendor",
+        });
       }
 
       if (!quotation.quotePrice) {
@@ -659,16 +657,20 @@ class PaymobController {
           .json({ message: "No quote price set for this quotation" });
       }
 
-      // Prepare minimal orderData for Paymob
+      // Prepare orderData for Paymob
+      const safeAddress =
+        quotation.userId.address && quotation.userId.address.trim() !== ""
+          ? quotation.userId.address
+          : "NA";
       const orderData = {
         total: quotation.quotePrice,
         customerId: quotation.userId._id,
         billingDetails: {
-          firstName: quotation.userId.firstName,
-          lastName: quotation.userId.lastName,
-          email: quotation.userId.email,
+          firstName: quotation.userId.firstName || "",
+          lastName: quotation.userId.lastName || "",
+          email: quotation.userId.email || "",
           phoneNumber: quotation.userId.phoneNumber || "",
-          address: quotation.userId.address || "",
+          address: safeAddress || quotation.billingDetails.address,
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
           zipCode: quotation.userId.zipCode || "NA",
@@ -676,7 +678,7 @@ class PaymobController {
         cartItems: [
           {
             productId: quotation.productId._id,
-            name: quotation.productId.name,
+            name: quotation.productId.name || "Product",
             quantity: 1,
             price: quotation.quotePrice,
             totalPrice: quotation.quotePrice,
@@ -685,9 +687,9 @@ class PaymobController {
         ],
         shippingFee: 0,
         shippingDetails: {
-          firstName: quotation.userId.firstName,
-          lastName: quotation.userId.lastName,
-          address: quotation.userId.address || "",
+          firstName: quotation.userId.firstName || "",
+          lastName: quotation.userId.lastName || "",
+          address: safeAddress || quotation.shippingDetails.address1,
           phoneNumber: quotation.userId.phoneNumber || "",
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
