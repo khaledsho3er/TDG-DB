@@ -664,7 +664,7 @@ class PaymobController {
           : "NA";
       const orderData = {
         total: quotation.quotePrice,
-        customerId: quotation.userId._id,
+        customerId: quotation.userId._id || quotation.userId,
         billingDetails: {
           firstName: quotation.userId.firstName || "",
           lastName: quotation.userId.lastName || "",
@@ -694,6 +694,9 @@ class PaymobController {
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
           zipCode: quotation.userId.zipCode || "NA",
+        },
+        extras: {
+          quotationId: quotation._id,
         },
       };
 
