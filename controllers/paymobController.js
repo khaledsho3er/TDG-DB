@@ -632,6 +632,115 @@ class PaymobController {
       });
     }
   }
+  static async createQuotationPayment(req, res) {
+    try {
+      const { id } = req.params;
+      const Quotation = require("../models/quotation");
+      const quotation = await Quotation.findById(id)
+        .populate("userId")
+        .populate("brandId")
+        .populate("productId");
+
+      if (!quotation) {
+        return res.status(404).json({ message: "Quotation not found" });
+      }
+
+      if (!quotation.ClientApproval || !quotation.vendorApproval) {
+        return res
+          .status(400)
+          .json({
+            message: "Quotation not approved by both client and vendor",
+          });
+      }
+
+      if (!quotation.quotePrice) {
+        return res
+          .status(400)
+          .json({ message: "No quote price set for this quotation" });
+      }
+
+      // Prepare minimal orderData for Paymob
+      const orderData = {
+        total: quotation.quotePrice,
+        customerId: quotation.userId._id,
+        billingDetails: {
+          firstName: quotation.userId.firstName,
+          lastName: quotation.userId.lastName,
+          email: quotation.userId.email,
+          phoneNumber: quotation.userId.phoneNumber || "",
+          address: quotation.userId.address || "",
+          country: quotation.userId.country || "NA",
+          city: quotation.userId.city || "NA",
+          zipCode: quotation.userId.zipCode || "NA",
+        },
+        cartItems: [
+          {
+            productId: quotation.productId._id,
+            name: quotation.productId.name,
+            quantity: 1,
+            price: quotation.quotePrice,
+            totalPrice: quotation.quotePrice,
+            brandId: quotation.brandId._id,
+          },
+        ],
+        shippingFee: 0,
+        shippingDetails: {
+          firstName: quotation.userId.firstName,
+          lastName: quotation.userId.lastName,
+          address: quotation.userId.address || "",
+          phoneNumber: quotation.userId.phoneNumber || "",
+          country: quotation.userId.country || "NA",
+          city: quotation.userId.city || "NA",
+          zipCode: quotation.userId.zipCode || "NA",
+        },
+      };
+
+      // Create Paymob order
+      const { order: paymobOrder, authToken } = await PaymobService.createOrder(
+        orderData.total,
+        orderData
+      );
+
+      // Get payment key
+      const paymentKey = await PaymobService.getPaymentKey(
+        paymobOrder.id,
+        {
+          amount: orderData.total,
+          email: orderData.billingDetails.email,
+          firstName: orderData.billingDetails.firstName,
+          lastName: orderData.billingDetails.lastName,
+          address: orderData.billingDetails.address,
+          phoneNumber: orderData.billingDetails.phoneNumber,
+          country: orderData.billingDetails.country,
+          city: orderData.billingDetails.city,
+          postal_code: orderData.billingDetails.zipCode,
+          cartItems: orderData.cartItems,
+          customerId: orderData.customerId,
+          shippingFee: orderData.shippingFee,
+          billingDetails: orderData.billingDetails,
+          shippingDetails: orderData.shippingDetails,
+        },
+        authToken,
+        `${
+          process.env.API_BASE_URL || "https://api.thedesigngrit.com"
+        }/api/paymob/callback`
+      );
+
+      // Return iframe URL
+      const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
+      res.json({
+        success: true,
+        iframe_url: iframeUrl,
+        orderId: paymobOrder.id,
+        paymentKey: paymentKey.token,
+      });
+    } catch (error) {
+      console.error("Error creating quotation payment:", error);
+      res
+        .status(500)
+        .json({ message: "Error creating quotation payment", error });
+    }
+  }
 }
 
 module.exports = PaymobController;
