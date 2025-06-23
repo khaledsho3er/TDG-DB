@@ -211,7 +211,12 @@ class PaymobController {
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
-
+          // Create a new order in your database
+          const orderData = PaymobController.transformedOrderData || {};
+          console.log(
+            "Transformed order data in handle callback:",
+            JSON.stringify(orderData, null, 2)
+          );
           // --- Quotation Payment ---
           if (orderExtras.quotationId) {
             const Quotation = require("../models/quotation");
@@ -319,14 +324,8 @@ class PaymobController {
           }
 
           // Create a new order in your database
-          const orderData = PaymobController.transformedOrderData || {};
-          console.log(
-            "Transformed order data in handle callback:",
-            JSON.stringify(orderData, null, 2)
-          );
-          // Create a new order in your database
           const newOrder = new Order({
-            customerId: orderData.customerId || orderExtras.customerId,
+            customerId,
             cartItems: orderData.cartItems
               ? orderData.cartItems.map((item) => ({
                   productId: item.productId,
