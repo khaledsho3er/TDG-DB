@@ -211,6 +211,8 @@ class PaymobController {
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
+
+          // --- Quotation Payment ---
           if (orderExtras.quotationId) {
             const Quotation = require("../models/quotation");
             const quotation = await Quotation.findById(orderExtras.quotationId)
@@ -291,6 +293,31 @@ class PaymobController {
             );
           }
 
+          // --- Regular Order Payment ---
+          let customerId = orderData.customerId || orderExtras.customerId;
+          if (customerId && typeof customerId === "object" && customerId._id) {
+            customerId = customerId._id;
+          }
+          // Fallback: try to get from billingDetails email if still missing
+          if (!customerId) {
+            const email =
+              (orderData.billingDetails && orderData.billingDetails.email) ||
+              (orderExtras.billingDetails && orderExtras.billingDetails.email);
+            if (email) {
+              const foundUser = await user.findOne({ email });
+              if (foundUser) {
+                customerId = foundUser._id;
+              }
+            }
+          }
+          if (!customerId) {
+            // Handle error: cannot create order without customerId
+            console.error("Could not determine customerId for order creation");
+            return res.redirect(
+              "https://thedesigngrit.com/home?payment-failed"
+            );
+          }
+
           // Create a new order in your database
           const orderData = PaymobController.transformedOrderData || {};
           console.log(
@@ -299,7 +326,7 @@ class PaymobController {
           );
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: orderData.customerId || orderExtras.customerId,
+            customerId,
             cartItems: orderData.cartItems
               ? orderData.cartItems.map((item) => ({
                   productId: item.productId,
