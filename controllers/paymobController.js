@@ -656,17 +656,21 @@ class PaymobController {
           .status(400)
           .json({ message: "No quote price set for this quotation" });
       }
-
+      // Prepare orderData for Paymob
+      const safeAddress =
+        quotation.userId.address && quotation.userId.address.trim() !== ""
+          ? quotation.userId.address
+          : "NA";
       // Prepare minimal orderData for Paymob
       const orderData = {
         total: quotation.quotePrice,
-        customerId: quotation.userId._id,
+        customerId: quotation.userId._id || quotation.userId,
         billingDetails: {
-          firstName: quotation.userId.firstName,
-          lastName: quotation.userId.lastName,
-          email: quotation.userId.email,
+          firstName: quotation.userId.firstName || "",
+          lastName: quotation.userId.lastName || "",
+          email: quotation.userId.email || "",
           phoneNumber: quotation.userId.phoneNumber || "",
-          address: quotation.userId.address || "",
+          address: safeAddress || quotation.billingDetails.address,
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
           zipCode: quotation.userId.zipCode || "NA",
@@ -674,7 +678,7 @@ class PaymobController {
         cartItems: [
           {
             productId: quotation.productId._id,
-            name: quotation.productId.name,
+            name: quotation.productId.name || "Product",
             quantity: 1,
             price: quotation.quotePrice,
             totalPrice: quotation.quotePrice,
@@ -685,7 +689,7 @@ class PaymobController {
         shippingDetails: {
           firstName: quotation.userId.firstName,
           lastName: quotation.userId.lastName,
-          address: quotation.userId.address || "",
+          address: safeAddress || quotation.shippingDetails.address1,
           phoneNumber: quotation.userId.phoneNumber || "",
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
