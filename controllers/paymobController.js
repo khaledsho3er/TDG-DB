@@ -211,6 +211,86 @@ class PaymobController {
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
+          if (orderExtras.quotationId) {
+            const Quotation = require("../models/quotation");
+            const quotation = await Quotation.findById(orderExtras.quotationId)
+              .populate("userId")
+              .populate("brandId")
+              .populate("productId");
+            if (!quotation) {
+              return res.redirect(
+                "https://thedesigngrit.com/home?payment-failed"
+              );
+            }
+            // Mark payment as successful in the quotation
+            await Quotation.findByIdAndUpdate(quotation._id, {
+              $set: {
+                paymentDetails: {
+                  paid: true,
+                  paymentId: orderId,
+                  paymentMethod: "paymob",
+                },
+              },
+            });
+            // Create an Order for this paid quotation
+            const customerId = quotation.userId._id
+              ? quotation.userId._id
+              : quotation.userId;
+            const newOrder = new Order({
+              customerId,
+              cartItems: [
+                {
+                  productId: quotation.productId._id || quotation.productId,
+                  name: quotation.productId.name || "Product",
+                  quantity: 1,
+                  price: quotation.quotePrice,
+                  totalPrice: quotation.quotePrice,
+                  brandId: quotation.brandId._id || quotation.brandId,
+                },
+              ],
+              subtotal: quotation.quotePrice,
+              shippingFee: 0,
+              total: quotation.quotePrice,
+              orderStatus: "Pending",
+              paymentDetails: {
+                paymentMethod: "paymob",
+                transactionId: orderId,
+                paymentStatus: "Paid",
+              },
+              billingDetails: {
+                firstName: quotation.userId.firstName || "",
+                lastName: quotation.userId.lastName || "",
+                email: quotation.userId.email || "",
+                phoneNumber: quotation.userId.phoneNumber || "",
+                address:
+                  quotation.userId.address &&
+                  quotation.userId.address.trim() !== ""
+                    ? quotation.userId.address
+                    : "NA",
+                country: quotation.userId.country || "NA",
+                city: quotation.userId.city || "NA",
+                zipCode: quotation.userId.zipCode || "NA",
+              },
+              shippingDetails: {
+                firstName: quotation.userId.firstName || "",
+                lastName: quotation.userId.lastName || "",
+                address:
+                  quotation.userId.address &&
+                  quotation.userId.address.trim() !== ""
+                    ? quotation.userId.address
+                    : "NA",
+                phoneNumber: quotation.userId.phoneNumber || "",
+                country: quotation.userId.country || "NA",
+                city: quotation.userId.city || "NA",
+                zipCode: quotation.userId.zipCode || "NA",
+              },
+            });
+            await newOrder.save();
+            return res.redirect(
+              `https://thedesigngrit.com/checkout?order=${newOrder._id}&status=success`
+            );
+          }
+
           // Create a new order in your database
           const orderData = PaymobController.transformedOrderData || {};
           console.log(
@@ -433,205 +513,6 @@ class PaymobController {
     }
   }
 
-  static async handleCallbackPost(req, res) {
-    try {
-      console.log("=== PAYMENT POST CALLBACK RECEIVED ===");
-      console.log("Request body:", JSON.stringify(req.body, null, 2));
-
-      const { hmac, obj } = req.body;
-
-      if (!hmac || !obj) {
-        console.error("Missing hmac or obj in request body");
-        return res.status(400).json({
-          error: "Invalid callback data",
-          details: "HMAC and payment object are required",
-        });
-      }
-
-      // Verify the payment
-      console.log("Verifying payment...");
-      const isValid = await PaymobService.verifyPayment(hmac, obj);
-      console.log("Payment verification result:", isValid);
-
-      if (!isValid) {
-        console.error("Payment verification failed");
-        return res.status(400).json({
-          error: "Invalid payment verification",
-          details: "Payment verification failed",
-        });
-      }
-
-      // Handle successful payment
-      if (obj.success) {
-        console.log("Payment successful, processing order...");
-
-        // Extract order data from the payment object
-        const paymentData = obj;
-        const customerData = paymentData.billing_data;
-
-        // Get the original order data from the extras field
-        const originalOrderData = paymentData.order?.extras || {};
-
-        console.log(
-          "Original order data:",
-          JSON.stringify(originalOrderData, null, 2)
-        );
-        console.log("Customer data:", JSON.stringify(customerData, null, 2));
-
-        // Check if we have a customerId
-        let customerId = originalOrderData.customerId;
-        if (!customerId && customerData && customerData.email) {
-          console.log(
-            "No customerId found in extras, looking up user by email:",
-            customerData.email
-          );
-          const foundUser = await user.findOne({ email: customerData.email });
-          if (foundUser) {
-            customerId = foundUser._id;
-            console.log("Found user by email, using customerId:", customerId);
-          } else {
-            // Create a new user if one doesn't exist
-            console.log("No user found with email, creating a new user");
-          }
-        }
-
-        if (!customerId) {
-          console.error("Could not determine customerId, using a default user");
-        }
-
-        // Check if we have cart items
-        if (
-          !originalOrderData.cartItems ||
-          !Array.isArray(originalOrderData.cartItems) ||
-          originalOrderData.cartItems.length === 0
-        ) {
-          console.error("No valid cart items found in order data");
-          return res.status(400).json({ error: "Invalid cart items" });
-        }
-
-        try {
-          // Create a new order directly
-          console.log("Creating new order...");
-          const newOrder = new Order({
-            customerId: customerId,
-            cartItems: originalOrderData.cartItems.map((item) => ({
-              productId: item.productId,
-              variantId: item.variantId,
-              name: item.name,
-              price: item.price || item.totalPrice / item.quantity,
-              quantity: item.quantity,
-              totalPrice: item.totalPrice,
-              brandId: item.brandId,
-            })),
-            subtotal: paymentData.amount_cents / 100,
-            shippingFee: originalOrderData.shippingFee || 0,
-            total: paymentData.amount_cents / 100,
-            orderStatus: "Pending",
-            paymentDetails: {
-              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
-              transactionId: paymentData.id,
-              paymentStatus: "Paid",
-            },
-            billingDetails: {
-              firstName: customerData.first_name || "Customer",
-              lastName: customerData.last_name || "Name",
-              email: customerData.email || "customer@example.com",
-              phoneNumber: customerData.phone_number || "N/A",
-              address: customerData.street || "N/A",
-              country: customerData.country || "N/A",
-              city: customerData.city || "N/A",
-              zipCode: customerData.postal_code || "N/A",
-            },
-            shippingDetails: {
-              firstName: customerData.first_name || "Customer",
-              lastName: customerData.last_name || "Name",
-              address: customerData.street || "N/A",
-              phoneNumber: customerData.phone_number || "N/A",
-              country: customerData.country || "N/A",
-              city: customerData.city || "N/A",
-              zipCode: customerData.postal_code || "N/A",
-            },
-          });
-
-          console.log(
-            "Order object created:",
-            JSON.stringify(newOrder, null, 2)
-          );
-
-          // Save the order to the database
-          console.log("Saving order to database...");
-          const savedOrder = await newOrder.save();
-
-          // Update product stock after order is saved
-          console.log("Updating product stock...");
-          for (const item of savedOrder.cartItems) {
-            try {
-              if (item.variantId) {
-                const variant = await ProductVariant.findById(item.variantId);
-                if (variant) {
-                  variant.stock = Math.max(0, variant.stock - item.quantity);
-                  await variant.save();
-                  console.log(
-                    `Updated variant ${variant._id} stock to ${variant.stock}`
-                  );
-                }
-              } else if (item.productId) {
-                const product = await Product.findById(item.productId);
-                if (product) {
-                  product.stock = Math.max(0, product.stock - item.quantity);
-                  product.sales = (product.sales || 0) + item.quantity;
-                  await product.save();
-                  console.log(
-                    `Updated product ${product._id} stock to ${product.stock}`
-                  );
-                }
-              }
-            } catch (stockError) {
-              console.error(`Error updating stock for item:`, stockError);
-            }
-          }
-
-          // Try to add the order to Mailchimp
-          try {
-            if (savedOrder.billingDetails && savedOrder.billingDetails.email) {
-              await addOrderToMailchimp(
-                savedOrder.billingDetails.email,
-                savedOrder
-              );
-              console.log("Order added to Mailchimp successfully");
-            }
-          } catch (mailchimpError) {
-            console.error("Failed to add order to Mailchimp:", mailchimpError);
-          }
-
-          // Return success response for POST request
-          return res.status(200).json({
-            success: true,
-            message: "Order processed successfully",
-            orderId: savedOrder._id,
-          });
-        } catch (orderError) {
-          console.error("Error creating order:", orderError);
-          return res.status(500).json({
-            error: "Failed to create order",
-            details: orderError.message,
-          });
-        }
-      } else {
-        console.log("Payment failed:", obj.error_occured || "Unknown error");
-        return res.status(400).json({
-          error: "Payment failed",
-          details: obj.error_occured || "Unknown error",
-        });
-      }
-    } catch (error) {
-      console.error("Unhandled error in payment callback:", error);
-      return res.status(500).json({
-        error: "Server error",
-        details: error.message,
-      });
-    }
-  }
   static async createQuotationPayment(req, res) {
     try {
       const { id } = req.params;

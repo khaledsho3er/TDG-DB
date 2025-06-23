@@ -18,8 +18,6 @@ router.post("/test-callback", (req, res) => {
 // Handle GET requests for the callback URL
 router.get("/callback", PaymobController.handleCallbackGet);
 
-// Handle POST requests for the callback URL
-router.post("/callback", PaymobController.handleCallbackPost);
 router.post("/quotation/:id/pay", PaymobController.createQuotationPayment);
 
 // Simple test route to verify server is accessible
