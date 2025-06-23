@@ -421,15 +421,15 @@ class PaymobController {
           );
         } catch (error) {
           console.error("Error creating order:", error);
-          return res.redirect("https://thedesigngrit.com/home/payment-failed");
+          return res.redirect("https://thedesigngrit.com/home?payment-failed");
         }
       } else {
         console.log("Payment failed via GET, redirecting to failure page");
-        return res.redirect("https://thedesigngrit.com/home/payment-failed");
+        return res.redirect("https://thedesigngrit.com/home?payment-failed");
       }
     } catch (error) {
       console.error("Error handling GET callback:", error);
-      return res.redirect("https://thedesigngrit.com/home/payment-failed");
+      return res.redirect("https://thedesigngrit.com/home?payment-failed");
     }
   }
 
