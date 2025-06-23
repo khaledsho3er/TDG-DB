@@ -64,6 +64,7 @@ class PaymobService {
         shipping_fee: orderData.shippingFee || 0,
         extras: {
           order_id: orderData.parentOrderId, // If you have a parent order ID
+          customerId: orderData.customerId,
           customer_email: orderData.billingDetails.email,
           customer_phone: orderData.billingDetails.phoneNumber,
           // Store the original cart items with all necessary fields
