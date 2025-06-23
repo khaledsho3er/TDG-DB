@@ -235,9 +235,58 @@ class PaymobController {
                 },
               },
             });
-            // Optionally, create an Order here if you want to track paid quotations as orders
+            const newOrder = new Order({
+              customerId: quotation.userId._id || quotation.userId,
+              cartItems: [
+                {
+                  productId: quotation.productId._id || quotation.productId,
+                  name: quotation.productId.name || "Product",
+                  quantity: 1,
+                  price: quotation.quotePrice,
+                  totalPrice: quotation.quotePrice,
+                  brandId: quotation.brandId._id || quotation.brandId,
+                },
+              ],
+              subtotal: quotation.quotePrice,
+              shippingFee: 0,
+              total: quotation.quotePrice,
+              orderStatus: "Pending",
+              paymentDetails: {
+                paymentMethod: "paymob",
+                transactionId: orderId,
+                paymentStatus: "Paid",
+              },
+              billingDetails: {
+                firstName: quotation.userId.firstName || "",
+                lastName: quotation.userId.lastName || "",
+                email: quotation.userId.email || "",
+                phoneNumber: quotation.userId.phoneNumber || "",
+                address:
+                  quotation.userId.address &&
+                  quotation.userId.address.trim() !== ""
+                    ? quotation.userId.address
+                    : "NA",
+                country: quotation.userId.country || "NA",
+                city: quotation.userId.city || "NA",
+                zipCode: quotation.userId.zipCode || "NA",
+              },
+              shippingDetails: {
+                firstName: quotation.userId.firstName || "",
+                lastName: quotation.userId.lastName || "",
+                address:
+                  quotation.userId.address &&
+                  quotation.userId.address.trim() !== ""
+                    ? quotation.userId.address
+                    : "NA",
+                phoneNumber: quotation.userId.phoneNumber || "",
+                country: quotation.userId.country || "NA",
+                city: quotation.userId.city || "NA",
+                zipCode: quotation.userId.zipCode || "NA",
+              },
+            });
+            await newOrder.save();
             return res.redirect(
-              `https://thedesigngrit.com/checkout?quotation=${quotation._id}&status=success`
+              `https://thedesigngrit.com/checkout?order=${newOrder._id}&status=success`
             );
           }
 
@@ -694,7 +743,7 @@ class PaymobController {
           : "NA";
       const orderData = {
         total: quotation.quotePrice,
-        customerId: quotation.userId._id || quotation.userId,
+        customerId: quotation.userId,
         billingDetails: {
           firstName: quotation.userId.firstName || "",
           lastName: quotation.userId.lastName || "",
