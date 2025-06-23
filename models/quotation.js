@@ -54,6 +54,11 @@ const QuotationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  paymentDetails: {
+    paid: { type: Boolean, default: false },
+    paymentId: { type: String },
+    paymentMethod: { type: String, enum: ["cod", "paymob"], default: "cod" },
+  },
 });
 
 const Quotation = mongoose.model("Quotation", QuotationSchema);

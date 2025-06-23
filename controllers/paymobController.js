@@ -11,6 +11,7 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
+const Quotation = require("../models/quotation");
 
 function generateOrderReceiptEmail(order) {
   return `
@@ -211,6 +212,35 @@ class PaymobController {
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
+
+          // Quotation-specific logic
+          if (orderExtras.quotationId) {
+            const Quotation = require("../models/quotation");
+            const quotation = await Quotation.findById(orderExtras.quotationId)
+              .populate("userId")
+              .populate("brandId")
+              .populate("productId");
+            if (!quotation) {
+              return res.redirect(
+                "https://thedesigngrit.com/home?payment-failed"
+              );
+            }
+            // Mark payment as successful in the quotation
+            await Quotation.findByIdAndUpdate(quotation._id, {
+              $set: {
+                paymentDetails: {
+                  paid: true,
+                  paymentId: orderId,
+                  paymentMethod: "paymob",
+                },
+              },
+            });
+            // Optionally, create an Order here if you want to track paid quotations as orders
+            return res.redirect(
+              `https://thedesigngrit.com/checkout?quotation=${quotation._id}&status=success`
+            );
+          }
+
           // Create a new order in your database
           const orderData = PaymobController.transformedOrderData || {};
           console.log(
@@ -415,6 +445,7 @@ class PaymobController {
           } catch (emailErr) {
             console.error("Failed to send receipt email:", emailErr);
           }
+
           // Redirect to success page with the order ID
           return res.redirect(
             `https://thedesigngrit.com/checkout?order=${savedOrder._id}&status=success`
@@ -635,7 +666,6 @@ class PaymobController {
   static async createQuotationPayment(req, res) {
     try {
       const { id } = req.params;
-      const Quotation = require("../models/quotation");
       const quotation = await Quotation.findById(id)
         .populate("userId")
         .populate("brandId")
@@ -730,6 +760,17 @@ class PaymobController {
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
         }/api/paymob/callback`
       );
+
+      // After creating Paymob order and before returning iframe_url
+      await Quotation.findByIdAndUpdate(quotation._id, {
+        $set: {
+          paymentDetails: {
+            paid: false, // Set to true only after callback, but set to false here for clarity
+            paymentId: paymobOrder.id,
+            paymentMethod: "paymob",
+          },
+        },
+      });
 
       // Return iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
