@@ -11,7 +11,6 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
-const Quotation = require("../models/quotation");
 
 function generateOrderReceiptEmail(order) {
   return `
@@ -212,84 +211,6 @@ class PaymobController {
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
-
-          // Quotation-specific logic
-          if (orderExtras.quotationId) {
-            const Quotation = require("../models/quotation");
-            const quotation = await Quotation.findById(orderExtras.quotationId)
-              .populate("userId")
-              .populate("brandId")
-              .populate("productId");
-            if (!quotation) {
-              return res.redirect(
-                "https://thedesigngrit.com/home?payment-failed"
-              );
-            }
-            // Mark payment as successful in the quotation
-            await Quotation.findByIdAndUpdate(quotation._id, {
-              $set: {
-                paymentDetails: {
-                  paid: true,
-                  paymentId: orderId,
-                  paymentMethod: "paymob",
-                },
-              },
-            });
-            const newOrder = new Order({
-              customerId: quotation.userId._id || quotation.userId,
-              cartItems: [
-                {
-                  productId: quotation.productId._id || quotation.productId,
-                  name: quotation.productId.name || "Product",
-                  quantity: 1,
-                  price: quotation.quotePrice,
-                  totalPrice: quotation.quotePrice,
-                  brandId: quotation.brandId._id || quotation.brandId,
-                },
-              ],
-              subtotal: quotation.quotePrice,
-              shippingFee: 0,
-              total: quotation.quotePrice,
-              orderStatus: "Pending",
-              paymentDetails: {
-                paymentMethod: "paymob",
-                transactionId: orderId,
-                paymentStatus: "Paid",
-              },
-              billingDetails: {
-                firstName: quotation.userId.firstName || "",
-                lastName: quotation.userId.lastName || "",
-                email: quotation.userId.email || "",
-                phoneNumber: quotation.userId.phoneNumber || "",
-                address:
-                  quotation.userId.address &&
-                  quotation.userId.address.trim() !== ""
-                    ? quotation.userId.address
-                    : "NA",
-                country: quotation.userId.country || "NA",
-                city: quotation.userId.city || "NA",
-                zipCode: quotation.userId.zipCode || "NA",
-              },
-              shippingDetails: {
-                firstName: quotation.userId.firstName || "",
-                lastName: quotation.userId.lastName || "",
-                address:
-                  quotation.userId.address &&
-                  quotation.userId.address.trim() !== ""
-                    ? quotation.userId.address
-                    : "NA",
-                phoneNumber: quotation.userId.phoneNumber || "",
-                country: quotation.userId.country || "NA",
-                city: quotation.userId.city || "NA",
-                zipCode: quotation.userId.zipCode || "NA",
-              },
-            });
-            await newOrder.save();
-            return res.redirect(
-              `https://thedesigngrit.com/checkout?order=${newOrder._id}&status=success`
-            );
-          }
-
           // Create a new order in your database
           const orderData = PaymobController.transformedOrderData || {};
           console.log(
@@ -494,7 +415,6 @@ class PaymobController {
           } catch (emailErr) {
             console.error("Failed to send receipt email:", emailErr);
           }
-
           // Redirect to success page with the order ID
           return res.redirect(
             `https://thedesigngrit.com/checkout?order=${savedOrder._id}&status=success`
@@ -715,6 +635,7 @@ class PaymobController {
   static async createQuotationPayment(req, res) {
     try {
       const { id } = req.params;
+      const Quotation = require("../models/quotation");
       const quotation = await Quotation.findById(id)
         .populate("userId")
         .populate("brandId")
@@ -736,20 +657,16 @@ class PaymobController {
           .json({ message: "No quote price set for this quotation" });
       }
 
-      // Prepare orderData for Paymob
-      const safeAddress =
-        quotation.userId.address && quotation.userId.address.trim() !== ""
-          ? quotation.userId.address
-          : "NA";
+      // Prepare minimal orderData for Paymob
       const orderData = {
         total: quotation.quotePrice,
-        customerId: quotation.userId,
+        customerId: quotation.userId._id,
         billingDetails: {
-          firstName: quotation.userId.firstName || "",
-          lastName: quotation.userId.lastName || "",
-          email: quotation.userId.email || "",
+          firstName: quotation.userId.firstName,
+          lastName: quotation.userId.lastName,
+          email: quotation.userId.email,
           phoneNumber: quotation.userId.phoneNumber || "",
-          address: safeAddress || quotation.billingDetails.address,
+          address: quotation.userId.address || "",
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
           zipCode: quotation.userId.zipCode || "NA",
@@ -757,7 +674,7 @@ class PaymobController {
         cartItems: [
           {
             productId: quotation.productId._id,
-            name: quotation.productId.name || "Product",
+            name: quotation.productId.name,
             quantity: 1,
             price: quotation.quotePrice,
             totalPrice: quotation.quotePrice,
@@ -766,16 +683,13 @@ class PaymobController {
         ],
         shippingFee: 0,
         shippingDetails: {
-          firstName: quotation.userId.firstName || "",
-          lastName: quotation.userId.lastName || "",
-          address: safeAddress || quotation.shippingDetails.address1,
+          firstName: quotation.userId.firstName,
+          lastName: quotation.userId.lastName,
+          address: quotation.userId.address || "",
           phoneNumber: quotation.userId.phoneNumber || "",
           country: quotation.userId.country || "NA",
           city: quotation.userId.city || "NA",
           zipCode: quotation.userId.zipCode || "NA",
-        },
-        extras: {
-          quotationId: quotation._id,
         },
       };
 
@@ -809,17 +723,6 @@ class PaymobController {
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
         }/api/paymob/callback`
       );
-
-      // After creating Paymob order and before returning iframe_url
-      await Quotation.findByIdAndUpdate(quotation._id, {
-        $set: {
-          paymentDetails: {
-            paid: false, // Set to true only after callback, but set to false here for clarity
-            paymentId: paymobOrder.id,
-            paymentMethod: "paymob",
-          },
-        },
-      });
 
       // Return iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
