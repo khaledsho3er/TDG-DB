@@ -11,7 +11,7 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
-const mongoose = require("mongoose");
+const TempOrder = require("../models/tempOrder");
 
 function generateOrderReceiptEmail(order) {
   return `
@@ -30,14 +30,6 @@ function generateOrderReceiptEmail(order) {
     <p>We will begin processing your order shortly. If you have any questions, reply to this email.</p>
   `;
 }
-
-const tempOrderSchema = new mongoose.Schema({
-  paymobOrderId: { type: Number, required: true, unique: true },
-  transformedOrderData: { type: Object, required: true },
-  createdAt: { type: Date, default: Date.now, expires: 3600 }, // auto-delete after 1 hour
-});
-
-const TempOrder = mongoose.model("TempOrder", tempOrderSchema);
 
 class PaymobController {
   static async getConfig(req, res) {
@@ -225,7 +217,6 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
           // Create a new order in your database
-          const TempOrder = require("../models/tempOrder");
           const tempOrder = await TempOrder.findOne({
             paymobOrderId: Number(orderId),
           });
