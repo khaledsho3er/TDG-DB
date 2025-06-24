@@ -144,7 +144,7 @@ app.use("/api/admin-notifications", adminNotificationRoutes); // Admin notificat
 app.use("/api/product-variants", productVariantRoutes); // Product variant routes
 app.use("/api/paymob", paymobRoutes); // Use Paymob routes
 app.use("/api/google-auth", googleAuthRoutes);
-app.use("/api/marketing", abandonedCartRoutes); // Analytics routes
+app.use("/api/mailchimp", abandonedCartRoutes); // Analytics routes
 // Start the server
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
