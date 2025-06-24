@@ -10,25 +10,28 @@ mailchimp.setConfig({
 });
 
 async function addContactToAudience(email, firstName = "", lastName = "") {
+  const subscriberHash = md5(email.toLowerCase());
   try {
-    const response = await mailchimp.lists.addListMember(
+    const response = await mailchimp.lists.setListMember(
       process.env.MAILCHIMP_AUDIENCE_ID,
+      subscriberHash,
       {
         email_address: email,
-        status: "subscribed", // Or 'pending' for double opt-in
+        status_if_new: "subscribed", // Will subscribe if new
         merge_fields: {
           FNAME: firstName,
           LNAME: lastName,
         },
       }
     );
-    console.log(`Successfully added contact: ${email}`, response);
+    console.log(`Successfully added/updated contact: ${email}`, response);
     return response;
   } catch (error) {
-    console.error("Error adding contact:", error);
+    console.error("Error adding/updating contact:", error);
     throw error;
   }
 }
+
 async function addOrderToMailchimp(email, order) {
   const subscriberHash = getSubscriberHash(email);
 
@@ -75,6 +78,7 @@ async function addOrderToMailchimp(email, order) {
     throw error;
   }
 }
+
 async function tagUser(email, tagName) {
   const subscriberHash = md5(email.toLowerCase());
 
@@ -88,6 +92,7 @@ async function tagUser(email, tagName) {
 
   console.log(`✅ ${email} tagged with ${tagName}`);
 }
+
 function formatOrderItems(items = []) {
   return items
     .map((item) => `${item.name} x${item.quantity} – $${item.totalPrice}`)

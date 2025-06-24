@@ -3,7 +3,7 @@ const router = express.Router();
 const { tagUser, addContactToAudience } = require("../utils/mailchimp");
 
 router.post("/abandoned-cart", async (req, res) => {
-  const { email } = req.body;
+  const { email, firstName, lastName } = req.body;
 
   if (!email) {
     return res.status(400).json({ error: "Email is required." });
@@ -11,7 +11,7 @@ router.post("/abandoned-cart", async (req, res) => {
 
   try {
     // Add the user to the audience if not already present
-    await addContactToAudience(email);
+    await addContactToAudience(email, firstName, lastName);
 
     // Now tag the user
     await tagUser(email, "cart-abandoned");
