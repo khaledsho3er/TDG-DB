@@ -402,7 +402,8 @@ class PaymobController {
                 .replace(/\*\|ORDER_SHIP_TOTAL\|\*/g, order.shippingFee || 0)
                 .replace(/\*\|ORDER_TAX_TOTAL\|\*/g, order.tax || 0)
                 .replace(/\*\|ORDER_DATE\|\*/g, orderDate)
-                .replace(/\*\|SHIPPING_ADDRESS\|\*/g, shippingAddress);
+                .replace(/\*\|SHIPPING_ADDRESS\|\*/g, shippingAddress)
+                .replace(/\*\|MC_PREVIEW_TEXT\|\*/g, "Thanks for your order!");
             }
 
             const htmlBody = fillOrderTemplate(template, savedOrder);
