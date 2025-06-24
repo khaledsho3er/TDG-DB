@@ -11,7 +11,6 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
-const TempOrder = require("../models/tempOrder");
 
 function generateOrderReceiptEmail(order) {
   return `
@@ -126,12 +125,6 @@ class PaymobController {
         transformedOrderData
       );
 
-      // Save temp order in DB
-      await TempOrder.create({
-        paymobOrderId: paymobOrder.id,
-        transformedOrderData,
-      });
-
       // Get payment key using the same token
       const paymentKey = await PaymobService.getPaymentKey(
         paymobOrder.id,
@@ -156,7 +149,9 @@ class PaymobController {
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
         }/api/paymob/callback`
       );
-
+      // Save the transformed order data in an object
+      // that can be accessed in other functions
+      PaymobController.transformedOrderData = transformedOrderData;
       // Create iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
@@ -217,123 +212,14 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
           // Create a new order in your database
-          const tempOrder = await TempOrder.findOne({
-            paymobOrderId: Number(orderId),
-          });
-          const orderData = tempOrder ? tempOrder.transformedOrderData : {};
+          const orderData = PaymobController.transformedOrderData || {};
           console.log(
             "Transformed order data in handle callback:",
             JSON.stringify(orderData, null, 2)
           );
-          // --- Quotation Payment ---
-          if (orderExtras.quotationId) {
-            const Quotation = require("../models/quotation");
-            const quotation = await Quotation.findById(orderExtras.quotationId)
-              .populate("userId")
-              .populate("brandId")
-              .populate("productId");
-            if (!quotation) {
-              return res.redirect(
-                "https://thedesigngrit.com/home?payment-failed"
-              );
-            }
-            // Mark payment as successful in the quotation
-            await Quotation.findByIdAndUpdate(quotation._id, {
-              $set: {
-                paymentDetails: {
-                  paid: true,
-                  paymentId: orderId,
-                  paymentMethod: "paymob",
-                },
-              },
-            });
-            // Create an Order for this paid quotation
-            const customerId = quotation.userId._id
-              ? quotation.userId._id
-              : quotation.userId;
-            const newOrder = new Order({
-              customerId,
-              cartItems: [
-                {
-                  productId: quotation.productId._id || quotation.productId,
-                  name: quotation.productId.name || "Product",
-                  quantity: 1,
-                  price: quotation.quotePrice,
-                  totalPrice: quotation.quotePrice,
-                  brandId: quotation.brandId._id || quotation.brandId,
-                },
-              ],
-              subtotal: quotation.quotePrice,
-              shippingFee: 0,
-              total: quotation.quotePrice,
-              orderStatus: "Pending",
-              paymentDetails: {
-                paymentMethod: "paymob",
-                transactionId: orderId,
-                paymentStatus: "Paid",
-              },
-              billingDetails: {
-                firstName: quotation.userId.firstName || "",
-                lastName: quotation.userId.lastName || "",
-                email: quotation.userId.email || "",
-                phoneNumber: quotation.userId.phoneNumber || "",
-                address:
-                  quotation.userId.address &&
-                  quotation.userId.address.trim() !== ""
-                    ? quotation.userId.address
-                    : "NA",
-                country: quotation.userId.country || "NA",
-                city: quotation.userId.city || "NA",
-                zipCode: quotation.userId.zipCode || "NA",
-              },
-              shippingDetails: {
-                firstName: quotation.userId.firstName || "",
-                lastName: quotation.userId.lastName || "",
-                address:
-                  quotation.userId.address &&
-                  quotation.userId.address.trim() !== ""
-                    ? quotation.userId.address
-                    : "NA",
-                phoneNumber: quotation.userId.phoneNumber || "",
-                country: quotation.userId.country || "NA",
-                city: quotation.userId.city || "NA",
-                zipCode: quotation.userId.zipCode || "NA",
-              },
-            });
-            await newOrder.save();
-            return res.redirect(
-              `https://thedesigngrit.com/checkout?order=${newOrder._id}&status=success`
-            );
-          }
-
-          // --- Regular Order Payment ---
-          let customerId = orderData.customerId || orderExtras.customerId;
-          if (customerId && typeof customerId === "object" && customerId._id) {
-            customerId = customerId._id;
-          }
-          // Fallback: try to get from billingDetails email if still missing
-          if (!customerId) {
-            const email =
-              (orderData.billingDetails && orderData.billingDetails.email) ||
-              (orderExtras.billingDetails && orderExtras.billingDetails.email);
-            if (email) {
-              const foundUser = await user.findOne({ email });
-              if (foundUser) {
-                customerId = foundUser._id;
-              }
-            }
-          }
-          if (!customerId) {
-            // Handle error: cannot create order without customerId
-            console.error("Could not determine customerId for order creation");
-            return res.redirect(
-              "https://thedesigngrit.com/home?payment-failed"
-            );
-          }
-
           // Create a new order in your database
           const newOrder = new Order({
-            customerId,
+            customerId: orderData.customerId || orderExtras.customerId,
             cartItems: orderData.cartItems
               ? orderData.cartItems.map((item) => ({
                   productId: item.productId,
@@ -547,115 +433,203 @@ class PaymobController {
     }
   }
 
-  static async createQuotationPayment(req, res) {
+  static async handleCallbackPost(req, res) {
     try {
-      const { id } = req.params;
-      const Quotation = require("../models/quotation");
-      const quotation = await Quotation.findById(id)
-        .populate("userId")
-        .populate("brandId")
-        .populate("productId");
+      console.log("=== PAYMENT POST CALLBACK RECEIVED ===");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-      if (!quotation) {
-        return res.status(404).json({ message: "Quotation not found" });
-      }
+      const { hmac, obj } = req.body;
 
-      if (!quotation.ClientApproval || !quotation.vendorApproval) {
+      if (!hmac || !obj) {
+        console.error("Missing hmac or obj in request body");
         return res.status(400).json({
-          message: "Quotation not approved by both client and vendor",
+          error: "Invalid callback data",
+          details: "HMAC and payment object are required",
         });
       }
 
-      if (!quotation.quotePrice) {
-        return res
-          .status(400)
-          .json({ message: "No quote price set for this quotation" });
+      // Verify the payment
+      console.log("Verifying payment...");
+      const isValid = await PaymobService.verifyPayment(hmac, obj);
+      console.log("Payment verification result:", isValid);
+
+      if (!isValid) {
+        console.error("Payment verification failed");
+        return res.status(400).json({
+          error: "Invalid payment verification",
+          details: "Payment verification failed",
+        });
       }
-      // Prepare orderData for Paymob
-      const safeAddress =
-        quotation.userId.address && quotation.userId.address.trim() !== ""
-          ? quotation.userId.address
-          : "NA";
-      // Prepare minimal orderData for Paymob
-      const orderData = {
-        total: quotation.quotePrice,
-        customerId: quotation.userId._id || quotation.userId,
-        billingDetails: {
-          firstName: quotation.userId.firstName || "",
-          lastName: quotation.userId.lastName || "",
-          email: quotation.userId.email || "",
-          phoneNumber: quotation.userId.phoneNumber || "",
-          address: safeAddress || quotation.billingDetails.address,
-          country: quotation.userId.country || "NA",
-          city: quotation.userId.city || "NA",
-          zipCode: quotation.userId.zipCode || "NA",
-        },
-        cartItems: [
-          {
-            productId: quotation.productId._id,
-            name: quotation.productId.name || "Product",
-            quantity: 1,
-            price: quotation.quotePrice,
-            totalPrice: quotation.quotePrice,
-            brandId: quotation.brandId._id,
-          },
-        ],
-        shippingFee: 0,
-        shippingDetails: {
-          firstName: quotation.userId.firstName,
-          lastName: quotation.userId.lastName,
-          address: safeAddress || quotation.shippingDetails.address1,
-          phoneNumber: quotation.userId.phoneNumber || "",
-          country: quotation.userId.country || "NA",
-          city: quotation.userId.city || "NA",
-          zipCode: quotation.userId.zipCode || "NA",
-        },
-      };
 
-      // Create Paymob order
-      const { order: paymobOrder, authToken } = await PaymobService.createOrder(
-        orderData.total,
-        orderData
-      );
+      // Handle successful payment
+      if (obj.success) {
+        console.log("Payment successful, processing order...");
 
-      // Get payment key
-      const paymentKey = await PaymobService.getPaymentKey(
-        paymobOrder.id,
-        {
-          amount: orderData.total,
-          email: orderData.billingDetails.email,
-          firstName: orderData.billingDetails.firstName,
-          lastName: orderData.billingDetails.lastName,
-          address: orderData.billingDetails.address,
-          phoneNumber: orderData.billingDetails.phoneNumber,
-          country: orderData.billingDetails.country,
-          city: orderData.billingDetails.city,
-          postal_code: orderData.billingDetails.zipCode,
-          cartItems: orderData.cartItems,
-          customerId: orderData.customerId,
-          shippingFee: orderData.shippingFee,
-          billingDetails: orderData.billingDetails,
-          shippingDetails: orderData.shippingDetails,
-        },
-        authToken,
-        `${
-          process.env.API_BASE_URL || "https://api.thedesigngrit.com"
-        }/api/paymob/callback`
-      );
+        // Extract order data from the payment object
+        const paymentData = obj;
+        const customerData = paymentData.billing_data;
 
-      // Return iframe URL
-      const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
-      res.json({
-        success: true,
-        iframe_url: iframeUrl,
-        orderId: paymobOrder.id,
-        paymentKey: paymentKey.token,
-      });
+        // Get the original order data from the extras field
+        const originalOrderData = paymentData.order?.extras || {};
+
+        console.log(
+          "Original order data:",
+          JSON.stringify(originalOrderData, null, 2)
+        );
+        console.log("Customer data:", JSON.stringify(customerData, null, 2));
+
+        // Check if we have a customerId
+        let customerId = originalOrderData.customerId;
+        if (!customerId && customerData && customerData.email) {
+          console.log(
+            "No customerId found in extras, looking up user by email:",
+            customerData.email
+          );
+          const foundUser = await user.findOne({ email: customerData.email });
+          if (foundUser) {
+            customerId = foundUser._id;
+            console.log("Found user by email, using customerId:", customerId);
+          } else {
+            // Create a new user if one doesn't exist
+            console.log("No user found with email, creating a new user");
+          }
+        }
+
+        if (!customerId) {
+          console.error("Could not determine customerId, using a default user");
+        }
+
+        // Check if we have cart items
+        if (
+          !originalOrderData.cartItems ||
+          !Array.isArray(originalOrderData.cartItems) ||
+          originalOrderData.cartItems.length === 0
+        ) {
+          console.error("No valid cart items found in order data");
+          return res.status(400).json({ error: "Invalid cart items" });
+        }
+
+        try {
+          // Create a new order directly
+          console.log("Creating new order...");
+          const newOrder = new Order({
+            customerId: customerId,
+            cartItems: originalOrderData.cartItems.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              name: item.name,
+              price: item.price || item.totalPrice / item.quantity,
+              quantity: item.quantity,
+              totalPrice: item.totalPrice,
+              brandId: item.brandId,
+            })),
+            subtotal: paymentData.amount_cents / 100,
+            shippingFee: originalOrderData.shippingFee || 0,
+            total: paymentData.amount_cents / 100,
+            orderStatus: "Pending",
+            paymentDetails: {
+              paymentMethod: "paymob", // Changed from "Paymob" to "paymob" to match enum
+              transactionId: paymentData.id,
+              paymentStatus: "Paid",
+            },
+            billingDetails: {
+              firstName: customerData.first_name || "Customer",
+              lastName: customerData.last_name || "Name",
+              email: customerData.email || "customer@example.com",
+              phoneNumber: customerData.phone_number || "N/A",
+              address: customerData.street || "N/A",
+              country: customerData.country || "N/A",
+              city: customerData.city || "N/A",
+              zipCode: customerData.postal_code || "N/A",
+            },
+            shippingDetails: {
+              firstName: customerData.first_name || "Customer",
+              lastName: customerData.last_name || "Name",
+              address: customerData.street || "N/A",
+              phoneNumber: customerData.phone_number || "N/A",
+              country: customerData.country || "N/A",
+              city: customerData.city || "N/A",
+              zipCode: customerData.postal_code || "N/A",
+            },
+          });
+
+          console.log(
+            "Order object created:",
+            JSON.stringify(newOrder, null, 2)
+          );
+
+          // Save the order to the database
+          console.log("Saving order to database...");
+          const savedOrder = await newOrder.save();
+
+          // Update product stock after order is saved
+          console.log("Updating product stock...");
+          for (const item of savedOrder.cartItems) {
+            try {
+              if (item.variantId) {
+                const variant = await ProductVariant.findById(item.variantId);
+                if (variant) {
+                  variant.stock = Math.max(0, variant.stock - item.quantity);
+                  await variant.save();
+                  console.log(
+                    `Updated variant ${variant._id} stock to ${variant.stock}`
+                  );
+                }
+              } else if (item.productId) {
+                const product = await Product.findById(item.productId);
+                if (product) {
+                  product.stock = Math.max(0, product.stock - item.quantity);
+                  product.sales = (product.sales || 0) + item.quantity;
+                  await product.save();
+                  console.log(
+                    `Updated product ${product._id} stock to ${product.stock}`
+                  );
+                }
+              }
+            } catch (stockError) {
+              console.error(`Error updating stock for item:`, stockError);
+            }
+          }
+
+          // Try to add the order to Mailchimp
+          try {
+            if (savedOrder.billingDetails && savedOrder.billingDetails.email) {
+              await addOrderToMailchimp(
+                savedOrder.billingDetails.email,
+                savedOrder
+              );
+              console.log("Order added to Mailchimp successfully");
+            }
+          } catch (mailchimpError) {
+            console.error("Failed to add order to Mailchimp:", mailchimpError);
+          }
+
+          // Return success response for POST request
+          return res.status(200).json({
+            success: true,
+            message: "Order processed successfully",
+            orderId: savedOrder._id,
+          });
+        } catch (orderError) {
+          console.error("Error creating order:", orderError);
+          return res.status(500).json({
+            error: "Failed to create order",
+            details: orderError.message,
+          });
+        }
+      } else {
+        console.log("Payment failed:", obj.error_occured || "Unknown error");
+        return res.status(400).json({
+          error: "Payment failed",
+          details: obj.error_occured || "Unknown error",
+        });
+      }
     } catch (error) {
-      console.error("Error creating quotation payment:", error);
-      res
-        .status(500)
-        .json({ message: "Error creating quotation payment", error });
+      console.error("Unhandled error in payment callback:", error);
+      return res.status(500).json({
+        error: "Server error",
+        details: error.message,
+      });
     }
   }
 }
