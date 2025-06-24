@@ -3,6 +3,7 @@ const Type = require("../models/types");
 const Order = require("../models/order");
 const upload = require("../middlewares/brandMulterSetup");
 const Notification = require("../models/notification");
+const AdminNotification = require("../models/adminNotifications");
 const mongoose = require("mongoose");
 // Create a new brand
 exports.createBrand = async (req, res) => {
@@ -144,6 +145,42 @@ exports.updateBrand = async (req, res) => {
     brand.pendingUpdates = updates;
     brand.updateStatus = "pending";
     await brand.save();
+
+    // Notify admin of changes
+    // Compare current brand data with pendingUpdates to find changed fields
+    const changedFields = [];
+    for (let key in updates) {
+      // Only compare if the field exists on the brand and is not an object/array (for simplicity)
+      if (
+        Object.prototype.hasOwnProperty.call(brand._doc, key) &&
+        typeof updates[key] !== "object" &&
+        brand[key] !== updates[key]
+      ) {
+        changedFields.push({
+          field: key,
+          oldValue: brand[key],
+          newValue: updates[key],
+        });
+      }
+    }
+
+    // Build a description for the notification
+    let description = `Brand '${brand.brandName}' submitted changes for approval: `;
+    if (changedFields.length > 0) {
+      description += changedFields
+        .map((f) => `${f.field}: \"${f.oldValue}\" → \"${f.newValue}\"`)
+        .join(", ");
+    } else {
+      description += "No fields changed.";
+    }
+
+    // Create a notification for the admin
+    const AdminNotification = new AdminNotification({
+      type: "Brand Update",
+      description: description,
+      read: false,
+    });
+    await AdminNotification.save();
 
     res.status(200).json(brand);
   } catch (error) {
