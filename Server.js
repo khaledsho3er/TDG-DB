@@ -42,6 +42,7 @@ const adminNotificationRoutes = require("./routes/adminNotificationRoutes"); // 
 const productVariantRoutes = require("./routes/productvariantRoutes"); // Import the product variant routes
 const paymobRoutes = require("./routes/paymobRoutes"); // Import Paymob routes
 const googleAuthRoutes = require("./routes/googleAuthRoutes");
+const abandonedCartRoutes = require("./routes/AbandonedCartEmail");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -143,6 +144,7 @@ app.use("/api/admin-notifications", adminNotificationRoutes); // Admin notificat
 app.use("/api/product-variants", productVariantRoutes); // Product variant routes
 app.use("/api/paymob", paymobRoutes); // Use Paymob routes
 app.use("/api/google-auth", googleAuthRoutes);
+app.use("/api/marketing", abandonedCartRoutes); // Analytics routes
 // Start the server
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
