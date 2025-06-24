@@ -73,6 +73,13 @@ class PaymobController {
             orderData.billingDetails.address ||
             orderData.shippingDetails?.address,
           country: orderData.billingDetails.country,
+          floor:
+            orderData.billingDetails.floor || orderData.shippingDetails?.floor,
+          apartment:
+            orderData.billingDetails.apartment ||
+            orderData.shippingDetails?.apartment,
+          label:
+            orderData.billingDetails.label || orderData.shippingDetails?.label,
           city: orderData.billingDetails.city,
           zipCode: orderData.billingDetails.postal_code || "NA",
         },
