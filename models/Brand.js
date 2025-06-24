@@ -31,6 +31,15 @@ const BrandSchema = new mongoose.Schema(
     commissionRate: { type: Number, default: 0.15 }, // Added commission rate (15%)
     taxRate: { type: Number, default: 0.14 }, // Added tax rate (14%)
     createdAt: { type: Date, default: Date.now },
+    pendingUpdates: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    updateStatus: {
+      type: String,
+      enum: ["none", "pending", "approved", "rejected"],
+      default: "none",
+    },
   },
   { timestamps: true }
 );

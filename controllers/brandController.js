@@ -141,6 +141,8 @@ exports.updateBrand = async (req, res) => {
     if (req.files["documents"]) {
       updates.documents = req.files["documents"].map((file) => file.path);
     }
+    brand.pendingUpdates = updates;
+    brand.updateStatus = "pending";
 
     Object.assign(brand, updates);
     await brand.save();
@@ -479,5 +481,69 @@ exports.getBrandTypes = async (req, res) => {
       message: "Error fetching brand types",
       error: error.message,
     });
+  }
+};
+exports.approvePendingUpdate = async (req, res) => {
+  try {
+    const brand = await Brand.findById(req.params.id);
+    if (!brand || !brand.pendingUpdates) {
+      return res.status(404).json({ message: "No pending updates found." });
+    }
+
+    Object.assign(brand, brand.pendingUpdates);
+    brand.pendingUpdates = null;
+    brand.updateStatus = "approved";
+
+    await brand.save();
+    // Send notification
+    const notification = new Notification({
+      type: "Brand Update",
+      description: "Your brand update has been approved by the admin.",
+      brandId: brand._id,
+    });
+    await notification.save();
+    res
+      .status(200)
+      .json({ message: "Brand update approved and applied.", brand });
+  } catch (error) {
+    console.error("Error approving update:", error);
+    res.status(500).json({ message: "Failed to approve update" });
+  }
+};
+exports.rejectPendingUpdate = async (req, res) => {
+  try {
+    const brand = await Brand.findById(req.params.id);
+    if (!brand || !brand.pendingUpdates) {
+      return res.status(404).json({ message: "No pending updates found." });
+    }
+
+    brand.pendingUpdates = null;
+    brand.updateStatus = "rejected";
+
+    await brand.save();
+    // Send notification
+    const notification = new Notification({
+      type: "Brand Update",
+      description: "Your brand update has been rejected by the admin.",
+      brandId: brand._id,
+    });
+    await notification.save();
+
+    res.status(200).json({ message: "Brand update rejected." });
+  } catch (error) {
+    console.error("Error rejecting update:", error);
+    res.status(500).json({ message: "Failed to reject update" });
+  }
+};
+exports.getPendingBrands = async (req, res) => {
+  try {
+    const brands = await Brand.find({ updateStatus: "pending" }).populate(
+      "types",
+      "name description"
+    );
+    res.status(200).json(brands);
+  } catch (error) {
+    console.error("Error fetching pending brands:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

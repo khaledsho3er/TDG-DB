@@ -76,5 +76,8 @@ router.delete("/admin/brands/:id", brandController.deleteBrand);
 
 // Get types assigned to a brand
 router.get("/:brandId/types", brandController.getBrandTypes);
+router.get("/admin/brands/pending", brandController.getPendingBrands);
+router.put("/admin/brands/:id/approve", brandController.approvePendingUpdate);
+router.put("/admin/brands/:id/reject", brandController.rejectPendingUpdate);
 
 module.exports = router;
