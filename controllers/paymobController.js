@@ -98,9 +98,18 @@ class PaymobController {
           phoneNumber:
             orderData.shippingDetails?.phone_number ||
             orderData.billingDetails.phone_number,
-          floor: orderData.shippingDetails?.floor,
-          apartment: orderData.shippingDetails?.apartment,
-          label: orderData.shippingDetails?.label,
+          floor:
+            orderData.billingDetails?.floor ||
+            orderData.shippingDetails?.floor ||
+            "101",
+          apartment:
+            orderData.billingDetails?.apartment ||
+            orderData.shippingDetails?.apartment ||
+            "101",
+          label:
+            orderData.billingDetails?.label ||
+            orderData.shippingDetails?.label ||
+            "Homess",
 
           country:
             orderData.shippingDetails?.country ||
