@@ -69,7 +69,9 @@ class PaymobController {
           lastName: orderData.billingDetails.last_name,
           email: orderData.billingDetails.email,
           phoneNumber: orderData.billingDetails.phone_number,
-          address: orderData.billingDetails.street,
+          address:
+            orderData.billingDetails.address ||
+            orderData.shippingDetails?.address,
           country: orderData.billingDetails.country,
           city: orderData.billingDetails.city,
           zipCode: orderData.billingDetails.postal_code || "NA",
@@ -83,7 +85,9 @@ class PaymobController {
             orderData.billingDetails.last_name,
           address:
             orderData.shippingDetails?.street ||
-            orderData.billingDetails.street,
+            orderData.billingDetails.street ||
+            orderData.billingDetails.address ||
+            orderData.shippingDetails.address,
           phoneNumber:
             orderData.shippingDetails?.phone_number ||
             orderData.billingDetails.phone_number,
