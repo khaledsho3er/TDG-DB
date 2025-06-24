@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { tagUser } = require("../utils/mailchimp");
+const { tagUser, addContactToAudience } = require("../utils/mailchimp");
 
 router.post("/abandoned-cart", async (req, res) => {
   const { email } = req.body;
@@ -10,11 +10,17 @@ router.post("/abandoned-cart", async (req, res) => {
   }
 
   try {
+    // Add the user to the audience if not already present
+    await addContactToAudience(email);
+
+    // Now tag the user
     await tagUser(email, "cart-abandoned");
     res.status(200).json({ message: "Tagged as cart-abandoned" });
   } catch (error) {
     console.error("Error tagging user:", error);
-    res.status(500).json({ error: "Failed to tag user" });
+    res
+      .status(500)
+      .json({ error: "Failed to tag user", details: error.message });
   }
 });
 
