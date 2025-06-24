@@ -42,7 +42,7 @@ const adminNotificationRoutes = require("./routes/adminNotificationRoutes"); // 
 const productVariantRoutes = require("./routes/productvariantRoutes"); // Import the product variant routes
 const paymobRoutes = require("./routes/paymobRoutes"); // Import Paymob routes
 const googleAuthRoutes = require("./routes/googleAuthRoutes");
-const abandonedCartRoutes = require("./routes/AbandonedCartEmail");
+const abandonedCartRoutes = require("./routes/abandonedCartEmail");
 const app = express();
 const port = process.env.PORT || 5000;
 
