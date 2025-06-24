@@ -52,7 +52,7 @@ app.use(
     origin: "https://thedesigngrit.com", // Change this to your frontend's URL
     credentials: true, // Allow cookies to be sent along with requests
 
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // السماح بكل الطلبات
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // السماح بكل الطلبات
   })
 );
 // Middleware to parse JSON bodies
