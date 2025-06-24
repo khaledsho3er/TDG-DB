@@ -143,9 +143,8 @@ exports.updateBrand = async (req, res) => {
     }
     brand.pendingUpdates = updates;
     brand.updateStatus = "pending";
-
-    Object.assign(brand, updates);
     await brand.save();
+
     res.status(200).json(brand);
   } catch (error) {
     console.error("Error in updateBrand:", error);
