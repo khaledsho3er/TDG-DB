@@ -168,7 +168,17 @@ exports.updateBrand = async (req, res) => {
     let description = `Brand '${brand.brandName}' submitted changes for approval: `;
     if (changedFields.length > 0) {
       description += changedFields
-        .map((f) => `${f.field}: \"${f.oldValue}\" → \"${f.newValue}\"`)
+        .map((f) => {
+          const oldVal =
+            typeof f.oldValue === "object"
+              ? JSON.stringify(f.oldValue)
+              : f.oldValue;
+          const newVal =
+            typeof f.newValue === "object"
+              ? JSON.stringify(f.newValue)
+              : f.newValue;
+          return `${f.field}: "${oldVal}" → "${newVal}"`;
+        })
         .join(", ");
     } else {
       description += "No fields changed.";
