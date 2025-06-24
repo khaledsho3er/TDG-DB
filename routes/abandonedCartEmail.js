@@ -1,18 +1,19 @@
 const express = require("express");
-const { tagAbandonedCart } = require("../utils/mailchimp");
-
 const router = express.Router();
+const mailchimpService = require("../utils/mailchimp");
 
 router.post("/abandoned-cart", async (req, res) => {
   const { email } = req.body;
 
-  if (!email) return res.status(400).json({ message: "Email is required" });
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
 
   try {
-    await tagAbandonedCart(email);
-    return res.status(200).json({ message: "User tagged with cart-abandoned" });
+    await mailchimpService.tagUser(email, "cart-abandoned");
+    return res.status(200).json({ message: "Tagged successfully" });
   } catch (error) {
-    console.error("Error tagging abandoned cart:", error);
+    console.error("❌ Mailchimp tagging failed:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
