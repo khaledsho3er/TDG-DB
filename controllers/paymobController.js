@@ -11,6 +11,7 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
+const mongoose = require("mongoose");
 
 function generateOrderReceiptEmail(order) {
   return `
@@ -29,6 +30,14 @@ function generateOrderReceiptEmail(order) {
     <p>We will begin processing your order shortly. If you have any questions, reply to this email.</p>
   `;
 }
+
+const tempOrderSchema = new mongoose.Schema({
+  paymobOrderId: { type: Number, required: true, unique: true },
+  transformedOrderData: { type: Object, required: true },
+  createdAt: { type: Date, default: Date.now, expires: 3600 }, // auto-delete after 1 hour
+});
+
+const TempOrder = mongoose.model("TempOrder", tempOrderSchema);
 
 class PaymobController {
   static async getConfig(req, res) {
@@ -125,6 +134,12 @@ class PaymobController {
         transformedOrderData
       );
 
+      // Save temp order in DB
+      await TempOrder.create({
+        paymobOrderId: paymobOrder.id,
+        transformedOrderData,
+      });
+
       // Get payment key using the same token
       const paymentKey = await PaymobService.getPaymentKey(
         paymobOrder.id,
@@ -149,9 +164,7 @@ class PaymobController {
           process.env.API_BASE_URL || "https://api.thedesigngrit.com"
         }/api/paymob/callback`
       );
-      // Save the transformed order data in an object
-      // that can be accessed in other functions
-      PaymobController.transformedOrderData = transformedOrderData;
+
       // Create iframe URL
       const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
 
@@ -212,7 +225,11 @@ class PaymobController {
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
           // Create a new order in your database
-          const orderData = PaymobController.transformedOrderData || {};
+          const TempOrder = require("../models/tempOrder");
+          const tempOrder = await TempOrder.findOne({
+            paymobOrderId: Number(orderId),
+          });
+          const orderData = tempOrder ? tempOrder.transformedOrderData : {};
           console.log(
             "Transformed order data in handle callback:",
             JSON.stringify(orderData, null, 2)
