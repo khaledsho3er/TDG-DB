@@ -174,13 +174,12 @@ exports.updateBrand = async (req, res) => {
       description += "No fields changed.";
     }
 
-    // Create a notification for the admin
-    const AdminNotification = new AdminNotification({
+    const adminNotification = new AdminNotification({
       type: "Brand Update",
       description: description,
       read: false,
     });
-    await AdminNotification.save();
+    await adminNotification.save();
 
     res.status(200).json(brand);
   } catch (error) {
