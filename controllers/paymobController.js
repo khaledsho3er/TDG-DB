@@ -91,6 +91,10 @@ class PaymobController {
           phoneNumber:
             orderData.shippingDetails?.phone_number ||
             orderData.billingDetails.phone_number,
+          floor: orderData.shippingDetails?.floor,
+          apartment: orderData.shippingDetails?.apartment,
+          label: orderData.shippingDetails?.label,
+
           country:
             orderData.shippingDetails?.country ||
             orderData.billingDetails.country,
@@ -262,6 +266,9 @@ class PaymobController {
                 lastName: paymobOrder.shipping_data?.last_name || "Name",
                 address: paymobOrder.shipping_data?.street || "N/A",
                 phoneNumber: paymobOrder.shipping_data?.phone_number || "N/A",
+                floor: paymobOrder.shipping_data?.floor || "N/A",
+                apartment: paymobOrder.shipping_data?.apartment || "N/A",
+                label: paymobOrder.shipping_data?.label || "N/A",
                 country: paymobOrder.shipping_data?.country || "N/A",
                 city: paymobOrder.shipping_data?.city || "N/A",
                 zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
