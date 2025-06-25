@@ -900,7 +900,7 @@ exports.updateDeliveryDate = async (req, res) => {
     order.orderStatus = "Confirmed"; // Assuming order is now in progress
 
     await order.save();
-
+    console.log("Order customer email:", customer.email);
     // Send email notification to customer using AWS SES
     await sendEmail({
       to: customer.email,
