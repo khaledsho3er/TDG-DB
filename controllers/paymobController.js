@@ -423,7 +423,7 @@ class PaymobController {
           for (const item of savedOrder.cartItems) {
             if (item.quotationId) {
               await Quotation.findByIdAndUpdate(item.quotationId, {
-                status: "ordered",
+                status: "approved",
               });
             }
           }
