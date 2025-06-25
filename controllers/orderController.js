@@ -923,8 +923,13 @@ exports.updateDeliveryDate = async (req, res) => {
 // Controller function to update cart item delivery date
 exports.updateCartItemDeliveryDate = async (req, res) => {
   const { orderId, cartItemId } = req.params; // Extract orderId and cartItemId from URL parameters
-  const { deliveryDate } = req.body; // Extract deliveryDate from request body
-
+  const { subDeliveryDate } = req.body;
+  console.log(
+    "deliveryDate from frontend:",
+    subDeliveryDate,
+    "typeof:",
+    typeof subDeliveryDate
+  );
   try {
     // Find the order by ID
     const order = await Order.findById(orderId);
@@ -940,9 +945,12 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
     if (cartItemIndex === -1) {
       return res.status(404).json({ message: "Cart item not found" });
     }
-
+    // Validate date
+    if (!subDeliveryDate || isNaN(new Date(subDeliveryDate))) {
+      return res.status(400).json({ message: "Invalid subDeliveryDate" });
+    }
     // Update the subDeliveryDate and subOrderStatus
-    order.cartItems[cartItemIndex].subDeliveryDate = deliveryDate;
+    order.cartItems[cartItemIndex].subDeliveryDate = subDeliveryDate;
     order.cartItems[cartItemIndex].subOrderStatus = "Confirmed";
 
     // Check if all cart items have subOrderStatus as "Confirmed"
@@ -957,7 +965,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
 
     // Save the updated order
     await order.save();
-
+    console.log("Saved cart item:", order.cartItems[cartItemIndex]);
     // Send email notification to customer using AWS SES
     const customer = await user.findById(order.customerId).select("email");
     console.log(
@@ -978,7 +986,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
         },</p><p>An item in your order (ID: ${
           order._id
         }) is scheduled for delivery on ${new Date(
-          deliveryDate
+          subDeliveryDate
         ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>The Design Grit</p>`,
       });
     }
