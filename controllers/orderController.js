@@ -976,7 +976,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
       "order billing name",
       order.billingDetails.firstName
     );
-    console.log("order id", order._id, "order deleviery", deliveryDate);
+    console.log("order id", order._id, "order deleviery", subDeliveryDate);
     if (customer && customer.email) {
       await sendEmail({
         to: customer.email,
