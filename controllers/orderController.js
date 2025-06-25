@@ -909,7 +909,7 @@ exports.updateDeliveryDate = async (req, res) => {
         order._id
       }) is scheduled for delivery on ${new Date(
         deliveryDate
-      ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>Your Company Name</p>`,
+      ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>The Design Grit </p>`,
     });
 
     res
@@ -959,7 +959,15 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
 
     // Send email notification to customer using AWS SES
     const customer = await user.findById(order.customerId).select("email");
-    console.log("Order customer email:", customer.email, "user:0", customer);
+    console.log(
+      "Order customer email:",
+      customer.email,
+      "user:0",
+      customer,
+      "order billing name",
+      order.billingDetails.firstName
+    );
+    console.log("order id", order._id, "order deleviery", deliveryDate);
     if (customer && customer.email) {
       await sendEmail({
         to: customer.email,
@@ -970,7 +978,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
           order._id
         }) is scheduled for delivery on ${new Date(
           deliveryDate
-        ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>Your Company Name</p>`,
+        ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>The Design Grit</p>`,
       });
     }
 
@@ -1098,7 +1106,7 @@ exports.addOrderNote = async (req, res) => {
     await sendEmail({
       to: customer.email,
       subject: "Order Note Added",
-      body: `<p>Dear Customer,</p><p>A note has been added to your order (ID: ${order._id}).</p><p>Note: "${note}"</p><p>Thank you for shopping with us!</p><p>Best regards,<br>Your Company Name</p>`,
+      body: `<p>Dear Customer,</p><p>A note has been added to your order (ID: ${order._id}).</p><p>Note: "${note}"</p><p>Thank you for shopping with us!</p><p>Best regards,<br>The Design Grit</p>`,
     });
 
     res.status(200).json({ message: "Note added successfully.", order });
