@@ -953,6 +953,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
     if (allConfirmed) {
       order.orderStatus = "Confirmed"; // Update orderStatus if all items are confirmed
     }
+    order.markModified("cartItems");
 
     // Save the updated order
     await order.save();
