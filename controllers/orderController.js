@@ -899,27 +899,6 @@ exports.updateDeliveryDate = async (req, res) => {
     order.deliveryDate = deliveryDate;
     order.orderStatus = "Confirmed"; // Assuming order is now in progress
 
-    // Logic for subDeliveryDate
-    if (order.cartItems.length === 1) {
-      // Only one cart item: set subDeliveryDate to deliveryDate
-      order.cartItems[0].subDeliveryDate = deliveryDate;
-      order.markModified("cartItems");
-    } else if (
-      order.cartItems.length > 1 &&
-      order.cartItems.every(
-        (item) =>
-          item.brandId &&
-          item.brandId.toString() === order.cartItems[0].brandId.toString()
-      )
-    ) {
-      // More than one cart item, all with the same brandId
-      order.cartItems.forEach((item) => {
-        item.subDeliveryDate = deliveryDate;
-      });
-      order.markModified("cartItems");
-    }
-    // else: do not set subDeliveryDate, only set deliveryDate
-
     await order.save();
     console.log("Order customer email:", customer.email);
     // Send email notification to customer using AWS SES
@@ -946,7 +925,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
   const { orderId, cartItemId } = req.params; // Extract orderId and cartItemId from URL parameters
   const { subDeliveryDate } = req.body;
   console.log(
-    "deliveryDate from frontend:",
+    "subDeliveryDate from frontend:",
     subDeliveryDate,
     "typeof:",
     typeof subDeliveryDate
@@ -970,8 +949,34 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
     if (!subDeliveryDate || isNaN(new Date(subDeliveryDate))) {
       return res.status(400).json({ message: "Invalid subDeliveryDate" });
     }
-    // Update the subDeliveryDate and subOrderStatus
-    order.cartItems[cartItemIndex].subDeliveryDate = subDeliveryDate;
+
+    // Logic for subDeliveryDate and deliveryDate
+    if (order.cartItems.length === 1) {
+      // Only one cart item: set subDeliveryDate and deliveryDate to subDeliveryDate
+      order.cartItems[0].subDeliveryDate = subDeliveryDate;
+      order.deliveryDate = subDeliveryDate;
+      order.markModified("cartItems");
+    } else if (
+      order.cartItems.length > 1 &&
+      order.cartItems.every(
+        (item) =>
+          item.brandId &&
+          item.brandId.toString() === order.cartItems[0].brandId.toString()
+      )
+    ) {
+      // More than one cart item, all with the same brandId
+      order.cartItems.forEach((item) => {
+        item.subDeliveryDate = subDeliveryDate;
+      });
+      order.deliveryDate = subDeliveryDate;
+      order.markModified("cartItems");
+    } else {
+      // Default: only set subDeliveryDate for the selected cart item
+      order.cartItems[cartItemIndex].subDeliveryDate = subDeliveryDate;
+      order.markModified("cartItems");
+    }
+
+    // Always update subOrderStatus for the selected cart item
     order.cartItems[cartItemIndex].subOrderStatus = "Confirmed";
 
     // Check if all cart items have subOrderStatus as "Confirmed"
@@ -982,7 +987,6 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
     if (allConfirmed) {
       order.orderStatus = "Confirmed"; // Update orderStatus if all items are confirmed
     }
-    order.markModified("cartItems");
 
     // Save the updated order
     await order.save();
@@ -997,7 +1001,12 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
       "order billing name",
       order.billingDetails.firstName
     );
-    console.log("order id", order._id, "order deleviery", subDeliveryDate);
+    console.log(
+      "order id",
+      order._id,
+      "order subDeliveryDate",
+      subDeliveryDate
+    );
     if (customer && customer.email) {
       await sendEmail({
         to: customer.email,
