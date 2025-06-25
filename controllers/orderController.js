@@ -968,28 +968,30 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
       order.cartItems.forEach((item) => {
         item.subDeliveryDate = subDeliveryDate;
       });
-      // Set deliveryDate as the latest subDeliveryDate among all cart items
-      const subDeliveryDates = order.cartItems
-        .map((item) => item.subDeliveryDate)
-        .filter((date) => !!date);
-      if (subDeliveryDates.length > 0) {
-        const latestDate = new Date(
-          Math.max(...subDeliveryDates.map((date) => new Date(date)))
+      // Only set deliveryDate if all cartItems have subDeliveryDate
+      const allHaveSubDelivery = order.cartItems.every(
+        (item) => !!item.subDeliveryDate
+      );
+      if (allHaveSubDelivery) {
+        const subDeliveryDates = order.cartItems.map(
+          (item) => new Date(item.subDeliveryDate)
         );
+        const latestDate = new Date(Math.max(...subDeliveryDates));
         order.deliveryDate = latestDate;
       }
       order.markModified("cartItems");
     } else {
       // Default: only set subDeliveryDate for the selected cart item
       order.cartItems[cartItemIndex].subDeliveryDate = subDeliveryDate;
-      // Set deliveryDate as the latest subDeliveryDate among all cart items
-      const subDeliveryDates = order.cartItems
-        .map((item) => item.subDeliveryDate)
-        .filter((date) => !!date);
-      if (subDeliveryDates.length > 0) {
-        const latestDate = new Date(
-          Math.max(...subDeliveryDates.map((date) => new Date(date)))
+      // Only set deliveryDate if all cartItems have subDeliveryDate
+      const allHaveSubDelivery = order.cartItems.every(
+        (item) => !!item.subDeliveryDate
+      );
+      if (allHaveSubDelivery) {
+        const subDeliveryDates = order.cartItems.map(
+          (item) => new Date(item.subDeliveryDate)
         );
+        const latestDate = new Date(Math.max(...subDeliveryDates));
         order.deliveryDate = latestDate;
       }
       order.markModified("cartItems");
