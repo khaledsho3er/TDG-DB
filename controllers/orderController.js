@@ -899,6 +899,27 @@ exports.updateDeliveryDate = async (req, res) => {
     order.deliveryDate = deliveryDate;
     order.orderStatus = "Confirmed"; // Assuming order is now in progress
 
+    // Logic for subDeliveryDate
+    if (order.cartItems.length === 1) {
+      // Only one cart item: set subDeliveryDate to deliveryDate
+      order.cartItems[0].subDeliveryDate = deliveryDate;
+      order.markModified("cartItems");
+    } else if (
+      order.cartItems.length > 1 &&
+      order.cartItems.every(
+        (item) =>
+          item.brandId &&
+          item.brandId.toString() === order.cartItems[0].brandId.toString()
+      )
+    ) {
+      // More than one cart item, all with the same brandId
+      order.cartItems.forEach((item) => {
+        item.subDeliveryDate = deliveryDate;
+      });
+      order.markModified("cartItems");
+    }
+    // else: do not set subDeliveryDate, only set deliveryDate
+
     await order.save();
     console.log("Order customer email:", customer.email);
     // Send email notification to customer using AWS SES
