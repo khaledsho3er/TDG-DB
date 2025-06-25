@@ -419,11 +419,12 @@ class PaymobController {
             }
           }
 
-          // Update quotation status if any cart item has a quotationId
+          // Update quotation status and paid flag if any cart item has a quotationId
           for (const item of savedOrder.cartItems) {
             if (item.quotationId) {
               await Quotation.findByIdAndUpdate(item.quotationId, {
                 status: "ordered",
+                "paymentDetails.paid": true,
               });
             }
           }
