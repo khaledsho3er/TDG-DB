@@ -255,18 +255,14 @@ class PaymobController {
                     price: item.price || item.totalPrice / item.quantity,
                     totalPrice: item.totalPrice || item.price * item.quantity,
                     brandId: item.brandId,
+                    fromQuotation: item.fromQuotation ?? false,
+                    quotationId: item.quotationId ?? null,
                   };
-                  // Copy extra fields if fromQuotation
-                  if (item.fromQuotation && item.quotationId) {
-                    cartItem.fromQuotation = true;
-                    cartItem.quotationId = item.quotationId;
-                    if (item.color) cartItem.color = item.color;
-                    if (item.size) cartItem.size = item.size;
-                    if (item.material) cartItem.material = item.material;
-                    if (item.customization)
-                      cartItem.customization = item.customization;
-                    // Add more fields as needed
-                  }
+                  if (item.color) cartItem.color = item.color;
+                  if (item.size) cartItem.size = item.size;
+                  if (item.material) cartItem.material = item.material;
+                  if (item.customization)
+                    cartItem.customization = item.customization;
                   return cartItem;
                 })
               : [],
@@ -413,9 +409,9 @@ class PaymobController {
             }
           }
 
-          // Update quotation status if any cart item is from a quotation
+          // Update quotation status if any cart item has a quotationId
           for (const item of savedOrder.cartItems) {
-            if (item.fromQuotation && item.quotationId) {
+            if (item.quotationId) {
               await Quotation.findByIdAndUpdate(item.quotationId, {
                 status: "ordered",
               });
