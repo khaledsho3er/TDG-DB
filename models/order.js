@@ -36,6 +36,14 @@ const orderSchema = new mongoose.Schema(
         },
         commissionAmount: { type: Number }, // Added commissionAmount
         taxAmount: { type: Number },
+        // Quotation-related fields
+        fromQuotation: { type: Boolean, default: false },
+        quotationId: { type: mongoose.Schema.Types.ObjectId, ref: "Quotation" },
+        color: { type: String },
+        size: { type: String },
+        material: { type: String },
+        customization: { type: String },
+        // Add more fields as needed
       },
     ],
 

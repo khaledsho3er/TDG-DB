@@ -11,6 +11,7 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
+const Quotation = require("../models/quotation");
 
 function generateOrderReceiptEmail(order) {
   return `
@@ -245,15 +246,29 @@ class PaymobController {
           const newOrder = new Order({
             customerId: orderData.customerId || orderExtras.customerId,
             cartItems: orderData.cartItems
-              ? orderData.cartItems.map((item) => ({
-                  productId: item.productId,
-                  variantId: item.variantId,
-                  name: item.name,
-                  quantity: item.quantity,
-                  price: item.price || item.totalPrice / item.quantity,
-                  totalPrice: item.totalPrice || item.price * item.quantity,
-                  brandId: item.brandId,
-                }))
+              ? orderData.cartItems.map((item) => {
+                  const cartItem = {
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price || item.totalPrice / item.quantity,
+                    totalPrice: item.totalPrice || item.price * item.quantity,
+                    brandId: item.brandId,
+                  };
+                  // Copy extra fields if fromQuotation
+                  if (item.fromQuotation && item.quotationId) {
+                    cartItem.fromQuotation = true;
+                    cartItem.quotationId = item.quotationId;
+                    if (item.color) cartItem.color = item.color;
+                    if (item.size) cartItem.size = item.size;
+                    if (item.material) cartItem.material = item.material;
+                    if (item.customization)
+                      cartItem.customization = item.customization;
+                    // Add more fields as needed
+                  }
+                  return cartItem;
+                })
               : [],
             subtotal: orderData.total || paymobOrder.amount_cents / 100,
             shippingFee: orderData.shippingFee || orderExtras.shippingFee || 0,
@@ -395,6 +410,15 @@ class PaymobController {
               }
             } catch (stockError) {
               console.error(`Error updating stock for item:`, stockError);
+            }
+          }
+
+          // Update quotation status if any cart item is from a quotation
+          for (const item of savedOrder.cartItems) {
+            if (item.fromQuotation && item.quotationId) {
+              await Quotation.findByIdAndUpdate(item.quotationId, {
+                status: "ordered",
+              });
             }
           }
 
