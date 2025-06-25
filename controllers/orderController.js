@@ -9,6 +9,7 @@ const nodemailer = require("nodemailer");
 const user = require("../models/user");
 const transporter = require("../utils/emailTransporter");
 const { addOrderToMailchimp } = require("../utils/mailchimp"); // Import it at the top
+const { sendEmail } = require("../services/awsSes");
 const mailchimpHandler = {
   syncOrder: async (email, order) => {
     try {
@@ -900,19 +901,16 @@ exports.updateDeliveryDate = async (req, res) => {
 
     await order.save();
 
-    // Send email notification to customer
-    const mailOptions = {
-      from: "karimwahba53@gmail.com",
+    // Send email notification to customer using AWS SES
+    await sendEmail({
       to: customer.email,
       subject: "Your Order Delivery Date Has Been Updated",
-      text: `Dear ${order.billingDetails.firstName},\n\nYour order (ID: ${
+      body: `<p>Dear ${order.billingDetails.firstName},</p><p>Your order (ID: ${
         order._id
       }) is scheduled for delivery on ${new Date(
         deliveryDate
-      ).toDateString()}.\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
-    };
-
-    await transporter.sendMail(mailOptions);
+      ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>Your Company Name</p>`,
+    });
 
     res
       .status(200)
@@ -958,6 +956,22 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
 
     // Save the updated order
     await order.save();
+
+    // Send email notification to customer using AWS SES
+    const customer = await user.findById(order.customerId).select("email");
+    if (customer && customer.email) {
+      await sendEmail({
+        to: customer.email,
+        subject: "Your Order Item Delivery Date Has Been Updated",
+        body: `<p>Dear ${
+          order.billingDetails.firstName
+        },</p><p>An item in your order (ID: ${
+          order._id
+        }) is scheduled for delivery on ${new Date(
+          deliveryDate
+        ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>Your Company Name</p>`,
+      });
+    }
 
     return res.status(200).json({
       message: "Cart item updated successfully",
@@ -1079,15 +1093,12 @@ exports.addOrderNote = async (req, res) => {
     order.notePostedAt = new Date();
     await order.save();
 
-    // Send email notification to the customer
-    const mailOptions = {
-      from: "karimwahba53@gmail.com",
+    // Send email notification to the customer using AWS SES
+    await sendEmail({
       to: customer.email,
       subject: "Order Note Added",
-      text: `Dear Customer,\n\nA note has been added to your order (ID: ${order._id}).\n\nNote: "${note}"\n\nThank you for shopping with us!\n\nBest regards,\nYour Company Name`,
-    };
-
-    await transporter.sendMail(mailOptions);
+      body: `<p>Dear Customer,</p><p>A note has been added to your order (ID: ${order._id}).</p><p>Note: "${note}"</p><p>Thank you for shopping with us!</p><p>Best regards,<br>Your Company Name</p>`,
+    });
 
     res.status(200).json({ message: "Note added successfully.", order });
   } catch (error) {
