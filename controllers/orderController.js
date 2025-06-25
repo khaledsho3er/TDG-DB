@@ -1073,7 +1073,33 @@ exports.uploadFileAndUpdateOrder = async (req, res) => {
       { POD: fileName, orderStatus: "Delivered" },
       { new: true }
     );
-
+    // Fetch order, customer, and brand for notification
+    const order = await Order.findById(orderId);
+    if (order) {
+      // Get customer firstName
+      const customer = await user
+        .findById(order.customerId)
+        .select("firstName");
+      // Get brand from first cartItem (assuming all cartItems are from the same brand for this notification)
+      let brandName = "Unknown Brand";
+      if (order.cartItems && order.cartItems.length > 0) {
+        const brandId = order.cartItems[0].brandId;
+        if (brandId) {
+          const Brand = require("../models/Brand");
+          const brand = await Brand.findById(brandId).select("brandName");
+          if (brand && brand.brandName) brandName = brand.brandName;
+        }
+      }
+      // Create admin notification
+      const AdminNotification = require("../models/adminNotifications");
+      await AdminNotification.create({
+        type: "POD Upload",
+        description: `Brand ${brandName} uploaded proof of delivery for customer ${
+          customer ? customer.firstName : "Unknown"
+        } on order #${orderId}`,
+        read: false,
+      });
+    }
     const fileUrl = `https://a29dbeb11704750c5e1d4b4544ae5595.r2.cloudflarestorage.com/files/${fileName}`;
     return res.status(200).json({
       message: "File uploaded successfully and the orderStatus is delivered",
