@@ -14,7 +14,7 @@ router.post("/abandoned-cart", async (req, res) => {
     await addContactToAudience(email, firstName, lastName);
 
     // Now tag the user
-    await tagUser(email, "cart-abandoned");
+    await tagUser(email, "Cart-Abandonment-Email");
     res.status(200).json({ message: "Tagged as cart-abandoned" });
   } catch (error) {
     console.error("Error tagging user:", error);
