@@ -1033,13 +1033,31 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
       const result = await sendEmail({
         to: customer.email,
         subject: "Your Order Item Delivery Date Has Been Updated",
-        body: `<p>Dear ${
-          order.billingDetails.firstName
-        },</p><p>An item in your order (ID: ${
-          order._id
-        }) is scheduled for delivery on ${new Date(
+        body: `
+          <div style="font-family: Arial, sans-serif; color: #222;">
+            <h2 style="color: #6b7b58;">The Design Grit</h2>
+            <p>Dear ${order.billingDetails.firstName},</p>
+            <p>
+              We are pleased to inform you that an item in your order <strong>(ID: ${
+                order._id
+              })</strong> is scheduled for delivery on <strong>${new Date(
           subDeliveryDate
-        ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>The Design Grit</p>`,
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}</strong>.
+            </p>
+            <p>Thank you for shopping with us! If you have any questions, feel free to reply to this email or contact our support team.</p>
+            <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+            <p style="font-size:13px;color:#888;">
+              The Design Grit<br>
+              123 Main St, Your City<br>
+              <a href="mailto:support@thedesigngrit.com" style="color:#6b7b58;">support@thedesigngrit.com</a><br>
+              <a href="https://thedesigngrit.com" style="color:#6b7b58;">thedesigngrit.com</a>
+            </p>
+          </div>
+        `,
       });
       console.log("sendEmail result:", result);
     } catch (err) {
