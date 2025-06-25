@@ -1028,8 +1028,9 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
       "order subDeliveryDate",
       subDeliveryDate
     );
-    if (customer && customer.email) {
-      await sendEmail({
+    console.log("About to send email to:", customer.email);
+    try {
+      const result = await sendEmail({
         to: customer.email,
         subject: "Your Order Item Delivery Date Has Been Updated",
         body: `<p>Dear ${
@@ -1040,6 +1041,9 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
           subDeliveryDate
         ).toDateString()}.</p><p>Thank you for shopping with us!</p><p>Best regards,<br>The Design Grit</p>`,
       });
+      console.log("sendEmail result:", result);
+    } catch (err) {
+      console.error("sendEmail error:", err);
     }
 
     return res.status(200).json({
