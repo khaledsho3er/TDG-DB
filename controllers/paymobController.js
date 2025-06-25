@@ -123,19 +123,29 @@ class PaymobController {
             "NA",
         },
         cartItems: orderData.items
-          ? orderData.items.map((item) => ({
-              productId: item.productId,
-              variantId: item.variantId,
-              name: item.name,
-              quantity: item.quantity,
-              price:
-                (item.amount_cents ? item.amount_cents / 100 : item.price) /
-                item.quantity,
-              totalPrice: item.amount_cents
-                ? item.amount_cents / 100
-                : item.price || 0,
-              brandId: item.brandId,
-            }))
+          ? orderData.items.map((item) => {
+              const cartItem = {
+                productId: item.productId,
+                variantId: item.variantId,
+                name: item.name,
+                quantity: item.quantity,
+                price:
+                  (item.amount_cents ? item.amount_cents / 100 : item.price) /
+                  item.quantity,
+                totalPrice: item.amount_cents
+                  ? item.amount_cents / 100
+                  : item.price || 0,
+                brandId: item.brandId,
+                fromQuotation: item.fromQuotation ?? false,
+                quotationId: item.quotationId ?? null,
+              };
+              if (item.color) cartItem.color = item.color;
+              if (item.size) cartItem.size = item.size;
+              if (item.material) cartItem.material = item.material;
+              if (item.customization)
+                cartItem.customization = item.customization;
+              return cartItem;
+            })
           : [],
       };
 
