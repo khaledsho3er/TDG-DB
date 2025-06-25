@@ -11,7 +11,24 @@ const axios = require("axios");
 const { sendEmail } = require("../services/awsSes");
 const fs = require("fs");
 const path = require("path");
-const Quotation = require("../models/quotation"); // <-- ensure this is imported
+
+function generateOrderReceiptEmail(order) {
+  return `
+    <h2>Thank you for your order!</h2>
+    <p>Order ID: <strong>${order._id}</strong></p>
+    <p>Total: <strong>${order.total} E£</strong></p>
+    <p>Products:</p>
+    <ul>
+      ${order.cartItems
+        .map(
+          (item) =>
+            `<li>${item.name} x${item.quantity} — ${item.totalPrice} E£</li>`
+        )
+        .join("")}
+    </ul>
+    <p>We will begin processing your order shortly. If you have any questions, reply to this email.</p>
+  `;
+}
 
 class PaymobController {
   static async getConfig(req, res) {
@@ -47,8 +64,6 @@ class PaymobController {
         total: orderData.total,
         customerId: orderData.customerId || req.user?.id,
         shippingFee: orderData.shippingFee || 0,
-        type: orderData.quotationId ? "quotation" : "order",
-        quotationId: orderData.quotationId || null,
         billingDetails: {
           firstName: orderData.billingDetails.first_name,
           lastName: orderData.billingDetails.last_name,
@@ -152,8 +167,6 @@ class PaymobController {
           shippingFee: transformedOrderData.shippingFee,
           billingDetails: transformedOrderData.billingDetails,
           shippingDetails: transformedOrderData.shippingDetails,
-          type: orderData.quotationId ? "quotation" : "order",
-          quotationId: orderData.quotationId || null,
         },
         authToken,
         `${
@@ -228,20 +241,6 @@ class PaymobController {
             "Transformed order data in handle callback:",
             JSON.stringify(orderData, null, 2)
           );
-
-          // === Handle Quotation Payment ===
-          if (orderData.type === "quotation" && orderData.quotationId) {
-            await Quotation.findByIdAndUpdate(orderData.quotationId, {
-              status: "approved",
-              "paymentDetails.paid": true,
-              "paymentDetails.paymentId": orderId,
-              "paymentDetails.paymentMethod": "paymob",
-            });
-
-            return res.redirect(
-              `https://thedesigngrit.com/quotations?quotation=${orderData.quotationId}&status=success`
-            );
-          }
           // Create a new order in your database
           const newOrder = new Order({
             customerId: orderData.customerId || orderExtras.customerId,
@@ -469,116 +468,7 @@ class PaymobController {
       return res.redirect("https://thedesigngrit.com/home?payment-failed");
     }
   }
-  static async createQuotationPayment(req, res) {
-    try {
-      const { quotationId } = req.body;
-      if (!quotationId) {
-        return res.status(400).json({ error: "Quotation ID is required" });
-      }
 
-      const quotation = await Quotation.findById(quotationId)
-        .populate("userId")
-        .populate("productId");
-
-      if (!quotation || !quotation.userId || !quotation.productId) {
-        return res
-          .status(404)
-          .json({ error: "Quotation not found or incomplete" });
-      }
-
-      const user = quotation.userId;
-      const product = quotation.productId;
-
-      const defaultAddress =
-        user.shipmentAddress.find((addr) => addr.isDefault) || {};
-
-      const billingDetails = {
-        firstName: user.firstName || "Customer",
-        lastName: user.lastName || "",
-        email: user.email,
-        phoneNumber: user.phoneNumber || "NA",
-        address: defaultAddress.address1 || "NA",
-        floor: defaultAddress.floor || "NA",
-        apartment: defaultAddress.apartment || "NA",
-        label: defaultAddress.label || "Home",
-        city: defaultAddress.city || "NA",
-        postal_code: defaultAddress.postalCode || "NA",
-        country: defaultAddress.country || "Egypt",
-        shippingMethod: "quotation",
-      };
-
-      const cartItems = [
-        {
-          productId: quotation.productId._id,
-          variantId: null,
-          name: product.name,
-          quantity: 1,
-          price: quotation.quotePrice,
-          totalPrice: quotation.quotePrice,
-          brandId: quotation.brandId,
-        },
-      ];
-
-      const transformedData = {
-        total: quotation.quotePrice,
-        customerId: user._id,
-        shippingFee: 0,
-        billingDetails,
-        shippingDetails: billingDetails,
-        cartItems,
-      };
-
-      const { order: paymobOrder, authToken } = await PaymobService.createOrder(
-        transformedData.total,
-        transformedData
-      );
-
-      const paymentKey = await PaymobService.getPaymentKey(
-        paymobOrder.id,
-        {
-          amount: transformedData.total,
-          email: billingDetails.email,
-          firstName: billingDetails.firstName,
-          lastName: billingDetails.lastName,
-          address: billingDetails.address,
-          phoneNumber: billingDetails.phoneNumber,
-          country: billingDetails.country,
-          city: billingDetails.city,
-          postal_code: billingDetails.postal_code,
-          cartItems: transformedData.cartItems,
-          customerId: transformedData.customerId,
-          shippingFee: transformedData.shippingFee,
-          billingDetails,
-          shippingDetails: billingDetails,
-        },
-        authToken,
-        `${
-          process.env.API_BASE_URL || "https://api.thedesigngrit.com"
-        }/api/paymob/callback`
-      );
-
-      // Save this orderData for callback to use
-      PaymobController.transformedOrderData = {
-        ...transformedData,
-        type: "quotation",
-        quotationId: quotation._id,
-      };
-
-      const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey.token}`;
-
-      return res.json({
-        success: true,
-        iframe_url: iframeUrl,
-        orderId: paymobOrder.id,
-        paymentKey: paymentKey.token,
-      });
-    } catch (error) {
-      console.error("Error creating quotation payment:", error);
-      return res
-        .status(500)
-        .json({ error: "Failed to create quotation payment" });
-    }
-  }
   static async handleCallbackPost(req, res) {
     try {
       console.log("=== PAYMENT POST CALLBACK RECEIVED ===");
