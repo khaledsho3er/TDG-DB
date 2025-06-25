@@ -959,6 +959,7 @@ exports.updateCartItemDeliveryDate = async (req, res) => {
 
     // Send email notification to customer using AWS SES
     const customer = await user.findById(order.customerId).select("email");
+    console.log("Order customer email:", customer.email, "user:0", customer);
     if (customer && customer.email) {
       await sendEmail({
         to: customer.email,
