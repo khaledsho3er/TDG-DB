@@ -139,9 +139,8 @@ exports.updateQuotationByVendor = async (req, res) => {
       // Construct invoice link if present
       let invoiceLink = null;
       if (updated.quotationInvoice) {
-        const baseUrl =
-          process.env.API_BASE_URL || "https://api.thedesigngrit.com";
-        invoiceLink = `${baseUrl}/uploads/${updated.quotationInvoice}`;
+        const baseUrl = "https://pub-64ea2c5c4ba5460991425897a370f20c.r2.dev/";
+        invoiceLink = `${baseUrl}/${updated.quotationInvoice}`;
       }
       // Format date
       let formattedDate = updated.dateOfQuotePrice
