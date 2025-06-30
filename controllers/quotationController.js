@@ -5,6 +5,7 @@ const Product = require("../models/Products"); // Assuming you have a 'Product' 
 const Brand = require("../models/Brand"); // Assuming you have a 'Brand' model
 const Notification = require("../models/notification"); // Import the Notification model
 const AdminNotification = require("../models/adminNotifications"); // Import the AdminNotification model
+const { sendEmail } = require("../services/awsSes"); // Import AWS SES email sender
 
 // Create a new quotation request
 exports.createQuotation = async (req, res) => {
@@ -127,6 +128,58 @@ exports.updateQuotationByVendor = async (req, res) => {
       return res.status(404).json({ message: "Quotation not found" });
     }
 
+    // Fetch user to get email
+    const user = await User.findById(updated.userId);
+    // Fetch product details for richer email
+    let product = null;
+    if (updated.productId) {
+      product = await Product.findById(updated.productId);
+    }
+    if (user && user.email) {
+      // Construct invoice link if present
+      let invoiceLink = null;
+      if (updated.quotationInvoice) {
+        const baseUrl =
+          process.env.API_BASE_URL || "https://api.thedesigngrit.com";
+        invoiceLink = `${baseUrl}/uploads/${updated.quotationInvoice}`;
+      }
+      // Format date
+      let formattedDate = updated.dateOfQuotePrice
+        ? new Date(updated.dateOfQuotePrice).toLocaleDateString()
+        : "N/A";
+      // Compose email body with more details
+      let emailBody = `
+        <h2>Your Quotation Has Been Updated</h2>
+        ${product ? `<p><strong>Product:</strong> ${product.name}</p>` : ""}
+        <p><strong>Material:</strong> ${updated.material || "-"}</p>
+        <p><strong>Size:</strong> ${updated.size || "-"}</p>
+        <p><strong>Color:</strong> ${updated.color || "-"}</p>
+        <p><strong>Customization:</strong> ${updated.customization || "-"}</p>
+        <p><strong>Note from Vendor:</strong> ${updated.note || "-"}</p>
+        <p><strong>Quote Price:</strong> ${
+          updated.quotePrice != null ? updated.quotePrice + " E£" : "-"
+        }</p>
+        <p><strong>Date of Quote Price:</strong> ${formattedDate}</p>
+        ${
+          invoiceLink
+            ? `<p><strong>Quotation Invoice:</strong> <a href='${invoiceLink}' target='_blank'>View Invoice</a></p>`
+            : ""
+        }
+        <hr>
+        <p>If you have any questions, please contact us.</p>
+      `;
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: "Your Quotation Has Been Updated",
+          body: emailBody,
+        });
+      } catch (emailErr) {
+        console.error("Failed to send quotation update email:", emailErr);
+        // Optionally, you can continue or return an error here
+      }
+    }
+
     res.status(200).json({
       message: "Quotation updated successfully",
       quotation: updated,
@@ -215,6 +268,27 @@ exports.toggleClientApproval = async (req, res) => {
 
     await quotation.save();
 
+    // Notify the brand about the client's action
+    try {
+      // Fetch user details for notification message
+      const user = await User.findById(quotation.userId);
+      let clientName = user ? `${user.firstName} ${user.lastName}` : "A client";
+      let action = quotation.ClientApproval ? "approved" : "rejected";
+      const newNotification = new Notification({
+        type: "quotation",
+        description: `The client ${clientName} has ${action} the quotation (ID: ${quotation._id}).`,
+        brandId: quotation.brandId,
+        quotation: quotation._id,
+        read: false,
+      });
+      await newNotification.save();
+    } catch (notifErr) {
+      console.error(
+        "Failed to create brand notification for client approval/rejection:",
+        notifErr
+      );
+    }
+
     res.status(200).json({
       message: `Client approval set to ${quotation.ClientApproval}`,
       quotation,
@@ -242,6 +316,35 @@ exports.vendorApproveQuotation = async (req, res) => {
     quotation.status = "approved";
 
     await quotation.save();
+
+    // Send email to user notifying vendor approval and waiting for user approval/payment
+    try {
+      // Fetch user and product details
+      const user = await User.findById(quotation.userId);
+      let product = null;
+      if (quotation.productId) {
+        product = await Product.findById(quotation.productId);
+      }
+      if (user && user.email) {
+        let emailBody = `
+          <h2>Your Quotation Has Been Accepted by the Vendor</h2>
+          ${product ? `<p><strong>Product:</strong> ${product.name}</p>` : ""}
+          <p><strong>Quote Price:</strong> ${
+            quotation.quotePrice != null ? quotation.quotePrice + " E£" : "-"
+          }</p>
+          <p>The vendor has accepted your quotation request. Please review the offer and proceed with your approval and payment to continue the process.</p>
+          <hr>
+          <p>If you have any questions, please contact us.</p>
+        `;
+        await sendEmail({
+          to: user.email,
+          subject: "Vendor Accepted Your Quotation - Action Required",
+          body: emailBody,
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send vendor approval email to user:", emailErr);
+    }
 
     res.status(200).json({
       message: "Quotation approved by vendor",
