@@ -350,15 +350,24 @@ exports.updateProduct = async (req, res) => {
       updates.warrantyInfo = JSON.parse(updates.warrantyInfo); // Convert back to an object if it was stringified
     }
 
-    // Handle images: merge new uploads with existing images
+    // Remove '/uploads/' from existing images if present and filter out invalid values
+    const existingImages = (existingProduct.images || [])
+      .map((img) =>
+        typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
+      )
+      .filter((img) => img && img !== "undefined" && img !== "null");
+
+    // Only add new valid filenames
     let newImages = [];
     if (req.files && req.files.length > 0) {
-      newImages = req.files.map((file) => file.filename);
+      newImages = req.files
+        .map((file) => file.filename)
+        .filter(
+          (filename) =>
+            filename && filename !== "undefined" && filename !== "null"
+        );
     }
-    // Remove '/uploads/' from existing images if present
-    const existingImages = (existingProduct.images || []).map((img) =>
-      img.replace(/^\/uploads\//, "")
-    );
+
     updates.images = [...existingImages, ...newImages];
 
     // Update mainImage if provided, else keep the current one
