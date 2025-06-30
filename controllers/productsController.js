@@ -316,6 +316,11 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+    // Fetch the existing product
+    const existingProduct = await Product.findById(id);
+    if (!existingProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
     // Reconstruct arrays for colors and sizes
     if (req.body.colors) {
       updates.colors = Array.isArray(req.body.colors)
@@ -345,9 +350,19 @@ exports.updateProduct = async (req, res) => {
       updates.warrantyInfo = JSON.parse(updates.warrantyInfo); // Convert back to an object if it was stringified
     }
 
-    if (req.files) {
-      updates.images = req.files.map((file) => `/uploads/${file.filename}`);
+    // Handle images: merge new uploads with existing images
+    let newImages = [];
+    if (req.files && req.files.length > 0) {
+      newImages = req.files.map((file) => file.filename);
     }
+    // Remove '/uploads/' from existing images if present
+    const existingImages = (existingProduct.images || []).map((img) =>
+      img.replace(/^\/uploads\//, "")
+    );
+    updates.images = [...existingImages, ...newImages];
+
+    // Update mainImage if provided, else keep the current one
+    updates.mainImage = req.body.mainImage || existingProduct.mainImage;
 
     const updatedProduct = await Product.findByIdAndUpdate(id, updates, {
       new: true,
