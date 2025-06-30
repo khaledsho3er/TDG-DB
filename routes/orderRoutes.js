@@ -53,7 +53,14 @@ router.put(
 router.put("/orders/:orderId/note", orderController.addOrderNote);
 router.post("/ping-brand", orderController.pingBrandOnOrder);
 router.put("/:orderId/payment-status", orderController.updatePaymentStatus);
-router.get("/getactive-orders", orderController.activeOrdersStats);
-router.get("/getcompleted-orders", orderController.completedOrdersStats);
-
+router.get("/admin/get-active-orders", orderController.activeOrdersStats);
+router.get("/admin/get-completed-orders", orderController.completedOrdersStats);
+router.get(
+  "/brand/orders/completed-stats/:brandId",
+  orderController.completedOrdersStatsByBrand
+);
+router.get(
+  "/brand/orders/active-stats/:brandId",
+  orderController.activeOrdersStatsByBrand
+);
 module.exports = router;

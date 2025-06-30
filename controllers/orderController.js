@@ -1330,3 +1330,69 @@ exports.activeOrdersStats = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+// Get count and total sum of delivered orders for a specific brand
+exports.completedOrdersStatsByBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    if (!brandId)
+      return res.status(400).json({ message: "brandId is required" });
+    // Find orders with at least one cartItem for this brand and Delivered status
+    const orders = await Order.find({
+      orderStatus: "Delivered",
+      "cartItems.brandId": brandId,
+    });
+    // Only count/sum the brand's items in each order
+    let count = 0;
+    let totalSum = 0;
+    orders.forEach((order) => {
+      const brandItems = order.cartItems.filter(
+        (item) => item.brandId && item.brandId.toString() === brandId
+      );
+      if (brandItems.length > 0) {
+        count++;
+        totalSum += brandItems.reduce(
+          (sum, item) => sum + (item.totalPrice || 0),
+          0
+        );
+      }
+    });
+    res.status(200).json({ count, totalSum });
+  } catch (error) {
+    console.error("Error fetching delivered orders stats by brand:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Get count and total sum of active (pending/confirmed) orders for a specific brand
+exports.activeOrdersStatsByBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    if (!brandId)
+      return res.status(400).json({ message: "brandId is required" });
+    // Find orders with at least one cartItem for this brand and Pending/Confirmed status
+    const orders = await Order.find({
+      orderStatus: { $in: ["Pending", "Confirmed"] },
+      "cartItems.brandId": brandId,
+    });
+    // Only count/sum the brand's items in each order
+    let count = 0;
+    let totalSum = 0;
+    orders.forEach((order) => {
+      const brandItems = order.cartItems.filter(
+        (item) => item.brandId && item.brandId.toString() === brandId
+      );
+      if (brandItems.length > 0) {
+        count++;
+        totalSum += brandItems.reduce(
+          (sum, item) => sum + (item.totalPrice || 0),
+          0
+        );
+      }
+    });
+    res.status(200).json({ count, totalSum });
+  } catch (error) {
+    console.error("Error fetching active orders stats by brand:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
