@@ -63,6 +63,14 @@ exports.createProductPromotion = async (req, res) => {
     product.promotionEndDate = endDate;
 
     await product.save();
+    // Create admin notification for pending promotion
+    const adminNotification = new Notification({
+      type: "Product Promotion",
+      description: `Promotion for product '${product.name}' from '${product.price}'to '${product.salePrice}'by '${product.discountPercentage}'% OFF `,
+      read: false,
+    });
+    await adminNotification.save();
+
     res.json({ message: "Promotion created successfully", product });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
