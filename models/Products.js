@@ -58,6 +58,15 @@ const productSchema = new mongoose.Schema(
         ref: "ProductVariant", // Reference to the ProductVariant schema
       },
     ], // Array of product variants
+    pendingUpdates: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    updateStatus: {
+      type: String,
+      enum: ["none", "pending", "approved", "rejected"],
+      default: "none",
+    },
   },
   { timestamps: true }
 );

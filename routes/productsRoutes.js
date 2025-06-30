@@ -22,6 +22,9 @@ const {
   updateProductStatus,
   getPromotionalProducts,
   getPromotionMetrics,
+  approvePendingUpdate,
+  rejectPendingUpdate,
+  getPendingProducts,
 } = require("../controllers/productsController");
 
 const router = express.Router();
@@ -89,5 +92,8 @@ router.get("/past-promotions/metrics", calculatePastPromotionMetrics);
 router.put("/product/status/:productId", updateProductStatus);
 router.get("/admin/products-promotions", getPromotionalProducts);
 router.get("/admin/products-promotion-metrics", getPromotionMetrics);
+router.patch("/admin/products/approve/:id", approvePendingUpdate);
+router.patch("/admin/products/reject/:id", rejectPendingUpdate);
+router.get("/admin/products/pending", getPendingProducts);
 
 module.exports = router;

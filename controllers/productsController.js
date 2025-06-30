@@ -373,29 +373,58 @@ exports.updateProduct = async (req, res) => {
     // Update mainImage if provided, else keep the current one
     updates.mainImage = req.body.mainImage || existingProduct.mainImage;
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true, // Optional: ensures that the update adheres to the model's validation rules
-    });
+    // Store updates in pendingUpdates and set updateStatus to 'pending'
+    existingProduct.pendingUpdates = updates;
+    existingProduct.updateStatus = "pending";
+    await existingProduct.save();
 
-    if (!updatedProduct) {
-      return res.status(404).json({ message: "Product not found" });
+    // Compare current product data with pendingUpdates to find changed fields
+    const changedFields = [];
+    for (let key in updates) {
+      if (
+        Object.prototype.hasOwnProperty.call(existingProduct._doc, key) &&
+        typeof updates[key] !== "object" &&
+        existingProduct[key] !== updates[key]
+      ) {
+        changedFields.push({
+          field: key,
+          oldValue: existingProduct[key],
+          newValue: updates[key],
+        });
+      }
     }
-    // Create admin notification for product update
+
+    // Build a description for the notification
+    let description = `Product '${existingProduct.name}' submitted changes for approval: `;
+    if (changedFields.length > 0) {
+      description += changedFields
+        .map((f) => {
+          const oldVal =
+            typeof f.oldValue === "object"
+              ? JSON.stringify(f.oldValue)
+              : f.oldValue;
+          const newVal =
+            typeof f.newValue === "object"
+              ? JSON.stringify(f.newValue)
+              : f.newValue;
+          return `${f.field}: "${oldVal}" → "${newVal}"`;
+        })
+        .join(", ");
+    } else {
+      description += "No fields changed.";
+    }
+
     const adminNotification = new AdminNotification({
-      type: "product_update",
-      description: `Product "${updatedProduct.name}" (ID: ${
-        updatedProduct._id
-      }) has been updated by brand "${
-        updatedProduct.brandId.brandName || updatedProduct.brandId
-      }"`,
+      type: "Product Update",
+      description: description,
       read: false,
     });
     await adminNotification.save();
 
-    res
-      .status(200)
-      .json({ message: "Product updated successfully", updatedProduct });
+    res.status(200).json({
+      message: "Product update submitted for admin approval.",
+      product: existingProduct,
+    });
   } catch (error) {
     console.error("Error updating product:", error);
     res.status(500).json({ message: "Error updating product", error });
@@ -900,5 +929,67 @@ exports.getPromotionMetrics = async (req, res) => {
   } catch (error) {
     console.error("Error calculating promotion metrics:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Approve pending product update
+exports.approvePendingUpdate = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product || !product.pendingUpdates) {
+      return res.status(404).json({ message: "No pending updates found." });
+    }
+    Object.assign(product, product.pendingUpdates);
+    product.pendingUpdates = null;
+    product.updateStatus = "approved";
+    await product.save();
+    // Send notification
+    const notification = new Notification({
+      type: "Product Update",
+      description: `Your product update for '${product.name}' has been approved by the admin.`,
+      brandId: product.brandId,
+    });
+    await notification.save();
+    res
+      .status(200)
+      .json({ message: "Product update approved and applied.", product });
+  } catch (error) {
+    console.error("Error approving product update:", error);
+    res.status(500).json({ message: "Failed to approve product update" });
+  }
+};
+
+// Reject pending product update
+exports.rejectPendingUpdate = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product || !product.pendingUpdates) {
+      return res.status(404).json({ message: "No pending updates found." });
+    }
+    product.pendingUpdates = null;
+    product.updateStatus = "rejected";
+    await product.save();
+    // Send notification
+    const notification = new Notification({
+      type: "Product Update",
+      description: `Your product update for '${product.name}' has been rejected by the admin.`,
+      brandId: product.brandId,
+    });
+    await notification.save();
+    res.status(200).json({ message: "Product update rejected." });
+  } catch (error) {
+    console.error("Error rejecting product update:", error);
+    res.status(500).json({ message: "Failed to reject product update" });
+  }
+};
+
+// Get all products with pending updates
+exports.getPendingProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ updateStatus: "pending" });
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching pending products:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
