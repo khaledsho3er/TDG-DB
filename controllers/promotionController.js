@@ -1,5 +1,7 @@
 const Product = require("../models/Products");
 const Notification = require("../models/notification");
+
+//unused file go to productController.js
 // Fetch past promotions (promotions that have ended)
 // Fetch past promotions for a specific brand
 exports.getPastPromotions = async (req, res) => {

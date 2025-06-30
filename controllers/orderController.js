@@ -1299,3 +1299,34 @@ exports.updatePaymentStatus = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Get count and total sum of delivered orders
+exports.completedOrdersStats = async (req, res) => {
+  try {
+    const deliveredOrders = await Order.find({ orderStatus: "Delivered" });
+    const count = deliveredOrders.length;
+    const totalSum = deliveredOrders.reduce(
+      (sum, order) => sum + (order.total || 0),
+      0
+    );
+    res.status(200).json({ count, totalSum });
+  } catch (error) {
+    console.error("Error fetching delivered orders stats:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Get count and total sum of pending or confirmed orders
+exports.activeOrdersStats = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      orderStatus: { $in: ["Pending", "Confirmed"] },
+    });
+    const count = orders.length;
+    const totalSum = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    res.status(200).json({ count, totalSum });
+  } catch (error) {
+    console.error("Error fetching pending/confirmed orders stats:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
