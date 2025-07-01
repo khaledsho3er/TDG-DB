@@ -257,22 +257,31 @@ class PaymobController {
             customerId: orderData.customerId || orderExtras.customerId,
             cartItems: orderData.cartItems
               ? orderData.cartItems.map((item) => {
+                  const saleAmount =
+                    item.totalPrice || item.price * item.quantity;
+                  const commissionAmount = saleAmount * 0.15; // 15%
+                  const taxAmount = saleAmount * 0.14; // 14%
+
                   const cartItem = {
                     productId: item.productId,
                     variantId: item.variantId,
                     name: item.name,
                     quantity: item.quantity,
                     price: item.price || item.totalPrice / item.quantity,
-                    totalPrice: item.totalPrice || item.price * item.quantity,
+                    totalPrice: saleAmount,
                     brandId: item.brandId,
                     fromQuotation: item.fromQuotation ?? false,
                     quotationId: item.quotationId ?? null,
+                    commissionAmount,
+                    taxAmount,
                   };
+
                   if (item.color) cartItem.color = item.color;
                   if (item.size) cartItem.size = item.size;
                   if (item.material) cartItem.material = item.material;
                   if (item.customization)
                     cartItem.customization = item.customization;
+
                   return cartItem;
                 })
               : [],
