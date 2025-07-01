@@ -62,6 +62,8 @@ class PaymobController {
 
       // Transform the frontend data structure to match our backend expectations
       const transformedOrderData = {
+        customerId: orderData.customerId || req.user?.id,
+        shippingFee: orderData.shippingFee || 0,
         total: orderData.total,
         subtotal: orderData.subtotal || 0,
         taxAmount: orderData.taxAmount || 0, // VAT
@@ -314,11 +316,7 @@ class PaymobController {
 
           // Create a new order in your database
           const newOrder = new Order({
-            customerId:
-              (orderData.customerId && orderData.customerId._id) ||
-              orderData.customerId ||
-              orderExtras.customerId,
-
+            customerId: orderData.customerId || orderExtras.customerId,
             cartItems,
             subtotal: total,
             shippingFee,
