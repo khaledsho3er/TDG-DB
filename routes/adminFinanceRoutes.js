@@ -3,6 +3,9 @@ const router = express.Router();
 const {
   generateAdminFinancialLogsFromOrders,
 } = require("../services/finance.service");
+const {
+  getAdminFinancialLogs,
+} = require("../controllers/adminFinanceController");
 
 // Admin-only endpoint to regenerate all logs
 router.post("/recalculate", async (req, res) => {
@@ -13,5 +16,6 @@ router.post("/recalculate", async (req, res) => {
     res.status(500).json({ error: "Failed to recalculate logs", details: err });
   }
 });
+router.get("/getall-logs", getAdminFinancialLogs);
 
 module.exports = router;
