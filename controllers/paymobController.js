@@ -295,12 +295,7 @@ class PaymobController {
           );
           const vat = +(productTotal * 0.14).toFixed(2);
           const paymobFee = +(total * 0.03).toFixed(2);
-          const brandPayout = +(
-            total -
-            vat -
-            paymobFee -
-            totalCommission
-          ).toFixed(2);
+          const brandPayout = +(total - vat - totalCommission).toFixed(2);
           const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
           const convertedAmount = paymobOrder.converted_amount || 0;
           const capturedAmount = paymobOrder.captured_amount
