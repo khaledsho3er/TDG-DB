@@ -306,9 +306,19 @@ class PaymobController {
           const capturedAmount = paymobOrder.captured_amount
             ? paymobOrder.captured_amount / 100
             : 0;
+          console.log(
+            "Resolved customerId:",
+            (orderData.customerId && orderData.customerId._id) ||
+              orderData.customerId
+          );
+
           // Create a new order in your database
           const newOrder = new Order({
-            customerId: orderData.customerId || orderExtras.customerId,
+            customerId:
+              (orderData.customerId && orderData.customerId._id) ||
+              orderData.customerId ||
+              orderExtras.customerId,
+
             cartItems,
             subtotal: total,
             shippingFee,
