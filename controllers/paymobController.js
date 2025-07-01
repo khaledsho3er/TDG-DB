@@ -261,7 +261,6 @@ class PaymobController {
             const totalPrice = item.totalPrice || item.price * item.quantity;
             const commission = +(totalPrice * 0.15).toFixed(2);
             const tax = +(totalPrice * 0.14).toFixed(2);
-
             return {
               productId: item.productId,
               variantId: item.variantId,
@@ -286,7 +285,6 @@ class PaymobController {
             orderData.shippingFee || orderExtras.shippingFee || 0;
           const total = subtotal;
 
-          // Commission & VAT & Fee Calculations
           const productTotal = cartItems.reduce(
             (sum, item) => sum + item.totalPrice,
             0
@@ -308,11 +306,6 @@ class PaymobController {
           const capturedAmount = paymobOrder.captured_amount
             ? paymobOrder.captured_amount / 100
             : 0;
-          console.log(
-            "Resolved customerId:",
-            (orderData.customerId && orderData.customerId._id) ||
-              orderData.customerId
-          );
 
           // Create a new order in your database
           const newOrder = new Order({
@@ -352,6 +345,12 @@ class PaymobController {
                 city: paymobOrder.shipping_data?.city || "N/A",
                 zipCode: paymobOrder.shipping_data?.postal_code || "N/A",
               },
+            vat,
+            fees: paymobFee,
+            brandPayout,
+            netAdminProfit,
+            convertedAmount,
+            capturedAmount,
           });
 
           console.log("New order object:", JSON.stringify(newOrder, null, 2));
