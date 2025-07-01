@@ -148,6 +148,7 @@ app.use("/api/paymob", paymobRoutes); // Use Paymob routes
 app.use("/api/google-auth", googleAuthRoutes);
 app.use("/api/mailchimp", marketingMailsRoutes); // Start the server
 app.use("/api/payouts", payoutRoutes);
+app.use("/api/admin-financials", require("./routes/adminFinance"));
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
