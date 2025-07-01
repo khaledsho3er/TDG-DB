@@ -63,8 +63,10 @@ class PaymobController {
       // Transform the frontend data structure to match our backend expectations
       const transformedOrderData = {
         total: orderData.total,
-        customerId: orderData.customerId || req.user?.id,
-        shippingFee: orderData.shippingFee || 0,
+        subtotal: orderData.subtotal || 0,
+        taxAmount: orderData.taxAmount || 0, // VAT
+        fees: orderData.fees || +((orderData.total || 0) * 0.03).toFixed(2),
+        convertedAmount: orderData.convertedAmount || orderData.total,
         billingDetails: {
           firstName: orderData.billingDetails.first_name,
           lastName: orderData.billingDetails.last_name,
@@ -252,42 +254,65 @@ class PaymobController {
             "Transformed order data in handle callback:",
             JSON.stringify(orderData, null, 2)
           );
+          // Build the cart items with commission and tax per item
+          const cartItems = (orderData.cartItems || []).map((item) => {
+            const totalPrice = item.totalPrice || item.price * item.quantity;
+            const commission = +(totalPrice * 0.15).toFixed(2);
+            const tax = +(totalPrice * 0.14).toFixed(2);
+
+            return {
+              productId: item.productId,
+              variantId: item.variantId,
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price || totalPrice / item.quantity,
+              totalPrice,
+              brandId: item.brandId,
+              fromQuotation: item.fromQuotation || false,
+              quotationId: item.quotationId || null,
+              commissionAmount: commission,
+              taxAmount: tax,
+              color: item.color,
+              size: item.size,
+              material: item.material,
+              customization: item.customization,
+            };
+          });
+
+          const subtotal = orderData.total || paymobOrder.amount_cents / 100;
+          const shippingFee =
+            orderData.shippingFee || orderExtras.shippingFee || 0;
+          const total = subtotal;
+
+          // Commission & VAT & Fee Calculations
+          const productTotal = cartItems.reduce(
+            (sum, item) => sum + item.totalPrice,
+            0
+          );
+          const totalCommission = cartItems.reduce(
+            (sum, item) => sum + item.commissionAmount,
+            0
+          );
+          const vat = +(productTotal * 0.14).toFixed(2);
+          const paymobFee = +(total * 0.03).toFixed(2);
+          const brandPayout = +(
+            total -
+            vat -
+            paymobFee -
+            totalCommission
+          ).toFixed(2);
+          const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
+          const convertedAmount = paymobOrder.converted_amount || 0;
+          const capturedAmount = paymobOrder.captured_amount
+            ? paymobOrder.captured_amount / 100
+            : 0;
           // Create a new order in your database
           const newOrder = new Order({
             customerId: orderData.customerId || orderExtras.customerId,
-            cartItems: orderData.cartItems
-              ? orderData.cartItems.map((item) => {
-                  const saleAmount =
-                    item.totalPrice || item.price * item.quantity;
-                  const commissionAmount = saleAmount * 0.15; // 15%
-                  const taxAmount = saleAmount * 0.14; // 14%
-
-                  const cartItem = {
-                    productId: item.productId,
-                    variantId: item.variantId,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price || item.totalPrice / item.quantity,
-                    totalPrice: saleAmount,
-                    brandId: item.brandId,
-                    fromQuotation: item.fromQuotation ?? false,
-                    quotationId: item.quotationId ?? null,
-                    commissionAmount,
-                    taxAmount,
-                  };
-
-                  if (item.color) cartItem.color = item.color;
-                  if (item.size) cartItem.size = item.size;
-                  if (item.material) cartItem.material = item.material;
-                  if (item.customization)
-                    cartItem.customization = item.customization;
-
-                  return cartItem;
-                })
-              : [],
-            subtotal: orderData.total || paymobOrder.amount_cents / 100,
-            shippingFee: orderData.shippingFee || orderExtras.shippingFee || 0,
-            total: orderData.total || paymobOrder.amount_cents / 100,
+            cartItems,
+            subtotal: total,
+            shippingFee,
+            total,
             orderStatus: "Pending",
             paymentDetails: {
               paymentMethod: "paymob",

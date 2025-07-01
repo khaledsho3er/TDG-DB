@@ -95,6 +95,12 @@ const orderSchema = new mongoose.Schema(
       city: { type: String, required: true },
       zipCode: { type: String, required: true },
     },
+    vat: { type: Number, default: 0 },
+    fees: { type: Number, default: 0 },
+    brandPayout: { type: Number, default: 0 },
+    convertedAmount: { type: Number, default: 0 },
+    capturedAmount: { type: Number, default: 0 },
+    netAdminProfit: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
