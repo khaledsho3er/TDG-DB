@@ -288,29 +288,65 @@ const path = require("path");
 exports.updateBrandImages = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = {};
-
-    if (req.files["brandlogo"] && req.files["brandlogo"][0]) {
-      const fullUrl = req.files["brandlogo"][0].location;
-      updateData.brandlogo = path.basename(fullUrl); // Get only the filename
-    }
-
-    if (req.files["coverPhoto"] && req.files["coverPhoto"][0]) {
-      const fullUrl = req.files["coverPhoto"][0].location;
-      updateData.coverPhoto = path.basename(fullUrl); // Get only the filename
-    }
-
-    const updatedBrand = await Brand.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
-
-    if (!updatedBrand) {
+    const brand = await Brand.findById(id);
+    if (!brand) {
       return res.status(404).json({ message: "Brand not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Images updated successfully", brand: updatedBrand });
+    const updates = {};
+    if (req.files["brandlogo"] && req.files["brandlogo"][0]) {
+      const fullUrl = req.files["brandlogo"][0].location;
+      updates.brandlogo = require("path").basename(fullUrl);
+    }
+    if (req.files["coverPhoto"] && req.files["coverPhoto"][0]) {
+      const fullUrl = req.files["coverPhoto"][0].location;
+      updates.coverPhoto = require("path").basename(fullUrl);
+    }
+
+    // Store updates in pendingUpdates and set updateStatus to pending
+    brand.pendingUpdates = {
+      ...(brand.pendingUpdates || {}),
+      ...updates,
+    };
+    brand.updateStatus = "pending";
+    await brand.save();
+
+    // Compare current brand data with pendingUpdates to find changed fields
+    const changedFields = [];
+    for (let key in updates) {
+      if (
+        Object.prototype.hasOwnProperty.call(brand._doc, key) &&
+        brand[key] !== updates[key]
+      ) {
+        changedFields.push({
+          field: key,
+          oldValue: brand[key],
+          newValue: updates[key],
+        });
+      }
+    }
+
+    // Build a description for the notification
+    let description = `Brand '${brand.brandName}' submitted image changes for approval: `;
+    if (changedFields.length > 0) {
+      description += changedFields
+        .map((f) => `${f.field}: "${f.oldValue}" → "${f.newValue}"`)
+        .join(", ");
+    } else {
+      description += "No image fields changed.";
+    }
+
+    const adminNotification = new AdminNotification({
+      type: "Brand Image Update",
+      description: description,
+      read: false,
+    });
+    await adminNotification.save();
+
+    res.status(200).json({
+      message: "Image update request submitted for approval.",
+      brand,
+    });
   } catch (error) {
     console.error("Error updating brand images:", error);
     res.status(500).json({ message: "Server error while updating images" });
