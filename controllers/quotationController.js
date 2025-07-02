@@ -257,7 +257,7 @@ exports.toggleClientApproval = async (req, res) => {
 
     // Toggle the client approval
     quotation.ClientApproval = !quotation.ClientApproval;
-
+    quotation.vendorApproval = true;
     // Set status accordingly
     if (!quotation.ClientApproval) {
       quotation.status = "rejected";
