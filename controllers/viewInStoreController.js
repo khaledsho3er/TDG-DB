@@ -126,19 +126,18 @@ const updateViewInStore = async (req, res) => {
       return res.status(404).json({ message: "ViewInStore entry not found" });
     }
 
+    const brandId = updatedViewInStore.brandId;
+    const userId = updatedViewInStore.userId;
+
     let brand = null;
     let user = null;
+
     if (status === "approved" || status === "rejected") {
       try {
         brand = await Brand.findById(brandId);
         user = await User.findById(userId);
-        if (
-          brand &&
-          brand.brandName &&
-          user &&
-          user.firstName &&
-          user.lastName
-        ) {
+
+        if (brand?.brandName && user?.firstName && user?.lastName) {
           const adminNotif = await AdminNotification.create({
             type: "View-in-store Request",
             description: `Brand '${brand.brandName}' has ${status} a view in store request from user ${user.firstName} ${user.lastName}.`,
@@ -152,10 +151,10 @@ const updateViewInStore = async (req, res) => {
       }
     }
 
-    // If status is approved, send email to user
+    // Send email if approved
     if (status === "approved") {
       try {
-        if (user && user.email) {
+        if (user?.email) {
           const emailResult = await sendEmail({
             to: user.email,
             subject: "Complete your purchase",
@@ -168,10 +167,10 @@ const updateViewInStore = async (req, res) => {
       }
     }
 
-    // If status is rejected, send rejection email to user
+    // Send email if rejected
     if (status === "rejected") {
       try {
-        if (user && user.email && brand && brand.brandName) {
+        if (user?.email && brand?.brandName) {
           const emailResult = await sendEmail({
             to: user.email,
             subject: "We value your feedback",
@@ -186,6 +185,7 @@ const updateViewInStore = async (req, res) => {
 
     res.status(200).json(updatedViewInStore);
   } catch (error) {
+    console.error("Error updating ViewInStore:", error);
     res.status(400).json({ message: error.message });
   }
 };
