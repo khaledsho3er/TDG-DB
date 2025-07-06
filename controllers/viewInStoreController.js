@@ -54,7 +54,7 @@ const createViewInStore = async (req, res) => {
           await sendEmail({
             to: user.email,
             subject: "Your view in store request is being processed!",
-            body: `<p>Your request to view in store has been submitted successfully and is now processing.<br>Feel free to visit the store anytime!</p>`,
+            body: `<p><br>Purchase Code: <b>${code}</b><br>Your request to view in store has been submitted successfully and is now processing.Feel free to visit the store anytime!</p>`,
           });
         }
       }
