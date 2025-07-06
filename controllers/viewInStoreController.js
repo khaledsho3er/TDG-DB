@@ -30,7 +30,7 @@ const createViewInStore = async (req, res) => {
         product = await require("../models/Products").findById(productId);
       } catch {}
       if (brand && brand._id) {
-        await Notification.create({
+        const brandNotif = await Notification.create({
           type: "viewInStore",
           description: `User ${
             user ? user.firstName + " " + user.lastName : userName
@@ -38,9 +38,12 @@ const createViewInStore = async (req, res) => {
             product && product.name ? ` for product '${product.name}'` : ""
           }.`,
           brandId: brand._id,
+          read: false,
         });
+        console.log("Brand notification created:", brandNotif);
+
         // Also notify admin
-        await AdminNotification.create({
+        const adminNotif = await AdminNotification.create({
           type: "View-in-store Request",
           description: `User ${
             user ? user.firstName + " " + user.lastName : userName
@@ -48,18 +51,25 @@ const createViewInStore = async (req, res) => {
             product && product.name ? ` for product '${product.name}'` : ""
           } from brand '${brand.brandName}'.`,
           brandId: brand._id,
+          read: false,
         });
+        console.log("Admin notification created:", adminNotif);
+
         // Email the user about request submission
         if (user && user.email) {
-          await sendEmail({
+          const emailResult = await sendEmail({
             to: user.email,
             subject: "Your view in store request is being processed!",
-            body: `<p><br>Purchase Code: <b>${code}</b><br>Your request to view in store has been submitted successfully and is now processing.Feel free to visit the store anytime!</p>`,
+            body: `<p><br>Purchase Code: <b>${code}</b><br>Your request to view in store has been submitted successfully and is now processing. Feel free to visit the store anytime!</p>`,
           });
+          console.log("User email sent:", emailResult);
         }
       }
     } catch (notifyBrandError) {
-      console.error("Failed to notify brand or admin:", notifyBrandError);
+      console.error(
+        "Failed to notify brand or admin or send email:",
+        notifyBrandError
+      );
     }
 
     res.status(201).json(savedViewInStore);
@@ -122,7 +132,6 @@ const updateViewInStore = async (req, res) => {
       try {
         brand = await Brand.findById(brandId);
         user = await User.findById(userId);
-        // Notify admin
         if (
           brand &&
           brand.brandName &&
@@ -130,11 +139,13 @@ const updateViewInStore = async (req, res) => {
           user.firstName &&
           user.lastName
         ) {
-          await AdminNotification.create({
+          const adminNotif = await AdminNotification.create({
             type: "View-in-store Request",
             description: `Brand '${brand.brandName}' has ${status} a view in store request from user ${user.firstName} ${user.lastName}.`,
             brandId: brand._id,
+            read: false,
           });
+          console.log("Admin notification created:", adminNotif);
         }
       } catch (notifyError) {
         console.error("Failed to notify admin:", notifyError);
@@ -144,16 +155,15 @@ const updateViewInStore = async (req, res) => {
     // If status is approved, send email to user
     if (status === "approved") {
       try {
-        const user = await User.findById(userId);
         if (user && user.email) {
-          await sendEmail({
+          const emailResult = await sendEmail({
             to: user.email,
             subject: "Complete your purchase",
             body: `<p>You have seen the product in store and you will pay it. Here is the step to pay it through <a href='https://thedesigngrit.com/myaccount/trackviewinstore'>TheDesignGrit</a>.</p>`,
           });
+          console.log("Approval email sent:", emailResult);
         }
       } catch (emailError) {
-        // Log but don't block the response
         console.error("Failed to send approval email:", emailError);
       }
     }
@@ -161,16 +171,15 @@ const updateViewInStore = async (req, res) => {
     // If status is rejected, send rejection email to user
     if (status === "rejected") {
       try {
-        const user = await User.findById(userId);
         if (user && user.email && brand && brand.brandName) {
-          await sendEmail({
+          const emailResult = await sendEmail({
             to: user.email,
             subject: "We value your feedback",
             body: `<p>We've heard that you unfortunately didn't like our <b>${brand.brandName}</b>'s products, so we will be happy if you just keep looking for your requirements through our website.</p>`,
           });
+          console.log("Rejection email sent:", emailResult);
         }
       } catch (emailError) {
-        // Log but don't block the response
         console.error("Failed to send rejection email:", emailError);
       }
     }
