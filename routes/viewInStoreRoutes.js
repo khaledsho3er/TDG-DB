@@ -7,6 +7,7 @@ const {
   updateViewInStore,
   deleteViewInStore,
   getViewInStoreByBrandId,
+  getViewInStoreByUserId,
 } = require("../controllers/viewInStoreController");
 
 // Create a new ViewInStore entry
@@ -25,5 +26,8 @@ router.put("/:id", updateViewInStore);
 
 // Delete a ViewInStore entry
 router.delete("/:id", deleteViewInStore);
+
+//get by user Id
+router.get("/user/:userId", getViewInStoreByUserId);
 
 module.exports = router;

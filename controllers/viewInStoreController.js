@@ -106,6 +106,21 @@ const getViewInStoreByBrandId = async (req, res) => {
   }
 };
 
+// Get all viewInStore entries by userId
+const getViewInStoreByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const viewInStoreEntries = await ViewInStore.find({ userId })
+      .populate("productId")
+      .populate("userId")
+      .populate("brandId");
+
+    res.status(200).json(viewInStoreEntries);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createViewInStore,
   getAllViewInStore,
@@ -113,4 +128,5 @@ module.exports = {
   updateViewInStore,
   deleteViewInStore,
   getViewInStoreByBrandId,
+  getViewInStoreByUserId,
 };
