@@ -60,7 +60,7 @@ const createViewInStore = async (req, res) => {
           const emailResult = await sendEmail({
             to: user.email,
             subject: "Your view in store request is being processed!",
-            body: `<p><br>Purchase Code: <b>${code}</b><br>Your request to view in store has been submitted successfully and is now processing. Feel free to visit the store anytime!</p>`,
+            body: `<p><br>Your request to view in store has been submitted successfully and is now processing.<br>Purchase Code: <b>${code}</b> Feel free to visit the store anytime!</p>`,
           });
           console.log("User email sent:", emailResult);
         }
@@ -114,11 +114,11 @@ const getViewInStoreById = async (req, res) => {
 const updateViewInStore = async (req, res) => {
   try {
     const { id } = req.params;
-    const { code, productId, userId, userName, brandId, status } = req.body;
+    const { status } = req.body;
 
     const updatedViewInStore = await ViewInStore.findByIdAndUpdate(
       id,
-      { code, productId, userId, userName, brandId, status },
+      { status },
       { new: true }
     );
 
