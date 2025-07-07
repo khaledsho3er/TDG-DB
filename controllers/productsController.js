@@ -1379,10 +1379,50 @@ exports.updateProductByAdmin = async (req, res) => {
       updates.mainImage = existingProduct.mainImage;
     }
 
+    // Find changed fields
+    const changedFields = [];
+    for (let key in updates) {
+      if (
+        Object.prototype.hasOwnProperty.call(existingProduct._doc, key) &&
+        typeof updates[key] !== "object" &&
+        existingProduct[key] !== updates[key]
+      ) {
+        changedFields.push({
+          field: key,
+          oldValue: existingProduct[key],
+          newValue: updates[key],
+        });
+      }
+    }
+
     // Directly update the product and set updateStatus to 'approved'
     Object.assign(existingProduct, updates);
     existingProduct.updateStatus = "approved";
     await existingProduct.save();
+
+    // Create a notification for the brand
+    if (changedFields.length > 0) {
+      let description = `Your product "${existingProduct.name}" has been updated by the admin. Changes: `;
+      description += changedFields
+        .map((f) => {
+          const oldVal =
+            typeof f.oldValue === "object"
+              ? JSON.stringify(f.oldValue)
+              : f.oldValue;
+          const newVal =
+            typeof f.newValue === "object"
+              ? JSON.stringify(f.newValue)
+              : f.newValue;
+          return `${f.field}: "${oldVal}" → "${newVal}"`;
+        })
+        .join(", ");
+      const notification = new Notification({
+        type: "Product Update",
+        description,
+        brandId: existingProduct.brandId,
+      });
+      await notification.save();
+    }
 
     res.status(200).json({
       message: "Product updated and approved successfully.",
