@@ -25,6 +25,7 @@ const {
   approvePendingUpdate,
   rejectPendingUpdate,
   getPendingProducts,
+  updateProductByAdmin,
 } = require("../controllers/productsController");
 
 const router = express.Router();
