@@ -312,20 +312,140 @@ exports.getProductsByType = async (req, res) => {
   }
 };
 
-exports.updateProduct = async (req, res) => {
+// exports.updateProduct = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const updates = { ...req.body };
+//     // Fetch the existing product
+//     const existingProduct = await Product.findById(id);
+//     if (!existingProduct) {
+//       return res.status(404).json({ message: "Product not found" });
+//     }
+//     // Reconstruct arrays for colors and sizes
+//     if (req.body.colors) {
+//       updates.colors = Array.isArray(req.body.colors)
+//         ? req.body.colors
+//         : Object.values(req.body)
+//             .filter((key) => key.startsWith("colors["))
+//             .map((key) => req.body[key]);
+//     }
+
+//     if (req.body.sizes) {
+//       updates.sizes = Array.isArray(req.body.sizes)
+//         ? req.body.sizes
+//         : Object.values(req.body)
+//             .filter((key) => key.startsWith("sizes["))
+//             .map((key) => req.body[key]);
+//     }
+//     // Ensure reviews is an array of objects
+//     if (updates.reviews && typeof updates.reviews === "string") {
+//       updates.reviews = JSON.parse(updates.reviews);
+//       // Convert back to an array if it was stringified
+//     }
+//     if (updates.technicalDimensions) {
+//       updates.technicalDimensions = JSON.parse(updates.technicalDimensions);
+//     }
+//     // Ensure warrantyInfo is an object
+//     if (updates.warrantyInfo && typeof updates.warrantyInfo === "string") {
+//       updates.warrantyInfo = JSON.parse(updates.warrantyInfo); // Convert back to an object if it was stringified
+//     }
+
+//     // Remove '/uploads/' from existing images if present and filter out invalid values
+//     const existingImages = (existingProduct.images || [])
+//       .map((img) =>
+//         typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
+//       )
+//       .filter((img) => img && img !== "undefined" && img !== "null");
+
+//     // Only add new valid filenames
+//     let newImages = [];
+//     if (req.files && req.files.length > 0) {
+//       newImages = req.files
+//         .map((file) => file.filename)
+//         .filter(
+//           (filename) =>
+//             filename && filename !== "undefined" && filename !== "null"
+//         );
+//     }
+
+//     updates.images = [...existingImages, ...newImages];
+
+//     // Update mainImage if provided, else keep the current one
+//     updates.mainImage = req.body.mainImage || existingProduct.mainImage;
+
+//     // Store updates in pendingUpdates and set updateStatus to 'pending'
+//     existingProduct.pendingUpdates = updates;
+//     existingProduct.updateStatus = "pending";
+//     await existingProduct.save();
+
+//     // Compare current product data with pendingUpdates to find changed fields
+//     const changedFields = [];
+//     for (let key in updates) {
+//       if (
+//         Object.prototype.hasOwnProperty.call(existingProduct._doc, key) &&
+//         typeof updates[key] !== "object" &&
+//         existingProduct[key] !== updates[key]
+//       ) {
+//         changedFields.push({
+//           field: key,
+//           oldValue: existingProduct[key],
+//           newValue: updates[key],
+//         });
+//       }
+//     }
+
+//     // Build a description for the notification
+//     let description = `Product '${existingProduct.name}' submitted changes for approval: `;
+//     if (changedFields.length > 0) {
+//       description += changedFields
+//         .map((f) => {
+//           const oldVal =
+//             typeof f.oldValue === "object"
+//               ? JSON.stringify(f.oldValue)
+//               : f.oldValue;
+//           const newVal =
+//             typeof f.newValue === "object"
+//               ? JSON.stringify(f.newValue)
+//               : f.newValue;
+//           return `${f.field}: "${oldVal}" → "${newVal}"`;
+//         })
+//         .join(", ");
+//     } else {
+//       description += "No fields changed.";
+//     }
+
+//     const adminNotification = new AdminNotification({
+//       type: "Product Update",
+//       description: description,
+//       read: false,
+//     });
+//     await adminNotification.save();
+
+//     res.status(200).json({
+//       message: "Product update submitted for admin approval.",
+//       product: existingProduct,
+//     });
+//   } catch (error) {
+//     console.error("Error updating product:", error);
+//     res.status(500).json({ message: "Error updating product", error });
+//   }
+// };
+const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+
     // Fetch the existing product
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
-    // Reconstruct arrays for colors and sizes
+
+    // Reconstruct arrays for colors and sizes (FIXED)
     if (req.body.colors) {
       updates.colors = Array.isArray(req.body.colors)
         ? req.body.colors
-        : Object.values(req.body)
+        : Object.keys(req.body) // FIXED: was Object.values
             .filter((key) => key.startsWith("colors["))
             .map((key) => req.body[key]);
     }
@@ -333,34 +453,55 @@ exports.updateProduct = async (req, res) => {
     if (req.body.sizes) {
       updates.sizes = Array.isArray(req.body.sizes)
         ? req.body.sizes
-        : Object.values(req.body)
+        : Object.keys(req.body) // FIXED: was Object.values
             .filter((key) => key.startsWith("sizes["))
             .map((key) => req.body[key]);
     }
+
+    // Reconstruct tags array
+    if (req.body.tags) {
+      updates.tags = Array.isArray(req.body.tags)
+        ? req.body.tags
+        : Object.keys(req.body)
+            .filter((key) => key.startsWith("tags["))
+            .map((key) => req.body[key]);
+    }
+
     // Ensure reviews is an array of objects
     if (updates.reviews && typeof updates.reviews === "string") {
       updates.reviews = JSON.parse(updates.reviews);
-      // Convert back to an array if it was stringified
-    }
-    if (updates.technicalDimensions) {
-      updates.technicalDimensions = JSON.parse(updates.technicalDimensions);
-    }
-    // Ensure warrantyInfo is an object
-    if (updates.warrantyInfo && typeof updates.warrantyInfo === "string") {
-      updates.warrantyInfo = JSON.parse(updates.warrantyInfo); // Convert back to an object if it was stringified
     }
 
-    // Remove '/uploads/' from existing images if present and filter out invalid values
+    // Parse technical dimensions
+    if (
+      updates.technicalDimensions &&
+      typeof updates.technicalDimensions === "string"
+    ) {
+      updates.technicalDimensions = JSON.parse(updates.technicalDimensions);
+    }
+
+    // Ensure warrantyInfo is an object
+    if (updates.warrantyInfo && typeof updates.warrantyInfo === "string") {
+      updates.warrantyInfo = JSON.parse(updates.warrantyInfo);
+    }
+
+    // Handle readyToShip boolean conversion
+    if (updates.readyToShip !== undefined) {
+      updates.readyToShip =
+        updates.readyToShip === "true" || updates.readyToShip === true;
+    }
+
+    // Handle image uploads
     const existingImages = (existingProduct.images || [])
       .map((img) =>
         typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
       )
       .filter((img) => img && img !== "undefined" && img !== "null");
 
-    // Only add new valid filenames
+    // Process new image uploads
     let newImages = [];
-    if (req.files && req.files.length > 0) {
-      newImages = req.files
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      newImages = req.files.images
         .map((file) => file.filename)
         .filter(
           (filename) =>
@@ -369,6 +510,12 @@ exports.updateProduct = async (req, res) => {
     }
 
     updates.images = [...existingImages, ...newImages];
+
+    // Handle CAD file upload (NEW)
+    if (req.files && req.files.cadFile && req.files.cadFile.length > 0) {
+      const cadFile = req.files.cadFile[0];
+      updates.cadFile = cadFile.filename;
+    }
 
     // Update mainImage if provided, else keep the current one
     updates.mainImage = req.body.mainImage || existingProduct.mainImage;
@@ -414,6 +561,7 @@ exports.updateProduct = async (req, res) => {
       description += "No fields changed.";
     }
 
+    // Create admin notification
     const adminNotification = new AdminNotification({
       type: "Product Update",
       description: description,
@@ -427,7 +575,9 @@ exports.updateProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating product:", error);
-    res.status(500).json({ message: "Error updating product", error });
+    res
+      .status(500)
+      .json({ message: "Error updating product", error: error.message });
   }
 };
 exports.deleteProduct = async (req, res) => {

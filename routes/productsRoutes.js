@@ -51,7 +51,14 @@ router.get("/types/:typeId/:typeName", getProductsByType);
 router.get("/getsingle/:id", getProductById);
 router.put("/promotion/:id", updateProductPromotion);
 router.get("/getproducts/brand/:brandId", getProductsByBrandId);
-router.put("/:id", upload.array("images", 5), updateProduct);
+router.put(
+  "/:id",
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "cadFile", maxCount: 1 },
+  ]),
+  updateProduct
+);
 router.delete("/:id", deleteProduct);
 router.post("/upload", upload.array("images", 10), (req, res) => {
   try {
