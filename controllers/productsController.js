@@ -1223,3 +1223,175 @@ exports.getPendingProducts = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+exports.updateProductByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = { ...req.body };
+
+    // Fetch the existing product
+    const existingProduct = await Product.findById(id);
+    if (!existingProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Reconstruct arrays for colors and sizes (FIXED)
+    if (req.body.colors) {
+      updates.colors = Array.isArray(req.body.colors)
+        ? req.body.colors
+        : Object.keys(req.body) // FIXED: was Object.values
+            .filter((key) => key.startsWith("colors["))
+            .map((key) => req.body[key]);
+    }
+
+    if (req.body.sizes) {
+      updates.sizes = Array.isArray(req.body.sizes)
+        ? req.body.sizes
+        : Object.keys(req.body) // FIXED: was Object.values
+            .filter((key) => key.startsWith("sizes["))
+            .map((key) => req.body[key]);
+    }
+
+    // Reconstruct tags array
+    if (req.body.tags) {
+      updates.tags = Array.isArray(req.body.tags)
+        ? req.body.tags
+        : Object.keys(req.body)
+            .filter((key) => key.startsWith("tags["))
+            .map((key) => req.body[key]);
+    }
+
+    // Ensure reviews is an array of objects
+    if (updates.reviews && typeof updates.reviews === "string") {
+      updates.reviews = JSON.parse(updates.reviews);
+    }
+
+    // Parse technical dimensions
+    if (
+      updates.technicalDimensions &&
+      typeof updates.technicalDimensions === "string"
+    ) {
+      updates.technicalDimensions = JSON.parse(updates.technicalDimensions);
+    }
+
+    // Ensure warrantyInfo is an object
+    if (updates.warrantyInfo && typeof updates.warrantyInfo === "string") {
+      updates.warrantyInfo = JSON.parse(updates.warrantyInfo);
+    }
+
+    // Handle readyToShip boolean conversion
+    if (updates.readyToShip !== undefined) {
+      updates.readyToShip =
+        updates.readyToShip === "true" || updates.readyToShip === true;
+    }
+
+    // Handle image uploads with metadata support
+    let imageMetadata = null;
+    if (req.body.imageMetadata) {
+      try {
+        imageMetadata = JSON.parse(req.body.imageMetadata);
+        console.log("Parsed image metadata:", imageMetadata);
+      } catch (error) {
+        console.error("Error parsing image metadata:", error);
+      }
+    }
+
+    if (imageMetadata && imageMetadata.operation === "update") {
+      // Enhanced image handling with metadata
+      const existingImages = (existingProduct.images || [])
+        .map((img) =>
+          typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
+        )
+        .filter((img) => img && img !== "undefined" && img !== "null");
+
+      // Process new image uploads
+      let newImages = [];
+      if (req.files && req.files.images && req.files.images.length > 0) {
+        newImages = req.files.images
+          .map((file) => file.filename)
+          .filter(
+            (filename) =>
+              filename && filename !== "undefined" && filename !== "null"
+          );
+      }
+
+      // Combine images based on metadata
+      const finalImages = [];
+      let newImageIndex = 0;
+
+      imageMetadata.currentImages.forEach((imgPath) => {
+        if (imgPath === "NEW_FILE") {
+          // Add new uploaded image
+          if (newImageIndex < newImages.length) {
+            finalImages.push(newImages[newImageIndex]);
+            newImageIndex++;
+          }
+        } else {
+          // Keep existing image if it's in the current list
+          const cleanPath = imgPath.replace(/^.*\//, "");
+          if (existingImages.includes(cleanPath)) {
+            finalImages.push(cleanPath);
+          }
+        }
+      });
+
+      updates.images = finalImages;
+      console.log("Final images after metadata processing:", finalImages);
+    } else {
+      // Fallback: original logic for backward compatibility
+      const existingImages = (existingProduct.images || [])
+        .map((img) =>
+          typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
+        )
+        .filter((img) => img && img !== "undefined" && img !== "null");
+
+      // Process new image uploads
+      let newImages = [];
+      if (req.files && req.files.images && req.files.images.length > 0) {
+        newImages = req.files.images
+          .map((file) => file.filename)
+          .filter(
+            (filename) =>
+              filename && filename !== "undefined" && filename !== "null"
+          );
+      }
+
+      updates.images = [...existingImages, ...newImages];
+    }
+
+    // Handle CAD file upload (NEW)
+    if (req.files && req.files.cadFile && req.files.cadFile.length > 0) {
+      const cadFile = req.files.cadFile[0];
+      updates.cadFile = cadFile.filename;
+    }
+
+    // Handle mainImage - it could be a filename string or keep existing
+    if (req.body.mainImage) {
+      // If mainImage is provided, use it (could be existing filename or new file)
+      const mainImageValue = req.body.mainImage;
+      if (typeof mainImageValue === "string") {
+        // If it's a string, clean it up
+        updates.mainImage = mainImageValue.replace(/^.*\//, "");
+      } else {
+        updates.mainImage = mainImageValue;
+      }
+    } else {
+      // Keep existing mainImage
+      updates.mainImage = existingProduct.mainImage;
+    }
+
+    // Directly update the product and set updateStatus to 'approved'
+    Object.assign(existingProduct, updates);
+    existingProduct.updateStatus = "approved";
+    await existingProduct.save();
+
+    res.status(200).json({
+      message: "Product updated and approved successfully.",
+      product: existingProduct,
+    });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating product", error: error.message });
+  }
+};

@@ -102,5 +102,12 @@ router.get("/admin/products-promotion-metrics", getPromotionMetrics);
 router.patch("/admin/products/approve/:id", approvePendingUpdate);
 router.patch("/admin/products/reject/:id", rejectPendingUpdate);
 router.get("/admin/products/pending", getPendingProducts);
-
+router.put(
+  "/admin/products/update/:id",
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "cadFile", maxCount: 1 },
+  ]),
+  updateProductByAdmin
+);
 module.exports = router;
