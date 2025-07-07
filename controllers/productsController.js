@@ -491,25 +491,79 @@ exports.updateProduct = async (req, res) => {
         updates.readyToShip === "true" || updates.readyToShip === true;
     }
 
-    // Handle image uploads
-    const existingImages = (existingProduct.images || [])
-      .map((img) =>
-        typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
-      )
-      .filter((img) => img && img !== "undefined" && img !== "null");
-
-    // Process new image uploads
-    let newImages = [];
-    if (req.files && req.files.images && req.files.images.length > 0) {
-      newImages = req.files.images
-        .map((file) => file.filename)
-        .filter(
-          (filename) =>
-            filename && filename !== "undefined" && filename !== "null"
-        );
+    // Handle image uploads with metadata support
+    let imageMetadata = null;
+    if (req.body.imageMetadata) {
+      try {
+        imageMetadata = JSON.parse(req.body.imageMetadata);
+        console.log("Parsed image metadata:", imageMetadata);
+      } catch (error) {
+        console.error("Error parsing image metadata:", error);
+      }
     }
 
-    updates.images = [...existingImages, ...newImages];
+    if (imageMetadata && imageMetadata.operation === "update") {
+      // Enhanced image handling with metadata
+      const existingImages = (existingProduct.images || [])
+        .map((img) =>
+          typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
+        )
+        .filter((img) => img && img !== "undefined" && img !== "null");
+
+      // Process new image uploads
+      let newImages = [];
+      if (req.files && req.files.images && req.files.images.length > 0) {
+        newImages = req.files.images
+          .map((file) => file.filename)
+          .filter(
+            (filename) =>
+              filename && filename !== "undefined" && filename !== "null"
+          );
+      }
+
+      // Combine images based on metadata
+      const finalImages = [];
+      let newImageIndex = 0;
+
+      imageMetadata.currentImages.forEach((imgPath) => {
+        if (imgPath === "NEW_FILE") {
+          // Add new uploaded image
+          if (newImageIndex < newImages.length) {
+            finalImages.push(newImages[newImageIndex]);
+            newImageIndex++;
+          }
+        } else {
+          // Keep existing image if it's in the current list
+          const cleanPath = imgPath.replace(/^.*\//, "");
+          if (existingImages.includes(cleanPath)) {
+            finalImages.push(cleanPath);
+          }
+        }
+      });
+
+      updates.images = finalImages;
+      console.log("Final images after metadata processing:", finalImages);
+    } else {
+      // Fallback: original logic for backward compatibility
+      const existingImages = (existingProduct.images || [])
+        .map((img) =>
+          typeof img === "string" ? img.replace(/^\/uploads\//, "") : null
+        )
+        .filter((img) => img && img !== "undefined" && img !== "null");
+
+      // Process new image uploads
+      let newImages = [];
+      if (req.files && req.files.images && req.files.images.length > 0) {
+        newImages = req.files.images
+          .map((file) => file.filename)
+          .filter(
+            (filename) =>
+              filename && filename !== "undefined" && filename !== "null"
+          );
+      }
+
+      updates.images = [...existingImages, ...newImages];
+    }
 
     // Handle CAD file upload (NEW)
     if (req.files && req.files.cadFile && req.files.cadFile.length > 0) {
@@ -517,8 +571,20 @@ exports.updateProduct = async (req, res) => {
       updates.cadFile = cadFile.filename;
     }
 
-    // Update mainImage if provided, else keep the current one
-    updates.mainImage = req.body.mainImage || existingProduct.mainImage;
+    // Handle mainImage - it could be a filename string or keep existing
+    if (req.body.mainImage) {
+      // If mainImage is provided, use it (could be existing filename or new file)
+      const mainImageValue = req.body.mainImage;
+      if (typeof mainImageValue === "string") {
+        // If it's a string, clean it up
+        updates.mainImage = mainImageValue.replace(/^.*\//, "");
+      } else {
+        updates.mainImage = mainImageValue;
+      }
+    } else {
+      // Keep existing mainImage
+      updates.mainImage = existingProduct.mainImage;
+    }
 
     // Store updates in pendingUpdates and set updateStatus to 'pending'
     existingProduct.pendingUpdates = updates;
@@ -559,6 +625,20 @@ exports.updateProduct = async (req, res) => {
         .join(", ");
     } else {
       description += "No fields changed.";
+    }
+
+    // Add image change information to description
+    if (imageMetadata && imageMetadata.operation === "update") {
+      const removedImages = imageMetadata.existingImages.filter(
+        (img) => !imageMetadata.currentImages.includes(img.replace(/^.*\//, ""))
+      );
+      const addedImages = imageMetadata.currentImages.filter(
+        (img) => img === "NEW_FILE"
+      ).length;
+
+      if (removedImages.length > 0 || addedImages > 0) {
+        description += ` | Images: ${addedImages} added, ${removedImages.length} removed`;
+      }
     }
 
     // Create admin notification
