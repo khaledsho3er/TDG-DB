@@ -430,7 +430,7 @@ exports.getProductsByType = async (req, res) => {
 //     res.status(500).json({ message: "Error updating product", error });
 //   }
 // };
-const updateProduct = async (req, res) => {
+exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
