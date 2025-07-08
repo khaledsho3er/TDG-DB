@@ -133,6 +133,8 @@ class PaymobController {
                 variantId: item.variantId,
                 name: item.name,
                 quantity: item.quantity,
+                selectedColor: item.selectedColor || null,
+                selectedSize: item.selectedSize || null,
                 price:
                   (item.amount_cents ? item.amount_cents / 100 : item.price) /
                   item.quantity,
@@ -275,8 +277,8 @@ class PaymobController {
               quotationId: item.quotationId || null,
               commissionAmount: commission,
               taxAmount: tax,
-              color: item.color,
-              size: item.size,
+              selectedColor: item.selectedColor || null,
+              selectedSize: item.selectedSize || null,
               material: item.material,
               customization: item.customization,
             };

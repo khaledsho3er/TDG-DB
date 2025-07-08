@@ -46,6 +46,8 @@ class PaymobService {
         description: item.name,
         quantity: item.quantity,
         product_id: item.productId,
+        selectedColor: item.selectedColor || null,
+        selectedSize: item.selectedSize || null,
         brand_id: item.brandId,
         variant_id: item.variantId || null,
       }));
@@ -74,6 +76,8 @@ class PaymobService {
             quantity: item.quantity,
             price: item.price,
             totalPrice: item.totalPrice,
+            selectedColor: item.selectedColor || null,
+            selectedSize: item.selectedSize || null,
             brandId: item.brandId,
           })),
           customerId: orderData.customerId,
