@@ -28,6 +28,8 @@ const orderSchema = new mongoose.Schema(
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
         totalPrice: { type: Number, required: true },
+        selectedColor: { type: String }, // Color selected by customer
+        selectedSize: { type: String }, // Size selected by customer
         subDeliveryDate: { type: Date },
         subOrderStatus: {
           type: String,

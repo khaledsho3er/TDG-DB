@@ -268,6 +268,8 @@ class PaymobController {
               quantity: item.quantity,
               price: item.price || totalPrice / item.quantity,
               totalPrice,
+              selectedColor: item.selectedColor,
+              selectedSize: item.selectedSize,
               brandId: item.brandId,
               fromQuotation: item.fromQuotation || false,
               quotationId: item.quotationId || null,
