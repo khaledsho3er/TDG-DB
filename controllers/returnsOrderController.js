@@ -3,8 +3,7 @@ const Order = require("../models/order");
 
 exports.createReturnRequest = async (req, res) => {
   try {
-    const { orderId, reason } = req.body;
-    const userId = req.user.id;
+    const { orderId, reason, userId } = req.body; // <-- add userId here
 
     const order = await Order.findById(orderId).populate(
       "cartItems.productId cartItems.brandId"
