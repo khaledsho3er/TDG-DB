@@ -1,4 +1,4 @@
-const ReturnRequest = require("../models/ReturnRequest");
+const ReturnRequest = require("../models/returnsOrder");
 const Order = require("../models/order");
 
 exports.createReturnRequest = async (req, res) => {
