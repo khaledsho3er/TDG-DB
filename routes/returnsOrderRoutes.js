@@ -10,5 +10,6 @@ router.put("/returns/:id/admin", ctrl.updateReturnByAdmin);
 router.get("/returns", ctrl.getAllReturns);
 router.get("/returns/:id", ctrl.getReturnById);
 router.delete("/returns/:id", ctrl.deleteReturn);
+router.get("/returns/brand/:brandId", ctrl.getReturnsByBrand);
 
 module.exports = router;

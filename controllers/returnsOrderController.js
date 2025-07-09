@@ -126,3 +126,17 @@ exports.deleteReturn = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+exports.getReturnsByBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+
+    const requests = await ReturnRequest.find({ brandId }).populate(
+      "orderId customerId brandId"
+    );
+
+    res.status(200).json(requests);
+  } catch (err) {
+    console.error("Error fetching returns by brand:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
