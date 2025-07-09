@@ -342,3 +342,34 @@ exports.deleteVariant = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Get variants by brand ID
+exports.getVariantsByBrandId = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    if (!brandId) {
+      return res.status(400).json({ error: "Brand ID is required" });
+    }
+
+    // Find all variants, populate productId to access brandId
+    const variants = await ProductVariant.find()
+      .populate({
+        path: "productId",
+        select: "brandId name sku",
+      })
+      .exec();
+
+    // Filter variants where the populated product's brandId matches
+    const filteredVariants = variants.filter(
+      (variant) =>
+        variant.productId &&
+        variant.productId.brandId &&
+        variant.productId.brandId.toString() === brandId
+    );
+
+    res.status(200).json(filteredVariants);
+  } catch (error) {
+    console.error("Error getting variants by brand ID:", error);
+    res.status(500).json({ error: error.message });
+  }
+};

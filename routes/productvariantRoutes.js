@@ -10,6 +10,7 @@ const {
   updateVariant,
   deleteVariant,
   getProductIdBySku,
+  getVariantsByBrandId,
 } = require("../controllers/productVariantController");
 
 // Get all product SKUs for dropdown
@@ -37,6 +38,9 @@ router.get("/sku/:sku", getVariantsBySku);
 
 // Get all variants for a product
 router.get("/product/:productId", getVariantsByProductId);
+
+// Get variants by brand ID
+router.get("/brand/:brandId", getVariantsByBrandId);
 
 // Update a variant
 router.put(
