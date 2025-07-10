@@ -11,6 +11,9 @@ const VendorSchema = new Schema({
   tier: { type: String, enum: ["1", "2", "3"], default: "3" },
   role: { type: String, enum: ["Vendor"], default: "Vendor" },
   brandId: { type: mongoose.Schema.Types.ObjectId, ref: "Brand" },
+  otp: { type: String },
+  otpCreatedAt: { type: Date },
+  resetToken: { type: String },
 });
 
 module.exports = mongoose.model("Vendor", VendorSchema);

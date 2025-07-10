@@ -6,10 +6,12 @@ const crypto = require("crypto");
 const otpStore = {}; // Temporary storage for OTPs (use Redis in production)
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../services/awsSes");
+const Vendor = require("../models/vendor"); // Add this import
 
 exports.sendOTP = async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
+  const { email, type } = req.body;
+  const Model = type === "vendor" ? Vendor : User;
+  const user = await Model.findOne({ email });
 
   if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -21,7 +23,7 @@ exports.sendOTP = async (req, res) => {
   console.log("User before saving OTP:", user); // 🟢 Log user object
   otpStore[email] = { otp, expiresAt: Date.now() + 300000 }; // Expires in 5 minutes
   // Store OTP in MongoDB
-  await User.findByIdAndUpdate(user._id, {
+  await Model.findByIdAndUpdate(user._id, {
     otp,
     otpCreatedAt: Date.now(),
   });
@@ -68,8 +70,9 @@ exports.sendOTP = async (req, res) => {
 //   res.json({ message: "OTP verified successfully" });
 // };
 exports.verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
-  const user = await User.findOne({ email });
+  const { email, otp, type } = req.body;
+  const Model = type === "vendor" ? Vendor : User;
+  const user = await Model.findOne({ email });
 
   if (!user) return res.status(400).json({ error: "User not found" });
 
@@ -96,10 +99,10 @@ const generateResetToken = (email) => {
 };
 
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
-
+  const { email, type } = req.body;
+  const Model = type === "vendor" ? Vendor : User;
   try {
-    const user = await User.findOne({ email });
+    const user = await Model.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -122,7 +125,8 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
-  const { email, newPassword } = req.body;
+  const { email, newPassword, type } = req.body;
+  const Model = type === "vendor" ? Vendor : User;
 
   console.log("Received token from headers:", token);
 
@@ -134,7 +138,7 @@ exports.resetPassword = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("Decoded Token:", decoded);
 
-    const user = await User.findOne({ email });
+    const user = await Model.findOne({ email });
     console.log("User found in DB:", user);
 
     if (!user || user.resetToken !== token) {
