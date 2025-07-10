@@ -827,13 +827,14 @@ exports.getSalesGraphDataByBrand = async (req, res) => {
 
     const objectIdBrandId = new mongoose.Types.ObjectId(brandId);
 
+    // Get all sales grouped by week, month, year
     const salesData = await Order.aggregate([
       { $unwind: "$cartItems" },
       { $match: { "cartItems.brandId": objectIdBrandId } },
       {
         $group: {
           _id: {
-            week: { $week: "$createdAt" },
+            week: { $isoWeek: "$createdAt" },
             month: { $month: "$createdAt" },
             year: { $year: "$createdAt" },
           },
@@ -842,33 +843,86 @@ exports.getSalesGraphDataByBrand = async (req, res) => {
           yearlySales: { $sum: "$cartItems.totalPrice" },
         },
       },
-      {
-        $group: {
-          _id: null,
-          weeklySales: { $push: { week: "$_id.week", sales: "$weeklySales" } },
-          monthlySales: {
-            $push: { month: "$_id.month", sales: "$monthlySales" },
-          },
-          yearlySales: { $push: { year: "$_id.year", sales: "$yearlySales" } },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          weeklySales: 1,
-          monthlySales: 1,
-          yearlySales: 1,
-        },
-      },
     ]);
 
-    if (!salesData.length) {
-      return res
-        .status(404)
-        .json({ error: "No sales data found for this brand" });
-    }
+    // Helper: get month name
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
 
-    res.status(200).json(salesData[0]); // Return sales data formatted for the frontend
+    // Extract all years, weeks, months
+    const years = [...new Set(salesData.map((d) => d._id.year))].sort(
+      (a, b) => a - b
+    );
+    const weeksByYear = {};
+    const monthsByYear = {};
+    salesData.forEach((d) => {
+      if (!weeksByYear[d._id.year]) weeksByYear[d._id.year] = new Set();
+      if (!monthsByYear[d._id.year]) monthsByYear[d._id.year] = new Set();
+      weeksByYear[d._id.year].add(d._id.week);
+      monthsByYear[d._id.year].add(d._id.month);
+    });
+
+    // Fill missing weeks/months/years with zero sales
+    // 1. Weekly
+    let weeklySales = [];
+    for (const year of years) {
+      const maxWeek = Math.max(...[...weeksByYear[year]]);
+      for (let week = 1; week <= maxWeek; week++) {
+        const found = salesData.find(
+          (d) => d._id.year === year && d._id.week === week
+        );
+        weeklySales.push({
+          week,
+          year,
+          sales: found ? found.weeklySales : 0,
+          xLabel: `W${week} ${year}`,
+        });
+      }
+    }
+    weeklySales.sort((a, b) => a.year - b.year || a.week - b.week);
+
+    // 2. Monthly
+    let monthlySales = [];
+    for (const year of years) {
+      for (let month = 1; month <= 12; month++) {
+        const found = salesData.find(
+          (d) => d._id.year === year && d._id.month === month
+        );
+        monthlySales.push({
+          month,
+          year,
+          sales: found ? found.monthlySales : 0,
+          xLabel: `${monthNames[month - 1]} ${year}`,
+        });
+      }
+    }
+    monthlySales.sort((a, b) => a.year - b.year || a.month - b.month);
+
+    // 3. Yearly
+    let yearlySales = [];
+    for (const year of years) {
+      const found = salesData.find((d) => d._id.year === year);
+      yearlySales.push({
+        year,
+        sales: found ? found.yearlySales : 0,
+        xLabel: `${year}`,
+      });
+    }
+    yearlySales.sort((a, b) => a.year - b.year);
+
+    res.status(200).json({ weeklySales, monthlySales, yearlySales });
   } catch (error) {
     console.error("Error in getSalesGraphDataByBrand:", error);
     res.status(500).json({ error: "Failed to fetch sales graph data" });
