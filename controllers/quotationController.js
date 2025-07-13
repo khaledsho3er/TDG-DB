@@ -31,6 +31,7 @@ exports.createQuotation = async (req, res) => {
       size,
       color,
       customization,
+      seen: false,
     });
 
     // Save the quotation to the database
@@ -112,6 +113,7 @@ exports.updateQuotationByVendor = async (req, res) => {
       quotePrice,
       dateOfQuotePrice,
       customizationLeadTime,
+      seen: true,
     };
 
     if (quotationInvoice) {

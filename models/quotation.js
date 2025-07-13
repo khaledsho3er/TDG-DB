@@ -45,6 +45,7 @@ const QuotationSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  seen: { type: Boolean, default: false },
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
