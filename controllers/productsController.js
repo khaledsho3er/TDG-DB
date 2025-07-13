@@ -12,7 +12,10 @@ exports.createProduct = async (req, res) => {
     // Extract form data from req.body
     const productData = req.body;
 
-    // Accept only string for colors and sizes
+    // Ensure color is set correctly
+    if (!productData.colors && productData.color) {
+      productData.colors = String(productData.color);
+    }
     if (typeof productData.colors !== "string" && productData.colors) {
       productData.colors = String(productData.colors);
     }
@@ -468,6 +471,19 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+
+    // Ensure color is set correctly
+    if (!updates.colors && updates.color) {
+      updates.colors = String(updates.color);
+    }
+    if (typeof updates.colors !== "string" && updates.colors) {
+      updates.colors = String(updates.colors);
+    }
+    if (!updates.sizes || updates.sizes === "") {
+      updates.sizes = "one size";
+    } else if (typeof updates.sizes !== "string") {
+      updates.sizes = String(updates.sizes);
+    }
 
     // Fetch the existing product
     const existingProduct = await Product.findById(id);
@@ -1266,6 +1282,19 @@ exports.updateProductByAdmin = async (req, res) => {
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Ensure color is set correctly
+    if (!updates.colors && updates.color) {
+      updates.colors = String(updates.color);
+    }
+    if (typeof updates.colors !== "string" && updates.colors) {
+      updates.colors = String(updates.colors);
+    }
+    if (!updates.sizes || updates.sizes === "") {
+      updates.sizes = "one size";
+    } else if (typeof updates.sizes !== "string") {
+      updates.sizes = String(updates.sizes);
     }
 
     // Reconstruct arrays for colors and sizes (FIXED)
