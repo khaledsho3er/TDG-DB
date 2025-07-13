@@ -88,20 +88,17 @@ router.put("/admin/brands/:id/reject", brandController.rejectPendingUpdate);
 // Shipping Fee Routes for Brands (use :brandId as param)
 router.post(
   "/:brandId/shipping-fee",
-  isAuthenticated,
-  isAuthorized(["Vendor"]),
+
   shippingFeeController.setShippingFee
 );
 router.get(
   "/:brandId/shipping-fee",
-  isAuthenticated,
-  isAuthorized(["Vendor"]),
+
   shippingFeeController.getShippingFees
 );
 router.get(
   "/:brandId/shipping-fee/:city",
-  isAuthenticated,
-  isAuthorized(["Vendor"]),
+
   shippingFeeController.getShippingFeeByCity
 );
 
