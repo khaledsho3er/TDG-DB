@@ -1219,6 +1219,18 @@ exports.approvePendingUpdate = async (req, res) => {
     if (!product || !product.pendingUpdates) {
       return res.status(404).json({ message: "No pending updates found." });
     }
+
+    // Fix colors and sizes in pendingUpdates if they are arrays
+    if (product.pendingUpdates) {
+      if (Array.isArray(product.pendingUpdates.colors)) {
+        product.pendingUpdates.colors = product.pendingUpdates.colors[0] || "";
+      }
+      if (Array.isArray(product.pendingUpdates.sizes)) {
+        product.pendingUpdates.sizes =
+          product.pendingUpdates.sizes[0] || "one size";
+      }
+    }
+
     Object.assign(product, product.pendingUpdates);
     product.pendingUpdates = null;
     product.updateStatus = "approved";
