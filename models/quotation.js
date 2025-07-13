@@ -34,7 +34,6 @@ const QuotationSchema = new mongoose.Schema({
     default: "",
   },
   quotationInvoice: { type: String }, // URL or filename
-  note: { type: String },
   customizationLeadTime: { type: String },
   quotePrice: { type: Number },
   dateOfQuotePrice: { type: Date },

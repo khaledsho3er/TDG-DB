@@ -100,8 +100,7 @@ exports.getQuotationsByBrandId = async (req, res) => {
 exports.updateQuotationByVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { note, quotePrice, dateOfQuotePrice, customizationLeadTime } =
-      req.body;
+    const { quotePrice, dateOfQuotePrice, customizationLeadTime } = req.body;
 
     // Handle file upload
     let quotationInvoice;
@@ -110,7 +109,6 @@ exports.updateQuotationByVendor = async (req, res) => {
     }
 
     const updateFields = {
-      note,
       quotePrice,
       dateOfQuotePrice,
       customizationLeadTime,
