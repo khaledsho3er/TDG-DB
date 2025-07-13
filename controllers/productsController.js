@@ -12,21 +12,14 @@ exports.createProduct = async (req, res) => {
     // Extract form data from req.body
     const productData = req.body;
 
-    // Reconstruct arrays for colors and sizes
-    if (req.body.colors) {
-      productData.colors = Array.isArray(req.body.colors)
-        ? req.body.colors
-        : Object.values(req.body)
-            .filter((key) => key.startsWith("colors["))
-            .map((key) => req.body[key]);
+    // Accept only string for colors and sizes
+    if (typeof productData.colors !== "string" && productData.colors) {
+      productData.colors = String(productData.colors);
     }
-
-    if (req.body.sizes) {
-      productData.sizes = Array.isArray(req.body.sizes)
-        ? req.body.sizes
-        : Object.values(req.body)
-            .filter((key) => key.startsWith("sizes["))
-            .map((key) => req.body[key]);
+    if (!productData.sizes || productData.sizes === "") {
+      productData.sizes = "one size";
+    } else if (typeof productData.sizes !== "string") {
+      productData.sizes = String(productData.sizes);
     }
 
     // Convert category, subcategory, and type to ObjectIDs
@@ -175,10 +168,35 @@ exports.getProducts = async (req, res) => {
 
     // Fetch products based on the filter
     const products = await Product.find(filter)
-      .populate("category subcategory vendor type brandId")
+      .populate("category subcategory vendor type brandId variants")
       .exec();
 
-    res.status(200).json(products);
+    // For each product, fetch unique variant colors and sizes
+    const productsWithVariants = await Promise.all(
+      products.map(async (product) => {
+        let variantColors = [];
+        let variantSizes = [];
+        if (product.variants && product.variants.length > 0) {
+          // If variants are populated
+          const variants = Array.isArray(product.variants[0])
+            ? product.variants[0]
+            : product.variants;
+          variantColors = [
+            ...new Set(variants.map((v) => v.color).filter(Boolean)),
+          ];
+          variantSizes = [
+            ...new Set(variants.map((v) => v.size).filter(Boolean)),
+          ];
+        }
+        return {
+          ...product.toObject(),
+          variantColors,
+          variantSizes,
+        };
+      })
+    );
+
+    res.status(200).json(productsWithVariants);
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Error fetching products", error });
@@ -195,14 +213,30 @@ exports.getProductById = async (req, res) => {
     }
 
     const product = await Product.findById(id)
-      .populate("category subcategory vendor type brandId")
+      .populate("category subcategory vendor type brandId variants")
       .exec();
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.status(200).json(product);
+    // Fetch unique variant colors and sizes
+    let variantColors = [];
+    let variantSizes = [];
+    if (product.variants && product.variants.length > 0) {
+      const variants = Array.isArray(product.variants[0])
+        ? product.variants[0]
+        : product.variants;
+      variantColors = [
+        ...new Set(variants.map((v) => v.color).filter(Boolean)),
+      ];
+      variantSizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
+    }
+    res.status(200).json({
+      ...product.toObject(),
+      variantColors,
+      variantSizes,
+    });
   } catch (error) {
     console.error("Error fetching product:", error);
     res.status(500).json({ message: "Error fetching product", error });

@@ -23,98 +23,77 @@ exports.createVariants = async (req, res) => {
 
     console.log(`Creating variants for product: ${productId}`);
 
-    // Check if we're creating a single variant or multiple variants
     let variantsToCreate = [];
     let savedVariants = [];
 
-    // Extract variants from request body
     const { variants } = req.body;
 
     if (variants && (Array.isArray(variants) || typeof variants === "string")) {
-      // Multiple variants case
-      // Parse variants if it's a string (from form data)
       const parsedVariants = Array.isArray(variants)
         ? variants
         : JSON.parse(variants);
 
       variantsToCreate = parsedVariants.map((variant) => {
-        // Parse dimensions if it's a string
-        let dimensions = variant.dimensions;
-        if (dimensions && typeof dimensions === "string") {
-          try {
-            dimensions = JSON.parse(dimensions);
-          } catch (e) {
-            console.error("Error parsing dimensions:", e);
-          }
-        }
-
+        // Ensure color and size are strings and required
+        let color = variant.color ? String(variant.color) : undefined;
+        let size = variant.size ? String(variant.size) : "one size";
         return {
           ...variant,
-          dimensions, // Add parsed dimensions
-          productId, // Add productId to each variant
-          // Ensure stock is set (use quantity as fallback or default to 0)
+          color,
+          size,
+          productId,
           stock:
             variant.stock !== undefined ? variant.stock : variant.quantity || 0,
-          // Include saleprice if provided
           ...(variant.saleprice && { saleprice: variant.saleprice }),
         };
       });
 
-      // Handle image uploads for multiple variants - with safer checks
+      // Handle image uploads for multiple variants
       if (
         req.files &&
         req.files.images &&
         Array.isArray(req.files.images) &&
         req.files.images.length > 0
       ) {
-        // In this case, we assume each variant has an 'imageIndices' property
-        // that specifies which images belong to it (e.g., [0, 1, 2])
         const imageUrls = req.files.images.map(
           (file) => file.filename || file.key
         );
-        console.log("Available image URLs:", imageUrls);
-
         variantsToCreate = variantsToCreate.map((variant) => {
           if (variant.imageIndices && Array.isArray(variant.imageIndices)) {
             const variantImages = variant.imageIndices
               .filter((index) => index >= 0 && index < imageUrls.length)
               .map((index) => imageUrls[index]);
-
             return {
               ...variant,
               images: variantImages.length > 0 ? variantImages : [],
               mainImage:
                 variant.mainImage ||
                 (variantImages.length > 0 ? variantImages[0] : null),
-              imageIndices: undefined, // Remove helper property
+              imageIndices: undefined,
             };
           }
           return variant;
         });
-      } else {
-        console.log(
-          "No images uploaded for variants or req.files structure is different than expected"
-        );
-        console.log("req.files:", req.files);
       }
 
-      // Create all variants
       savedVariants = await ProductVariant.insertMany(variantsToCreate, {
         session,
       });
     } else {
       // Single variant case
+      let color = req.body.color ? String(req.body.color) : undefined;
+      let size = req.body.size ? String(req.body.size) : "one size";
       const variantData = {
         ...req.body,
-        productId, // Ensure productId is included
-        // Ensure stock is set (use quantity as fallback or default to 0)
+        color,
+        size,
+        productId,
         stock:
           req.body.stock !== undefined
             ? req.body.stock
             : req.body.quantity || 0,
       };
 
-      // Parse dimensions if it's a string
       if (
         variantData.dimensions &&
         typeof variantData.dimensions === "string"
@@ -126,7 +105,6 @@ exports.createVariants = async (req, res) => {
         }
       }
 
-      // Handle image uploads for single variant - with safer checks
       if (
         req.files &&
         req.files.images &&
@@ -136,15 +114,8 @@ exports.createVariants = async (req, res) => {
         const imageUrls = req.files.images.map(
           (file) => file.filename || file.key
         );
-        console.log("Uploaded variant image URLs:", imageUrls);
         variantData.images = imageUrls;
-        // Set mainImage to the first image if not explicitly provided
         variantData.mainImage = variantData.mainImage || imageUrls[0];
-      } else {
-        console.log(
-          "No variant images uploaded or req.files structure is different than expected"
-        );
-        console.log("req.files:", req.files);
       }
 
       const variant = new ProductVariant(variantData);
@@ -192,7 +163,7 @@ exports.getVariantsByProductId = async (req, res) => {
   try {
     const variants = await ProductVariant.find({
       productId: req.params.productId,
-    });
+    }).populate("productId", "name sku"); // Populate productId to get name and sku
     res.status(200).json(variants);
   } catch (error) {
     res.status(500).json({ error: error.message });

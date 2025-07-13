@@ -22,8 +22,8 @@ const productSchema = new mongoose.Schema(
         review: { type: String },
       },
     ],
-    colors: [{ type: String }],
-    sizes: [{ type: String }],
+    colors: { type: String },
+    sizes: { type: String },
     images: [{ type: String }], // Array of image paths
     mainImage: { type: String }, // Highlighted main image
     description: { type: String, maxlength: 2000 },
