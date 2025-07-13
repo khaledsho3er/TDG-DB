@@ -2,6 +2,11 @@ const express = require("express");
 const router = express.Router();
 const brandController = require("../controllers/brandController");
 const upload = require("../middlewares/brandMulterSetup");
+const shippingFeeController = require("../controllers/shippingFeeController");
+const {
+  isAuthenticated,
+  isAuthorized,
+} = require("../middlewares/authMiddleware");
 
 // Create a new brand
 router.post(
@@ -79,5 +84,25 @@ router.get("/:brandId/types", brandController.getBrandTypes);
 router.get("/admin/brands/pending", brandController.getPendingBrands);
 router.put("/admin/brands/:id/approve", brandController.approvePendingUpdate);
 router.put("/admin/brands/:id/reject", brandController.rejectPendingUpdate);
+
+// Shipping Fee Routes for Brands
+router.post(
+  "/shipping-fee",
+  isAuthenticated,
+  isAuthorized(["Vendor"]),
+  shippingFeeController.setShippingFee
+);
+router.get(
+  "/shipping-fee",
+  isAuthenticated,
+  isAuthorized(["Vendor"]),
+  shippingFeeController.getShippingFees
+);
+router.get(
+  "/shipping-fee/:city",
+  isAuthenticated,
+  isAuthorized(["Vendor"]),
+  shippingFeeController.getShippingFeeByCity
+);
 
 module.exports = router;
