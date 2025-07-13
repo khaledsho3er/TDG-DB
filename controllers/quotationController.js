@@ -100,7 +100,8 @@ exports.getQuotationsByBrandId = async (req, res) => {
 exports.updateQuotationByVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { note, quotePrice, dateOfQuotePrice } = req.body;
+    const { note, quotePrice, dateOfQuotePrice, customizationLeadTime } =
+      req.body;
 
     // Handle file upload
     let quotationInvoice;
@@ -112,6 +113,7 @@ exports.updateQuotationByVendor = async (req, res) => {
       note,
       quotePrice,
       dateOfQuotePrice,
+      customizationLeadTime,
     };
 
     if (quotationInvoice) {
@@ -154,7 +156,9 @@ exports.updateQuotationByVendor = async (req, res) => {
         <p><strong>Size:</strong> ${updated.size || "-"}</p>
         <p><strong>Color:</strong> ${updated.color || "-"}</p>
         <p><strong>Customization:</strong> ${updated.customization || "-"}</p>
-        <p><strong>Note from Vendor:</strong> ${updated.note || "-"}</p>
+        <p><strong>Customization Lead Time:</strong> ${
+          updated.customizationLeadTime || "-"
+        }</p>
         <p><strong>Quote Price:</strong> ${
           updated.quotePrice != null ? updated.quotePrice + " E£" : "-"
         }</p>
