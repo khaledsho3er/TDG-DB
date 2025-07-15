@@ -61,18 +61,18 @@ exports.subscribe = async (req, res) => {
 // Unsubscribe from Newsletter
 exports.unsubscribe = async (req, res) => {
   try {
-    const { email } = req.params;
-    const subscriber = await Newsletter.findOne({ email });
+    const { id } = req.params;
+    const subscriber = await Newsletter.findById(id);
 
     if (!subscriber)
-      return res.status(404).json({ message: "Email not found" });
+      return res.status(404).json({ message: "Subscriber not found" });
 
     subscriber.subscribed = false;
     await subscriber.save();
     // Create admin notification for unsubscription
     const adminNotification = new AdminNotification({
       type: "newsletter",
-      description: `Unsubscription from ${email}`,
+      description: `Unsubscription from ${subscriber.email}`,
       read: false,
     });
     await adminNotification.save();
