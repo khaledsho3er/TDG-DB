@@ -3,6 +3,8 @@ const transporter = require("../utils/emailTransporter");
 const AdminNotification = require("../models/adminNotifications"); // Import AdminNotification model
 const fs = require("fs");
 const path = require("path");
+const { sendEmail } = require("../services/awsSes");
+
 // Subscribe to Newsletter
 exports.subscribe = async (req, res) => {
   try {
@@ -24,35 +26,30 @@ exports.subscribe = async (req, res) => {
     let emailTemplate = fs.readFileSync(templatePath, "utf8");
     emailTemplate = emailTemplate.replace("{{email}}", email);
 
-    // Email options
-    const mailOptions = {
-      from: "karimwahba53@gmail.com",
-      to: email,
-      subject: "Welcome to Our Newsletter!",
-      html: emailTemplate, // Use HTML template instead of plain text
-    };
-
-    // Send email
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-        return res.status(500).json({
-          message: "Subscription successful, but email failed to send",
-        });
-      }
-      console.log("Email sent: " + info.response);
-      // Create admin notification for new subscription
-      const adminNotification = new AdminNotification({
-        type: "newsletter",
-        description: `New subscription from ${email}`,
-        read: false,
+    // Use AWS SES to send the email
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Welcome to Our Newsletter!",
+        body: emailTemplate,
       });
-      adminNotification.save();
-      return res
-        .status(201)
-        .json({ message: "Subscribed successfully", subscriber });
+    } catch (error) {
+      console.error("Error sending email via SES:", error);
+      return res.status(500).json({
+        message: "Subscription successful, but email failed to send",
+      });
+    }
+
+    // Create admin notification for new subscription
+    const adminNotification = new AdminNotification({
+      type: "newsletter",
+      description: `New subscription from ${email}`,
+      read: false,
     });
-    res.status(201).json({ message: "Subscribed successfully", subscriber });
+    adminNotification.save();
+    return res
+      .status(201)
+      .json({ message: "Subscribed successfully", subscriber });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
