@@ -1,5 +1,6 @@
 const ReturnRequest = require("../models/returnsOrder");
 const Order = require("../models/order");
+const AdminFinancialLog = require("../models/AdminFinancialLog");
 
 exports.createReturnRequest = async (req, res) => {
   try {
@@ -76,17 +77,80 @@ exports.updateReturnByAdmin = async (req, res) => {
       return res.status(400).json({ error: "Invalid admin status" });
     }
 
-    const request = await ReturnRequest.findById(id);
+    const request = await ReturnRequest.findById(id).populate("orderId");
     if (!request)
       return res.status(404).json({ error: "Return request not found" });
+
+    const order = request.orderId;
+    if (!order) return res.status(400).json({ error: "Order not found" });
+
+    const refundBrandId = request.brandId.toString();
+
+    if (status === "Refunded") {
+      const refundItems = order.cartItems.filter(
+        (item) => item.brandId?.toString() === refundBrandId
+      );
+
+      if (refundItems.length === 0)
+        return res
+          .status(400)
+          .json({ error: "No matching brand items found in order." });
+
+      let totalRefund = 0;
+      let totalCommission = 0;
+      let totalVat = 0;
+
+      for (const item of refundItems) {
+        totalRefund += item.totalPrice;
+        totalCommission += item.commissionAmount ?? item.totalPrice * 0.15;
+        totalVat += item.taxAmount ?? item.totalPrice * 0.14;
+      }
+
+      const paymobFee = +(order.total * 0.03).toFixed(2);
+      const brandPayout = +(
+        totalRefund -
+        totalCommission -
+        totalVat -
+        paymobFee
+      ).toFixed(2);
+      const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
+
+      // Log the reversal in AdminFinancialLog
+      await AdminFinancialLog.create({
+        orderId: order._id,
+        brandId: refundBrandId,
+        total: -totalRefund,
+        shippingFee: -order.shippingFee,
+        vat: -totalVat,
+        commission: -totalCommission,
+        paymobFee: -paymobFee,
+        brandPayout: -brandPayout,
+        netAdminProfit: -netAdminProfit,
+        capturedAmount: -order.capturedAmount,
+        convertedAmount: -order.convertedAmount,
+        date: order.createdAt,
+        month: new Date(order.createdAt).getMonth() + 1,
+        year: new Date(order.createdAt).getFullYear(),
+      });
+
+      // Update order summary fields (optional)
+      order.brandPayout = Math.max(0, order.brandPayout - brandPayout);
+      order.netAdminProfit = Math.max(0, order.netAdminProfit - netAdminProfit);
+      order.orderStatus = "Refunded";
+      await order.save();
+    }
 
     request.status = status;
     request.adminNote = adminNote;
     request.reviewedAt = new Date();
     await request.save();
 
-    res.json({ message: "Admin status updated", request });
+    res.json({
+      message: "Admin status updated and financials adjusted",
+      request,
+    });
   } catch (err) {
+    console.error("Admin refund error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
