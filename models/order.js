@@ -56,8 +56,16 @@ const orderSchema = new mongoose.Schema(
     orderStatus: {
       type: String,
       default: "Pending",
-      enum: ["Pending", "Confirmed", "Delivered", "Returned", "Cancelled"],
+      enum: [
+        "Pending",
+        "Confirmed",
+        "Delivered",
+        "Returned",
+        "Cancelled",
+        "Refunded",
+      ],
     },
+
     POD: { type: String }, // proof of Delivery file uploaded by the delivery person
     note: { type: String, default: null }, // Note can be written once and cannot be changed
     notePostedAt: { type: Date, default: null }, // You can mark this as immutable if desired
