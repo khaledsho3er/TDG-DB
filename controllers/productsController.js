@@ -863,7 +863,7 @@ exports.getSearchSuggestions = async (req, res) => {
     res.status(500).json({ error: "Error fetching suggestions" });
   }
 };
-
+//update the promotion
 exports.updateProductPromotion = async (req, res) => {
   try {
     const { salePrice, discountPercentage, startDate, endDate } = req.body;
