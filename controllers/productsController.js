@@ -867,38 +867,59 @@ exports.getSearchSuggestions = async (req, res) => {
 exports.updateProductPromotion = async (req, res) => {
   try {
     const { salePrice, discountPercentage, startDate, endDate } = req.body;
-    const { id } = req.params; // Get product ID from URL
-    if (!salePrice || !startDate || !endDate) {
+    const { id } = req.params;
+    if ((!salePrice && !discountPercentage) || !startDate || !endDate) {
       return res.status(400).json({
         message:
-          "All fields (sale price, start date, end date) are required for a promotion.",
+          "You must provide either sale price or discount percentage, and both start and end dates.",
       });
     }
     const product = await Product.findById(id);
     if (!product) return res.status(404).json({ message: "Product not found" });
-    // const discountPercentage =
-    //   ((product.price - salePrice) / product.price) * 100;
 
-    product.salePrice = salePrice;
-    product.discountPercentage = discountPercentage.toFixed(2);
+    let finalSalePrice;
+    let finalDiscount;
 
-    product.promotionStartDate = startDate;
-    product.promotionEndDate = endDate;
+    if (salePrice) {
+      finalSalePrice = Number(salePrice);
+      finalDiscount = Math.round(
+        ((product.price - finalSalePrice) / product.price) * 100
+      );
+    } else if (discountPercentage) {
+      finalDiscount = Number(discountPercentage);
+      finalSalePrice = Math.round(product.price * (1 - finalDiscount / 100));
+    }
+
+    product.salePrice = finalSalePrice;
+    product.discountPercentage = finalDiscount;
+
+    product.promotionStartDate = new Date(startDate);
+    product.promotionEndDate = new Date(endDate);
+
+    // Convert colors and sizes arrays to comma-separated strings if needed
+    if (Array.isArray(product.colors)) {
+      product.colors = product.colors.join(", ");
+    }
+    if (Array.isArray(product.sizes)) {
+      product.sizes = product.sizes.join(", ");
+    }
 
     await product.save();
-    // Create admin notification for promotion update
+
+    // Use the value calculated by the pre-save hook or the explicit value
+    const discount = product.discountPercentage || finalDiscount || 0;
+
     const adminNotification = new AdminNotification({
       type: "promotion",
       description: `Promotion added to product "${
         product.name
-      }" with ${discountPercentage.toFixed(2)}% discount, valid from ${new Date(
-        startDate
-      ).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
+      }" with ${discount}% discount, valid from ${product.promotionStartDate.toLocaleDateString()} to ${product.promotionEndDate.toLocaleDateString()}`,
       read: false,
     });
     await adminNotification.save();
     res.json({ message: "Promotion updated successfully", product });
   } catch (error) {
+    console.error("Error updating product promotion:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
