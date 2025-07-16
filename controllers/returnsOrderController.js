@@ -135,7 +135,8 @@ exports.updateReturnByAdmin = async (req, res) => {
       if (order.paymentDetails && order.paymentDetails.transactionId) {
         const refundAmount = productTotal + totalVat;
         await require("../services/paymobService").refundTransaction(
-          order.paymentDetails.transactionId,
+          order.paymentDetails.transactionId ||
+            order.orderId.paymentDetails.transactionId,
           Math.round(refundAmount * 100)
         );
       }
