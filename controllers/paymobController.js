@@ -249,6 +249,19 @@ class PaymobController {
             JSON.stringify(paymobOrder, null, 2)
           );
 
+          const transactionResponse = await axios.get(
+            `https://accept.paymob.com/api/acceptance/transactions?order=${orderId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+          const transactions = transactionResponse.data || [];
+          const latestTransaction = transactions.find((t) => t.success);
+          const transactionId = latestTransaction?.id;
+          console.log("Latest Transaction ID:", transactionId);
+
           // Extract order data from extras
           const orderExtras = paymobOrder.extras || {};
           console.log("Order extras:", JSON.stringify(orderExtras, null, 2));
@@ -316,7 +329,7 @@ class PaymobController {
             orderStatus: "Pending",
             paymentDetails: {
               paymentMethod: "paymob",
-              transactionId: orderId,
+              transactionId: transactionId || orderId,
               paymentStatus: "Paid",
             },
             billingDetails: orderData.billingDetails ||
