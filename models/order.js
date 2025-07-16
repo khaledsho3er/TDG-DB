@@ -61,6 +61,7 @@ const orderSchema = new mongoose.Schema(
         "Confirmed",
         "Delivered",
         "Returned",
+        "Returning",
         "Cancelled",
         "Refunded",
       ],

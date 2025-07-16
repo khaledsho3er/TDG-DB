@@ -37,7 +37,7 @@ exports.createReturnRequest = async (req, res) => {
 
     await returnRequest.save();
 
-    order.orderStatus = "Returned";
+    order.orderStatus = "Returning";
     await order.save();
 
     res.status(201).json({ message: "Return request created", returnRequest });
@@ -153,7 +153,8 @@ exports.updateReturnByAdmin = async (req, res) => {
     request.adminNote = adminNote;
     request.reviewedAt = new Date();
     await request.save();
-
+    order.orderStatus = "Refunded";
+    await order.save();
     res.json({
       message: "Admin status updated and financials adjusted",
       request,
