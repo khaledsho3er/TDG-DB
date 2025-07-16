@@ -19,7 +19,7 @@ async function generateAdminFinancialLogsFromOrders() {
         item.commissionAmount ?? +(item.totalPrice * 0.15).toFixed(2);
       const brandId = item.brandId;
       const paymobFee = +(total * 0.03).toFixed(2);
-      const brandPayout = +(total - vat - commission - paymobFee).toFixed(2);
+      const brandPayout = +(total - vat - commission - shippingFee).toFixed(2);
       const netAdminProfit = +(commission - paymobFee).toFixed(2);
 
       await AdminFinancialLog.findOneAndUpdate(
