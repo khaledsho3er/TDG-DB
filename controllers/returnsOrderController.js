@@ -1,6 +1,7 @@
 const ReturnRequest = require("../models/returnsOrder");
 const Order = require("../models/order");
 const AdminFinancialLog = require("../models/AdminFinancialLog");
+const shippingFee = require("../models/shippingFee");
 
 exports.createReturnRequest = async (req, res) => {
   try {
@@ -106,9 +107,12 @@ exports.updateReturnByAdmin = async (req, res) => {
       }
 
       const paymobFee = +(order.total * 0.03).toFixed(2);
-      const brandPayout = +(totalRefund - totalCommission - totalVat).toFixed(
-        2
-      );
+      const brandPayout = +(
+        totalRefund -
+        totalCommission -
+        totalVat -
+        shippingFee
+      ).toFixed(2);
       const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
 
       // Log the reversal in AdminFinancialLog
@@ -116,7 +120,7 @@ exports.updateReturnByAdmin = async (req, res) => {
         orderId: order._id,
         brandId: refundBrandId,
         total: -totalRefund,
-        shippingFee: 0,
+        shippingFee: order.shippingFee,
         vat: -totalVat,
         commission: -totalCommission,
         paymobFee: -paymobFee,
