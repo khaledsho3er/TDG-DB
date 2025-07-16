@@ -96,12 +96,11 @@ exports.updateReturnByAdmin = async (req, res) => {
           .status(400)
           .json({ error: "No matching brand items found in order." });
 
-      let totalRefund = 0;
+      let totalRefund = order.total;
       let totalCommission = 0;
       let totalVat = 0;
 
       for (const item of refundItems) {
-        totalRefund += item.totalPrice;
         totalCommission += item.commissionAmount ?? item.totalPrice * 0.15;
         totalVat += item.taxAmount ?? item.totalPrice * 0.14;
       }
