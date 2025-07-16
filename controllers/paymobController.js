@@ -257,7 +257,7 @@ class PaymobController {
               },
             }
           );
-          const transactions = transactionResponse.data || [];
+          const transactions = transactionResponse.data.transactions || [];
           const latestTransaction = transactions.find((t) => t.success);
           const transactionId = latestTransaction?.id;
           console.log("Latest Transaction ID:", transactionId);
