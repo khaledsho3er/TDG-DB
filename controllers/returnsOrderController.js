@@ -107,9 +107,7 @@ exports.updateReturnByAdmin = async (req, res) => {
       }
 
       const paymobFee = +(order.total * 0.03).toFixed(2);
-      const brandPayout = +(totalRefund - totalCommission - totalVat).toFixed(
-        2
-      );
+      const brandPayout = +order.brandPayout.toFixed(2);
       const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
 
       // Log the reversal in AdminFinancialLog
