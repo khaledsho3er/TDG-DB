@@ -246,7 +246,7 @@ class PaymobService {
   static async refundTransaction(transactionId, amountCents = null) {
     try {
       const authToken = await this.getAuthToken();
-
+      console.log("Refunding paymob transaction id :", transactionId);
       const payload = {
         auth_token: authToken,
         transaction_id: transactionId,

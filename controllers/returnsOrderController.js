@@ -130,6 +130,10 @@ exports.updateReturnByAdmin = async (req, res) => {
       const paymobFee = +((productTotal + totalVat) * 0.03).toFixed(2);
       const brandPayout = +(productTotal - totalCommission).toFixed(2); // Do not subtract shipping or VAT
       const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
+      console.log(
+        "Refunding paymob transaction id :",
+        order.paymentDetails.transactionId
+      );
 
       // Refund via Paymob: product price + VAT only
       if (order.paymentDetails && order.paymentDetails.transactionId) {
