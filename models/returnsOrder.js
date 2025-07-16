@@ -37,14 +37,15 @@ const returnRequestSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Rejected", "Refunded"],
+      enum: ["Pending", "Refunded", "Not Refunded"],
       default: "Pending",
     },
     brandStatus: {
       type: String,
-      enum: ["Pending", "Returned", "Not Returned"],
+      enum: ["Pending", "Received", "Not Received"],
       default: "Pending",
     },
+    brandReason: { type: String },
     requestedAt: { type: Date, default: Date.now },
     reviewedAt: { type: Date },
     adminNote: { type: String },

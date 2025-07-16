@@ -50,17 +50,33 @@ exports.createReturnRequest = async (req, res) => {
 exports.updateReturnByBrand = async (req, res) => {
   try {
     const { id } = req.params;
-    const { brandStatus } = req.body;
+    const { brandStatus, brandReason } = req.body;
 
-    if (!["Returned", "Not Returned"].includes(brandStatus)) {
+    if (!["Received", "Not Received"].includes(brandStatus)) {
       return res.status(400).json({ error: "Invalid brand status" });
     }
 
+    // If brandStatus is "Not Received", require a reason
+    if (
+      brandStatus === "Not Received" &&
+      (!brandReason || brandReason.trim() === "")
+    ) {
+      return res.status(400).json({
+        error: "Reason is required when brand status is 'Not Received'",
+      });
+    }
+
+    // If brandStatus is "Received", ignore any reason in the request
     const request = await ReturnRequest.findById(id);
     if (!request)
       return res.status(404).json({ error: "Return request not found" });
 
     request.brandStatus = brandStatus;
+    if (brandStatus === "Not Received") {
+      request.brandReason = brandReason;
+    }
+    // If Received, do not update the reason (leave as is)
+
     await request.save();
 
     res.json({ message: "Brand status updated", request });
