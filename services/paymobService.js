@@ -241,6 +241,35 @@ class PaymobService {
       throw error;
     }
   }
+  // Inside class PaymobService
+
+  static async refundTransaction(transactionId, amountCents = null) {
+    try {
+      const authToken = await this.getAuthToken();
+
+      const payload = {
+        auth_token: authToken,
+        transaction_id: transactionId,
+      };
+
+      if (amountCents !== null) {
+        payload.amount_cents = amountCents; // for partial refunds
+      }
+
+      const response = await paymobAxios.post(
+        "/acceptance/void_refund/refund",
+        payload
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error processing refund via Paymob:",
+        error.response?.data || error.message
+      );
+      throw new Error("Refund failed");
+    }
+  }
 }
 
 module.exports = PaymobService;

@@ -97,25 +97,39 @@ exports.updateReturnByAdmin = async (req, res) => {
           .status(400)
           .json({ error: "No matching brand items found in order." });
 
-      let totalRefund = order.total;
+      // Calculate product total and VAT (14%)
+      let productTotal = refundItems.reduce(
+        (sum, item) => sum + item.totalPrice,
+        0
+      );
+      let totalVat = refundItems.reduce(
+        (sum, item) => sum + (item.taxAmount ?? item.totalPrice * 0.14),
+        0
+      );
       let totalCommission = 0;
-      let totalVat = 0;
-
       for (const item of refundItems) {
         totalCommission += item.commissionAmount ?? item.totalPrice * 0.15;
-        totalVat += item.taxAmount ?? item.totalPrice * 0.14;
       }
 
-      const paymobFee = +(order.total * 0.03).toFixed(2);
-      const brandPayout = +order.brandPayout.toFixed(2);
+      const paymobFee = +((productTotal + totalVat) * 0.03).toFixed(2);
+      const brandPayout = +(productTotal - totalCommission).toFixed(2); // Do not subtract shipping or VAT
       const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
+
+      // Refund via Paymob: product price + VAT only
+      if (order.paymentDetails && order.paymentDetails.transactionId) {
+        const refundAmount = productTotal + totalVat;
+        await require("../services/paymobService").refundTransaction(
+          order.paymentDetails.transactionId,
+          Math.round(refundAmount * 100)
+        );
+      }
 
       // Log the reversal in AdminFinancialLog
       await AdminFinancialLog.create({
         orderId: order._id,
         brandId: refundBrandId,
-        total: -totalRefund,
-        shippingFee: +order.shippingFee,
+        total: -(productTotal + totalVat),
+        shippingFee: 0, // Not refunded
         vat: -totalVat,
         commission: -totalCommission,
         paymobFee: -paymobFee,

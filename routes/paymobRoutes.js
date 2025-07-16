@@ -33,5 +33,6 @@ router.get("/test", (req, res) => {
     }/api/paymob/callback`,
   });
 });
+router.post("/refund", PaymobController.refundTransaction);
 
 module.exports = router;
