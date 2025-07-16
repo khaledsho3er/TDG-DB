@@ -111,7 +111,7 @@ exports.updateReturnByAdmin = async (req, res) => {
         totalRefund -
         totalCommission -
         totalVat -
-        shippingFee
+        order.shippingFee
       ).toFixed(2);
       const netAdminProfit = +(totalCommission - paymobFee).toFixed(2);
 
