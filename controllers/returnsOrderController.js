@@ -2,6 +2,9 @@ const ReturnRequest = require("../models/returnsOrder");
 const Order = require("../models/order");
 const AdminFinancialLog = require("../models/AdminFinancialLog");
 const shippingFee = require("../models/shippingFee");
+const Notification = require("../models/notification");
+const AdminNotification = require("../models/adminNotifications");
+const User = require("../models/user");
 
 exports.createReturnRequest = async (req, res) => {
   try {
@@ -36,6 +39,33 @@ exports.createReturnRequest = async (req, res) => {
     });
 
     await returnRequest.save();
+
+    // Fetch user for name
+    const user = await User.findById(userId);
+    const userName = user
+      ? `${user.firstName} ${user.lastName}`
+      : "Unknown User";
+    const productNames = order.cartItems.map((item) => item.name).join(", ");
+    const deliveryDate = order.deliveryDate
+      ? order.deliveryDate.toISOString().split("T")[0]
+      : "Unknown Date";
+    const notificationDescription = `${userName} requested to return order ${order._id} containing product(s): ${productNames}, delivered on ${deliveryDate}, with reason: ${reason}`;
+
+    const notification = new Notification({
+      type: "Return Order Request",
+      description: notificationDescription,
+      brandId: order.cartItems[0].brandId._id,
+      orderId: order._id,
+    });
+    await notification.save();
+
+    // Also notify admin
+    const AdminNotification = require("../models/adminNotifications");
+    const adminNotification = new AdminNotification({
+      type: "Return Order Request",
+      description: notificationDescription,
+    });
+    await adminNotification.save();
 
     order.orderStatus = "Returning";
     await order.save();
@@ -78,6 +108,19 @@ exports.updateReturnByBrand = async (req, res) => {
     // If Received, do not update the reason (leave as is)
 
     await request.save();
+
+    // Notify admin about brand's action
+    let adminDescription;
+    if (brandStatus === "Received") {
+      adminDescription = `Brand has received the returned product for return request (${id}).`;
+    } else {
+      adminDescription = `Brand has NOT received the returned product for return request (${id}) due to: ${brandReason}`;
+    }
+    const adminNotification = new AdminNotification({
+      type: "Return Order Update by Brand",
+      description: adminDescription,
+    });
+    await adminNotification.save();
 
     res.json({ message: "Brand status updated", request });
   } catch (err) {
@@ -149,6 +192,25 @@ exports.updateReturnByAdmin = async (req, res) => {
           realTransactionId,
           Math.round(refundAmount * 100)
         );
+
+        // Send refund email to user
+        const { sendEmail } = require("../services/awsSes");
+        let userEmail = null;
+        if (order.billingDetails && order.billingDetails.email) {
+          userEmail = order.billingDetails.email;
+        } else if (order.customerId) {
+          const user = await User.findById(order.customerId);
+          userEmail = user?.email;
+        }
+        if (userEmail) {
+          const subject = "Your refund has been processed";
+          const body = `Dear Customer,<br><br>Your refund for order <b>${order._id}</b> has been processed successfully. The refunded amount (excluding shipping fees) will be returned to your bank account within 10-14 business days.<br><br>If you have any questions, please contact our support team.<br><br>Thank you for shopping with us!`;
+          try {
+            await sendEmail({ to: userEmail, subject, body });
+          } catch (emailErr) {
+            console.error("Failed to send refund email:", emailErr);
+          }
+        }
       }
 
       // Log the reversal in AdminFinancialLog
