@@ -275,30 +275,20 @@ class PaymobService {
   static async getTransactionIdByOrderId(orderId) {
     try {
       const authToken = await this.getAuthToken();
-      console.log("authtokenl:", authToken);
       const response = await paymobAxios.post(
         "/ecommerce/orders/transaction_inquiry",
+        { order_id: orderId },
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
-        },
-        {
-          order_id: orderId,
         }
       );
-      console.log("ordre_id", orderId);
-      console.log("respomse", response);
-
-      const transactions =
-        response.data.id ||
-        response.data.migs_transaction.acquirer.transactionId;
-      if (!transactions || transactions.length === 0) {
-        throw new Error("No transactions found for this order ID");
+      // The transaction ID is in response.data.id
+      if (!response.data || !response.data.id) {
+        throw new Error("No transaction found for this order ID");
       }
-      // Return the latest transaction's id
-      const transactionId = transactions[transactions.length - 1].id;
-      return transactionId;
+      return response.data.id;
     } catch (error) {
       console.error(
         "Error retrieving transaction ID from Paymob:",
