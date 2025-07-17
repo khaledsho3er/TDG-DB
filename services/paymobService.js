@@ -270,6 +270,33 @@ class PaymobService {
       throw new Error("Refund failed");
     }
   }
+
+  // Add this method to retrieve transaction ID by order ID
+  static async getTransactionIdByOrderId(orderId) {
+    try {
+      const authToken = await this.getAuthToken();
+      const response = await paymobAxios.post(
+        "/ecommerce/orders/transaction_inquiry",
+        {
+          auth_token: authToken,
+          order_id: orderId,
+        }
+      );
+      const transactions = response.data.transactions;
+      if (!transactions || transactions.length === 0) {
+        throw new Error("No transactions found for this order ID");
+      }
+      // Return the latest transaction's id
+      const transactionId = transactions[transactions.length - 1].id;
+      return transactionId;
+    } catch (error) {
+      console.error(
+        "Error retrieving transaction ID from Paymob:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to retrieve transaction ID");
+    }
+  }
 }
 
 module.exports = PaymobService;

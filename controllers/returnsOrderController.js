@@ -137,10 +137,16 @@ exports.updateReturnByAdmin = async (req, res) => {
 
       // Refund via Paymob: product price + VAT only
       if (order.paymentDetails && order.paymentDetails.transactionId) {
+        // Here, transactionId is actually the Paymob order ID
+        const paymobOrderId = order.paymentDetails.transactionId;
+        // Retrieve the real transaction ID from Paymob
+        const paymobService = require("../services/paymobService");
+        const realTransactionId = await paymobService.getTransactionIdByOrderId(
+          paymobOrderId
+        );
         const refundAmount = productTotal + totalVat;
-        await require("../services/paymobService").refundTransaction(
-          order.paymentDetails.transactionId ||
-            order.orderId.paymentDetails.transactionId,
+        await paymobService.refundTransaction(
+          realTransactionId,
           Math.round(refundAmount * 100)
         );
       }
