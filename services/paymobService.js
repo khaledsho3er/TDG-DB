@@ -286,7 +286,9 @@ class PaymobService {
           order_id: orderId,
         }
       );
-      const transactions = response.data.transactions;
+      const transactions =
+        response.data.id ||
+        response.data.migs_transaction.acquirer.transactionId;
       if (!transactions || transactions.length === 0) {
         throw new Error("No transactions found for this order ID");
       }
