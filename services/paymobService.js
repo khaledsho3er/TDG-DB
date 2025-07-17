@@ -278,7 +278,11 @@ class PaymobService {
       const response = await paymobAxios.post(
         "/ecommerce/orders/transaction_inquiry",
         {
-          auth_token: authToken,
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+        {
           order_id: orderId,
         }
       );
