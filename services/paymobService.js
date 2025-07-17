@@ -275,6 +275,7 @@ class PaymobService {
   static async getTransactionIdByOrderId(orderId) {
     try {
       const authToken = await this.getAuthToken();
+      console.log("authtokenl:", authToken);
       const response = await paymobAxios.post(
         "/ecommerce/orders/transaction_inquiry",
         {
