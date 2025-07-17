@@ -287,6 +287,9 @@ class PaymobService {
           order_id: orderId,
         }
       );
+      console.log("ordre_id", orderId);
+      console.log("respomse", response);
+
       const transactions =
         response.data.id ||
         response.data.migs_transaction.acquirer.transactionId;
