@@ -4,6 +4,7 @@ const AdminNotification = require("../models/adminNotifications"); // Import Adm
 const fs = require("fs");
 const path = require("path");
 const { sendEmail } = require("../services/awsSes");
+const { addContactToAudience } = require("../utils/mailchimp");
 
 // Subscribe to Newsletter
 exports.subscribe = async (req, res) => {
@@ -18,6 +19,14 @@ exports.subscribe = async (req, res) => {
 
     const subscriber = new Newsletter({ email });
     await subscriber.save();
+
+    // Add to Mailchimp
+    try {
+      await addContactToAudience(email);
+    } catch (mailchimpErr) {
+      console.error("Error adding contact to Mailchimp:", mailchimpErr);
+      // Optionally, you can continue or return a warning
+    }
     // Read and modify email template
     const templatePath = path.join(
       __dirname,
